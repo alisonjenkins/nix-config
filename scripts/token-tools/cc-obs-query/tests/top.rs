@@ -47,8 +47,8 @@ fn top_subagent_keeps_series_without_an_agent_name() {
     .to_string();
     let fake = serve(with_own(vec![("by (agent_name, model)", result)]));
     let out = cli(&fake, &["top", "subagent", "--by", "tokens"]).json();
-    assert_eq!(share_of(&out, "Explore"), Some(0.7), "{out}");
-    assert_eq!(share_of(&out, "(unattributed)"), Some(0.3), "{out}");
+    assert_eq!(share_of(&out, "Explore@opus"), Some(0.7), "{out}");
+    assert_eq!(share_of(&out, "(unattributed)@opus"), Some(0.3), "{out}");
 }
 
 #[test]
@@ -309,4 +309,89 @@ fn top_fixed_does_not_rank_or_count_the_total_series() {
         (share_of(&out, "other").unwrap() - 0.7).abs() < 1e-9,
         "{out}"
     );
+}
+
+const MISSING: &str = "cc_obs_ledger_subagent_transcript_missing_total";
+
+fn missing_runs(count: &str) -> String {
+    json!({"status": "success", "data": {"resultType": "vector", "result": [
+        {"metric": {}, "value": [1.0, count]},
+    ]}})
+    .to_string()
+}
+
+fn gaps_of(out: &Value) -> String {
+    out["gaps"].to_string()
+}
+
+const GAP: &str = "subagent: 4 sub-agent runs left no transcript, so their requests, context and tool calls are not in this view";
+
+#[test]
+fn top_session_by_requests_reports_runs_whose_transcript_the_ledger_never_found() {
+    let fake = serve(with_own(vec![
+        (MISSING, missing_runs("4")),
+        (
+            "cc_obs_ledger_requests_total",
+            vector("session_id", &[("s", "6")]),
+        ),
+    ]));
+    let run = cli(&fake, &["top", "session", "--by", "requests"]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    assert!(gaps_of(&run.json()).contains(GAP), "{}", run.json());
+}
+
+#[test]
+fn top_session_by_context_growth_reports_the_missing_runs() {
+    let fake = serve(with_own(vec![
+        (MISSING, missing_runs("4")),
+        ("cc_obs_ledger_context_tokens", EMPTY_PROM.to_owned()),
+    ]));
+    let run = cli(&fake, &["top", "session", "--by", "context-growth"]);
+    assert_eq!(run.code, 0, "{}", run.err);
+    assert!(gaps_of(&run.json()).contains(GAP), "{}", run.json());
+}
+
+#[test]
+fn top_subagent_cost_figures_do_not_carry_the_ledger_gap() {
+    let fake = serve(with_own(vec![
+        (MISSING, missing_runs("4")),
+        (
+            "by (agent_name, model)",
+            json!({"status": "success", "data": {"resultType": "vector", "result": [
+                {"metric": {"agent_name": "Explore", "model": "opus"}, "value": [1.0, "70"]},
+            ]}})
+            .to_string(),
+        ),
+    ]));
+    let out = cli(&fake, &["top", "subagent", "--by", "tokens"]).json();
+    assert!(out.get("gaps").is_none(), "{out}");
+}
+
+#[test]
+fn no_gap_when_every_run_had_a_transcript() {
+    let fake = serve(with_own(vec![
+        (MISSING, missing_runs("0")),
+        (
+            "cc_obs_ledger_requests_total",
+            vector("session_id", &[("s", "6")]),
+        ),
+    ]));
+    let out = cli(&fake, &["top", "session", "--by", "requests"]).json();
+    assert!(out.get("gaps").is_none(), "{out}");
+}
+
+#[test]
+fn a_failing_counter_lookup_fails_the_ranking_instead_of_reading_as_zero() {
+    let fake = serve(with_own(vec![
+        (
+            MISSING,
+            r#"{"status":"error","errorType":"bad_data","error":"boom"}"#.to_owned(),
+        ),
+        (
+            "cc_obs_ledger_requests_total",
+            vector("session_id", &[("s", "6")]),
+        ),
+    ]));
+    let run = cli(&fake, &["top", "session", "--by", "requests"]);
+    assert_ne!(run.code, 0, "{}", run.err);
 }

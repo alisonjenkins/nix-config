@@ -353,6 +353,8 @@ in {
         nix.settings.cores = 8;
         nix.settings.max-jobs = 4;
 
+        # Adds to the profiles that modules.desktop enables.
+        modules.kernelTuning.profiles = [ "gaming" ];
         modules.locale.enable = true;
         modules.docker.enable = true;
         modules.docker.enableQemuBinfmt = true;
@@ -647,6 +649,10 @@ in {
           enable = true;
           controls."PCM 02" = "DSP 1";
         };
+
+        # ddcutil (noctalia's brightness backend for the external monitor)
+        # needs i2c-dev loaded and the user in the i2c group.
+        hardware.i2c.enable = true;
 
         boot = {
           bootspec.enableValidation = true;
@@ -1034,11 +1040,6 @@ in {
           };
 
           steam = let
-            patchedBwrap = pkgs.bubblewrap.overrideAttrs (old: {
-              patches = (old.patches or []) ++ [
-                "${patchesDir}/bubblewrap-allow-caps.patch"
-              ];
-            });
             # Remote Play input reaches niri through extest. niri never maps
             # an absolute libinput device to a specific output (its own
             # backend_ext.rs FIXME), so positions are computed in global
@@ -1071,6 +1072,10 @@ in {
             # from source for a fault only Steam's private FHS actually has.
             package = let
               steamPkgs = pkgs.extend (_final: prev: { libva = prev.unstable.libva; });
+              # Patched bubblewrap, --cap-add ALL, hidapi and the libGL profile,
+              # shared with every gaming host. Overriding `package` bypasses the
+              # module default that applies them, so pass them on.
+              shared = config.modules.desktop.gaming.steamFhsArgs steamPkgs;
               # steam-stream-mode's state directory: the published stream target
               # and the display filter's log live here.
               streamModeState = "${config.users.users.${username}.home}/.local/state/stream-mode";
@@ -1085,28 +1090,8 @@ in {
                   "Remote Play assumes custom.niri.virtualOutputs declares exactly one output named \"steam\"; got ${builtins.toJSON virtualOutputNames}. Pick the intended one explicitly instead of silently taking the first.";
                 lib.head virtualOutputNames;
             in steamPkgs.steam.override {
-              buildFHSEnv = args: (steamPkgs.buildFHSEnv.override {
-                bubblewrap = patchedBwrap;
-              }) (args // {
-                extraBwrapArgs = (args.extraBwrapArgs or []) ++ [ "--cap-add" "ALL" ];
-              });
-              # Add patched bubblewrap inside FHS environment and tell pressure-vessel to use it.
-              # hidapi mirrors programs.steam.extraPackages from modules/desktop — overriding
-              # `package` here bypasses the module-level extraPackages, so we re-add it.
-              # See NixOS/nixpkgs#518150 for the Steam Controller (2026) firmware updater bug.
-              extraPkgs = pkgs: [ patchedBwrap pkgs.hidapi ];
-              # Steam's gameoverlayrenderer.so is preloaded into every game
-              # launch and needs libGL.so.1 with only $ORIGIN as RUNPATH.
-              # Nix-built processes (the steam-command-runner gamescope shim)
-              # do not search the FHS /usr/lib64, so the loader aborts with
-              # "libGL.so.1: cannot open shared object file" before main.
-              extraProfile = ''
-                export LD_LIBRARY_PATH=/run/opengl-driver/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-              '';
-              extraEnv = {
-                # Tell pressure-vessel to use the patched bubblewrap instead of its bundled one
-                BWRAP = "${patchedBwrap}/bin/bwrap";
-
+              inherit (shared) buildFHSEnv extraPkgs extraProfile;
+              extraEnv = shared.extraEnv // {
                 # Remote Play sizes its capture from its own idea of the
                 # desktop rather than from the PipeWire stream the portal gave
                 # it, so a Deck streaming the 1280x800 virtual output receives
@@ -1410,7 +1395,7 @@ in {
               autoSubUidGidRange = true;
               isNormalUser = true;
               description = "Alison Jenkins";
-              extraGroups = [ "audio" "input" "libvirtd" "networkmanager" "docker" "video" "wheel" "realtime" ];
+              extraGroups = [ "audio" "input" "libvirtd" "networkmanager" "docker" "video" "wheel" "realtime" "i2c" ];
               hashedPasswordFile = "/persistence/passwords/ali";
               useDefaultShell = true;
 

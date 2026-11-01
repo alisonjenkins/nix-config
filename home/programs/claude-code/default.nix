@@ -186,6 +186,9 @@ let
     else
       fullSkills;
 
+  # modules.rootly, read by path because this module is imported where it may not be.
+  rootly = lib.attrByPath [ "modules" "rootly" ] { enable = false; skills = null; } config;
+
   # The remaining paths are *parents* of many skills, so merging contents is right.
   fullSkills = pkgs.symlinkJoin {
     name = "claude-code-skills";
@@ -195,7 +198,8 @@ let
       "${cavemanPkg}/skills"
       "${claudeStatusbarPkg}/share/claude-statusbar/skills"
       speckitInitSkill
-    ] ++ lib.optional config.programs.rea.enable config.programs.rea.skills;
+    ] ++ lib.optional config.programs.rea.enable config.programs.rea.skills
+      ++ lib.optional rootly.enable rootly.skills;
   };
 
   lspmuxPkg = inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.lspmux;
@@ -326,6 +330,15 @@ let
   # so subcommands run clean. `@REAL@` is substituted with the absolute store
   # path of `.claude-real` at build time (below).
   claudeDispatcher = pkgs.writeShellScript "claude-dispatcher" ''
+    ${lib.optionalString pkgs.stdenv.isDarwin ''
+      # nixpkgs' launcher does `--set-default CLAUDE_CODE_CERT_STORE system`,
+      # which on the work Mac makes every session fail with
+      # UNABLE_TO_GET_ISSUER_CERT_LOCALLY. It only sets the variable when
+      # unset, so an empty value keeps Claude Code on its own default store.
+      # Set here rather than via home.sessionVariables: shells that inherit
+      # __HM_SESS_VARS_SOURCED (tmux panes) never re-source those.
+      export CLAUDE_CODE_CERT_STORE="''${CLAUDE_CODE_CERT_STORE-}"
+    ''}
     inject=()
     while [ $# -gt 0 ]; do
       case "$1" in
@@ -433,9 +446,13 @@ in
         DISABLE_AUTOUPDATER = "1";
         DISABLE_ERROR_REPORTING = "1";
         DISABLE_BUG_COMMAND = "1";
+        CLAUDE_CODE_SUBAGENT_MODEL = "haiku";
       };
 
       alwaysThinkingEnabled = true;
+
+      # Tokens, capped at the model's window: pulls compaction forward on 1M-window models.
+      autoCompactWindow = 350000;
 
       # Sonnet always, including plan mode: it is the fastest model that
       # isn't Haiku, and Haiku can't run auto mode. Everything Sonnet cannot
@@ -447,8 +464,9 @@ in
       # Note this key is now nix-managed, so the activation script at the foot
       # of this file replaces it on every rebuild: a `/model` chosen mid-session
       # lasts for that session and is reset to sonnet on the next switch.
-      # `CLAUDE_CODE_SUBAGENT_MODEL` is deliberately NOT set — it overrides
-      # every subagent's model and would defeat the per-agent `model:` below.
+      # Main loop only. Sub-agents that name no model fall through to
+      # CLAUDE_CODE_SUBAGENT_MODEL (env above); per-agent `model:` still wins since
+      # Claude Code 2.1.251. Never set CLAUDE_CODE_SUBAGENT_MODEL_FORCE: it would override them.
       model = "sonnet";
 
       # Skill listing visibility. The listing budget is 1% of the model's
@@ -468,8 +486,14 @@ in
       #   documents -> docx, pdf, pptx, xlsx, doc-coauthoring, internal-comms
       #   web-ui    -> frontend-design, web-artifacts-builder, webapp-testing
       #   skill-authoring -> skill-creator
-      # Leaves without a natural parent (mcp-builder, slack-gif-creator) keep
-      # their descriptions and stay top-level.
+      #   token-efficiency -> mcp-builder
+      #   delegation -> local-llm-setup, cavecrew
+      #   review    -> security
+      #   documents -> slack-gif-creator
+      # "user-invocable-only" removes a skill from the model's listing but keeps
+      # it in the / menu: for skills only the user ever starts. Skill-doctor on
+      # 2026-10-27 showed the model had invoked none of these on either machine
+      # (ADR 0055).
       skillOverrides = {
         docx = "name-only";
         pdf = "name-only";
@@ -481,6 +505,48 @@ in
         web-artifacts-builder = "name-only";
         webapp-testing = "name-only";
         skill-creator = "name-only";
+        # Never model-invoked; routed from the families above, the name still shows.
+        mcp-builder = "name-only";
+        slack-gif-creator = "name-only";
+        local-llm-setup = "name-only";
+        security = "name-only";
+        cavecrew = "name-only";
+        # Slash commands the user types; claude-statusbar stays listed as the
+        # router for the statusbar-* commands.
+        caveman = "user-invocable-only";
+        caveman-commit = "user-invocable-only";
+        caveman-compress = "user-invocable-only";
+        caveman-help = "user-invocable-only";
+        caveman-review = "user-invocable-only";
+        caveman-stats = "user-invocable-only";
+        statusbar = "user-invocable-only";
+        statusbar-doctor = "user-invocable-only";
+        statusbar-preview = "user-invocable-only";
+        statusbar-reset = "user-invocable-only";
+        statusbar-style = "user-invocable-only";
+        statusbar-theme = "user-invocable-only";
+        speckit-init = "user-invocable-only";
+        nix-pull-build = "user-invocable-only";
+        process-todo = "user-invocable-only";
+        docs-audit = "user-invocable-only";
+        # Skills synced from claude.ai (~/.claude/skills/synced). The docs only
+        # offer syncClaudeAiSkills = false for the whole set; a prefixed key
+        # here is undocumented but verified on 2.1.308 to take the skill out of
+        # the listing. Together they were 3,160 tokens a turn on the desktop,
+        # the single largest item, with chrome-browser the only one the model
+        # had ever run. Four duplicate the local farm (docx, pdf, pptx, xlsx).
+        "anthropic-skills:built-in-browser" = "user-invocable-only";
+        "anthropic-skills:computer-use" = "user-invocable-only";
+        "anthropic-skills:deep-research" = "user-invocable-only";
+        "anthropic-skills:docs" = "user-invocable-only";
+        "anthropic-skills:docx" = "user-invocable-only";
+        "anthropic-skills:google-workspace" = "user-invocable-only";
+        "anthropic-skills:import-memory" = "user-invocable-only";
+        "anthropic-skills:morning" = "user-invocable-only";
+        "anthropic-skills:pdf" = "user-invocable-only";
+        "anthropic-skills:pptx" = "user-invocable-only";
+        "anthropic-skills:skill-creator" = "user-invocable-only";
+        "anthropic-skills:xlsx" = "user-invocable-only";
       };
 
       # Terminal UI renderer: "fullscreen" = flicker-free alt-screen renderer

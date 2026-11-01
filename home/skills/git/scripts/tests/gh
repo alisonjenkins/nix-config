@@ -212,6 +212,11 @@ elif [[ $is_pr_view -eq 1 ]]; then
   pr_head_sha="$(cat "$fixtures/pr-head-sha.txt" 2>/dev/null || echo "")"
   printf '%s\t%s\n' "$pr_number" "$pr_head_sha"
 elif [[ $is_pr_checks -eq 1 ]]; then
+  # checks-watch-hook: a script run while "watching", simulating the user
+  # changing the checkout during the minutes CI takes to settle.
+  if [[ -f "$fixtures/checks-watch-hook" ]]; then
+    bash "$fixtures/checks-watch-hook" >&2
+  fi
   if [[ -f "$fixtures/checks-no-checks" ]]; then
     echo "no checks reported on the branch" >&2
     exit 1

@@ -42,6 +42,27 @@
   '';
 
   systemd.services = {
+    # cloud-init sets the Hetzner server name only on first boot; re-apply it
+    # every boot, before anything registers this node under its hostname.
+    hetzner-hostname = {
+      description = "Set the hostname to the Hetzner server name";
+      after = [ "cloud-init.service" ];
+      before = [
+        "tailscaled.service"
+        "tailscale-bootstrap.service"
+        "k3s-state-volume.service"
+        "k3s-server-bootstrap.service"
+        "k3s-agent-bootstrap.service"
+      ];
+      wantedBy = [ "multi-user.target" ];
+      path = [ pkgs.jq ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = "${pkgs.bash}/bin/bash ${./hetzner-set-hostname.sh}";
+      };
+    };
+
     # Tailscale bootstrap service — brings up the Tailscale tunnel before k3s.
     # Auth key is provided via cloud-init userData in /etc/karpenter-node.conf.
     tailscale-bootstrap = {

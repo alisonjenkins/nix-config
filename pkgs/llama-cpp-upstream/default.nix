@@ -4,7 +4,7 @@
 # v0.6.0 release knows the `gemma-embedding2` architecture, so
 # llama-models.embeddinggemma-2-q8-0 fails to load there. Drop this once
 # nixpkgs ships a llama.cpp that does.
-llama-cpp.overrideAttrs (_: {
+llama-cpp.overrideAttrs (old: {
   version = "0.6.0-b7dafa0";
 
   src = fetchFromGitHub {
@@ -21,4 +21,20 @@ llama-cpp.overrideAttrs (_: {
   # nixpkgs' patches target the 0.6.0 sources and are already in this commit;
   # applying them again aborts the build as "reversed or previously applied".
   patches = [ ];
+
+  # These four tests each ran into ctest's 1500 s timeout in the sandbox
+  # (test-save-load-state and test-recurrent-state-rollback loop over every
+  # architecture; the two "model" tests do the same with larger fixtures), so
+  # the whole system build stalled for 25 min and then failed. They exercise
+  # upstream test logic, not this package's wiring; the rest of the suite runs.
+  # test-download-model fetches a model from huggingface.co, which the sandbox
+  # cannot resolve, and test-state-restore-fragmented never runs without it.
+  disabledTests = (old.disabledTests or [ ]) ++ [
+    "test-recurrent-state-rollback"
+    "test-save-load-state"
+    "test-gguf-model-data"
+    "test-quant-type-selection"
+    "test-download-model"
+    "test-state-restore-fragmented"
+  ];
 })

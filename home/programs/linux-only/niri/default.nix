@@ -5,7 +5,38 @@ let
   # substituteInPlace patches (perf-mode blur/spectrum disable + lid-switch
   # inhibit) have no targets. 5.x also dropped the custom "noctaliaPerformanceMode"
   # visual flag entirely. Use the package vanilla; configure blur/idle via toml.
-  noctalia-shell = inputs.noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  #
+  # Three fork-only patches until they land upstream (PRs on
+  # alisonjenkins/noctalia): `session lock --grace`, locking when no output is
+  # connected, and `lockscreen.grace_period_idle_only`. Docs are excluded since
+  # the pinned source may not match them.
+  noctaliaPatch = { rev, hash, postFetch ? "" }: pkgs.fetchpatch2 {
+    url = "https://github.com/alisonjenkins/noctalia/commit/${rev}.patch";
+    inherit hash postFetch;
+    excludes = [ "docs/*" "example.toml" ];
+  };
+  noctalia-shell = inputs.noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [
+      (noctaliaPatch {
+        rev = "c24ff5a0317624266a47d9b6bfde0db2f233e3df";
+        hash = "sha256-cpIV7m1fYt7WHZLy186Jmh/tF62SjUnxd3CQgldyiU8=";
+      })
+      (noctaliaPatch {
+        rev = "6900fb7ec441a78b83666e3bad2262f91b078f39";
+        hash = "sha256-eJ9UUseZPu+fgeqv6kVL4JbnEDvmCARIUUBokiMZAnE=";
+      })
+      (noctaliaPatch {
+        rev = "14f83b82433348cd993c571d2ddcd5e427d2345e";
+        hash = "sha256-pqTQ8vFhpLl75UXWCPKS99dLPTfzfnY3SsK7DIl7aGo=";
+        # The pinned noctalia files the lock screen settings under Security;
+        # upstream main moved them to LockScreen/"general".
+        postFetch = ''
+          substituteInPlace $out \
+            --replace-fail 'SettingsSection::LockScreen, "general"' 'SettingsSection::Security, "lock-screen"'
+        '';
+      })
+    ];
+  });
 in
 {
   imports = [

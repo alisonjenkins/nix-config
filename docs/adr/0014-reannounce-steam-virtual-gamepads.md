@@ -14,7 +14,7 @@ gamepad, a uinput device named `Microsoft X-Box 360 pad N`. On a reconnect
 Steam made a new one for the returning controller and left the old one in
 place:
 
-```
+```text
 11:45:23  Microsoft X-Box 360 pad 1   event256   created at launch, held by the game
 11:47:26  Microsoft X-Box 360 pad 0   event257   created at the reconnect, receives the input
 ```

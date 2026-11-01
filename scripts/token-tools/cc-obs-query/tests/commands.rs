@@ -140,6 +140,36 @@ fn tool_reports_calls_sizes_share_and_repeat_rate() {
 }
 
 #[test]
+fn tool_repeat_rate_does_not_count_the_same_call_by_two_sub_agents() {
+    let record = |i: u64, agent_id: &str| {
+        json!({
+            "stream": {"service_name": "cc-obs-ledger"},
+            "values": [[format!("{}", 1_760_000_000_000_000_000_u64 + i),
+                        "cc_obs_ledger.tool_call",
+                        {"structuredMetadata": {
+                            "session_id": "s1", "agent": "subagent", "agent_id": agent_id,
+                            "tool_name": "Read", "input_hash": "x", "input_prefix_hash": "p",
+                            "result_bytes": "10", "turn": "0", "seq": "0"}}]]
+        })
+        .to_string()
+    };
+    let body = format!(
+        r#"{{"status":"success","data":{{"resultType":"streams","result":[{},{}],"stats":{{}}}}}}"#,
+        record(0, "a1"),
+        record(1, "a2")
+    );
+    let fake = serve(with_own(vec![
+        (
+            "event_name=\"tool_result\"",
+            fixture("loki_tool_results.json"),
+        ),
+        ("event_name=\"cc_obs_ledger.tool_call\"", body),
+    ]));
+    let out = cli(&fake, &["tool", "Read"]).json();
+    assert_eq!(row(&out, "repeat_rate")["value"], json!(0), "{out}");
+}
+
+#[test]
 fn tool_unknown_name_is_unavailable() {
     let fake = serve(with_own(vec![(
         "event_name=\"tool_result\"",
@@ -364,6 +394,11 @@ fn health_flags_an_unreachable_store() {
     let out = run.json();
     assert_eq!(out["stores_ok"], json!(false));
     assert_eq!(row(&out, "tempo")["value"], json!("down"));
+    let reason = row(&out, "tempo")["reason"]
+        .as_str()
+        .expect("a down store carries a reason");
+    assert!(reason.contains("HTTP 404"), "{reason}");
+    assert!(row(&out, "loki").get("reason").is_none());
 }
 
 #[test]

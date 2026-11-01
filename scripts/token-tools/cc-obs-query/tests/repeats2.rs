@@ -231,7 +231,30 @@ fn duplicate_records_count_once_and_are_noted() {
     assert!(!has(&out, "identical:Read"), "{out}");
     let gaps = out["gaps"].to_string();
     assert!(
-        gaps.contains("1 duplicate tool_call records (same session, agent, seq) ignored"),
+        gaps.contains("1 duplicate tool_call records (same session, agent, agent_id, seq) ignored"),
         "{gaps}"
+    );
+}
+
+#[test]
+fn sub_agents_that_each_restart_seq_are_not_duplicates() {
+    let metas: Vec<Value> = [("a1", "x"), ("a1", "y"), ("a2", "x"), ("a2", "y")]
+        .iter()
+        .enumerate()
+        .map(|(i, (agent_id, hash))| {
+            let mut meta = record(&Rec("s1", "subagent", "Read", hash, (i % 2) as u64));
+            meta["agent_id"] = json!(agent_id);
+            meta
+        })
+        .collect();
+    let out = run_repeats(loki_meta(&metas));
+    assert_eq!(out["calls_analysed"], json!(4), "{out}");
+    assert!(
+        !has(&out, "identical:Read"),
+        "two sub-agents merged into one stream: {out}"
+    );
+    assert!(
+        !out["gaps"].to_string().contains("duplicate"),
+        "distinct sub-agents reported as duplicates: {out}"
     );
 }

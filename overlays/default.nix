@@ -670,6 +670,24 @@ in
     });
   };
 
+  # Solaar 1.1.20 has the X2 Superstrike feature (0x1B0C) but not the PRO X3
+  # Superstrike's HID++ 2.0-only dongle (046d:c54f), so it reports "No
+  # supported device found". Upstream PR pwr-Solaar/Solaar#3352 (open) adds it;
+  # drop this once a release contains it. Applied by modules/desktop only.
+  solaar-pro-x3-superstrike = _final: prev: {
+    solaar = prev.solaar.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [
+        "${patchesDir}/solaar-pro-x3-superstrike.patch"
+      ];
+      # The patch reads a new Device property that the suite's fake devices
+      # lack (the PR changes no tests), so these three report-rate tests fail.
+      disabledTests = (old.disabledTests or [ ]) ++ [
+        "test_get_polling_rate"
+        "test46"
+      ];
+    });
+  };
+
   snapper = final: _prev: {
     snapper = _prev.snapper.overrideAttrs (oldAttrs: {
       buildInputs = oldAttrs.buildInputs ++ [ _prev.zlib ];

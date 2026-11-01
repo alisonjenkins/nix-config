@@ -1,9 +1,9 @@
 ---
 name: writing
 description: >-
-  Use when writing, drafting or editing prose a person will read: a PR comment, PR description, review reply, commit body, README, design doc, report, release note, or message to a colleague. Also when asked to tighten text, cut fluff, de-slop it, or make it easier to read. Not for a .docx/.pdf/.pptx/.xlsx deliverable or multi-turn co-drafting with the user (see documents).
+  Use when writing, drafting or editing prose a person will read: a PR comment, PR description, review reply, commit body, design doc, report, release note, or message to a colleague. Also when asked to tighten text, cut fluff, de-slop it, or make it easier to read. Not for a .docx/.pdf/.pptx/.xlsx deliverable or multi-turn co-drafting with the user (see documents).
 metadata:
-  summary: "Use when drafting or editing prose a person reads: PR comment, commit body, README, design doc, release note; tighten, cut fluff."
+  summary: "Use when drafting or editing prose a person reads: PR comment, commit body, design doc, release note; tighten, cut fluff."
 ---
 
 # Writing
@@ -112,6 +112,8 @@ what the answer names. Then check the text still has a point of view.
 
 Related: `review` for phrasing a review finding, `git/commit-messages.md` for
 commit subject and body format. Both defer to this skill for the prose itself.
+`docs` for the structure and content of repo documentation such as a README;
+this skill still owns the sentences.
 
 Derived from the `unslop` skill in
 [cursor/plugins](https://github.com/cursor/plugins), rewritten for this skill

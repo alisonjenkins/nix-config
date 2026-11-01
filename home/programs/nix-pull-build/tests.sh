@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# git exports these while a commit hook runs; they would point the test repos at the real one.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
+
 script="$(cd "$(dirname "$0")" && pwd)/build.sh"
 real_git="$(command -v git)"
 export REAL_GIT="$real_git"
@@ -109,8 +112,11 @@ advance() {
 }
 
 run() {
-  bash -c 'repository="$1"; script="$2"; shift 2; source "$script"' bash "$repository" "$script" "$@" \
-    > "$tmp/output" 2>&1
+  (
+    cd "${RUN_DIR:-$tmp}"
+    bash -c 'configured_repository="$1"; expected_origin="$2"; script="$3"; shift 3; source "$script"' \
+      bash "${CONFIGURED-$repository}" "${EXPECTED_ORIGIN-$(dirname "$repository")/origin}" "$script" "$@"
+  ) > "$tmp/output" 2>&1
 }
 
 setup success
@@ -192,7 +198,7 @@ grep -q 'Nix build failed' "$NOTIFICATION_LOG" || fail "missing failure notifica
 
 if script --version 2>&1 | grep -q util-linux; then
   setup build-tty
-  script -qec "bash -c 'repository=\"\$1\"; script=\"\$2\"; shift 2; source \"\$script\"' bash '$repository' '$script'" /dev/null \
+  script -qec "bash -c 'configured_repository=\"\$1\"; expected_origin=\"\$2\"; script=\"\$3\"; shift 3; source \"\$script\"' bash '$repository' '$tmp/build-tty/origin' '$script'" /dev/null \
     > "$tmp/output" 2>&1 || { cat "$tmp/output"; fail "TTY build"; }
   if grep -Fxq -- '--print-build-logs' "$BUILD_LOG"; then fail "TTY build used --print-build-logs"; fi
   [[ ! -e "$XDG_STATE_HOME" ]] || fail "TTY build wrote a log file"
@@ -291,5 +297,39 @@ setup wrong-platform
 export TEST_PLATFORM=FreeBSD
 if run; then fail "unsupported platform accepted"; fi
 [[ ! -f "$BUILD_LOG" ]] || fail "built on unsupported platform"
+
+setup discover-subdir
+mkdir "$repository/sub"
+RUN_DIR="$repository/sub" CONFIGURED="" run || { cat "$tmp/output"; fail "discovery from a subdirectory"; }
+grep -Fxq "$repository#darwinConfigurations.Test-Mac.system" "$BUILD_LOG" || fail "subdirectory did not build the checkout"
+
+setup discover-worktree
+git -C "$repository" worktree add -q -b feature "$tmp/discover-worktree/wt"
+RUN_DIR="$tmp/discover-worktree/wt" CONFIGURED="" run || { cat "$tmp/output"; fail "discovery from a worktree"; }
+grep -Fxq "$repository#darwinConfigurations.Test-Mac.system" "$BUILD_LOG" || fail "worktree did not resolve to the main checkout"
+
+setup discover-over-configured
+git clone -q "$tmp/discover-over-configured/origin" "$tmp/discover-over-configured/other"
+RUN_DIR="$repository" CONFIGURED="$tmp/discover-over-configured/other" run || { cat "$tmp/output"; fail "discovery beat the configured path"; }
+grep -Fxq "$repository#darwinConfigurations.Test-Mac.system" "$BUILD_LOG" || fail "configured path beat discovery"
+
+setup foreign-origin-fallback
+git clone -q "$tmp/foreign-origin-fallback/origin" "$tmp/foreign-origin-fallback/other"
+RUN_DIR="$tmp/foreign-origin-fallback/other" EXPECTED_ORIGIN=https://example.invalid/nix-config.git run \
+  || { cat "$tmp/output"; fail "foreign origin should fall back to the configured path"; }
+grep -Fxq "$repository#darwinConfigurations.Test-Mac.system" "$BUILD_LOG" || fail "foreign checkout was built instead of the configured one"
+
+setup foreign-origin-no-fallback
+if RUN_DIR="$repository" CONFIGURED="" EXPECTED_ORIGIN=https://example.invalid/nix-config.git run; then
+  fail "checkout with a foreign origin accepted"
+fi
+grep -q 'programs.nix-pull-build.repository is unset' "$tmp/output" || fail "missing discovery failure message"
+[[ ! -f "$BUILD_LOG" ]] || fail "built a checkout with a foreign origin"
+
+eval "$(sed -n '/^normalize_remote()/,/^}/p' "$script")"
+for url in git@github.com:o/r.git https://github.com/o/r.git https://github.com/o/r ssh://git@github.com/o/r.git; do
+  [[ "$(normalize_remote "$url")" = github.com/o/r ]] || fail "normalize_remote mangled $url"
+done
+[[ "$(normalize_remote "/srv/git/origin")" = /srv/git/origin ]] || fail "normalize_remote mangled a local path"
 
 echo 'All nix-pull-build integration tests passed.'

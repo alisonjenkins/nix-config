@@ -88,6 +88,98 @@ let
       secretFile = p.streamKeyFile;
     }
   ) cfg.profiles);
+
+  sourceModule = {
+    options = {
+      id = lib.mkOption {
+        type = lib.types.str;
+        example = "pipewire-camera-source";
+        description = "OBS source id, e.g. an input kind such as pipewire-camera-source.";
+      };
+      settings = lib.mkOption {
+        inherit (jsonFormat) type;
+        default = { };
+        description = "Replaces the source's settings object wholesale.";
+      };
+    };
+  };
+
+  sceneSourceModule = {
+    options = {
+      name = lib.mkOption {
+        type = lib.types.str;
+        example = "Desktop audio";
+        description = "Source name, unique within the collection.";
+      };
+      id = lib.mkOption {
+        type = lib.types.str;
+        example = "pipewire-screen-capture-source";
+        description = "OBS source id, e.g. an input kind.";
+      };
+      settings = lib.mkOption {
+        inherit (jsonFormat) type;
+        default = { };
+        description = ''
+          Merged over the settings OBS already wrote, so state OBS keeps
+          there (a screen capture's portal RestoreToken) survives a switch.
+        '';
+      };
+      audio = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Whether the source produces audio, so it gets mixer tracks.";
+      };
+    };
+  };
+
+  audioSlotModule = {
+    options = {
+      name = lib.mkOption {
+        type = lib.types.str;
+        example = "Game Audio";
+        description = "Name shown in the OBS mixer.";
+      };
+      id = lib.mkOption {
+        type = lib.types.str;
+        example = "pipewire-audio-capture-application";
+        description = "OBS source id the slot is switched to.";
+      };
+      settings = lib.mkOption {
+        inherit (jsonFormat) type;
+        default = { };
+        description = "Replaces the slot's settings object wholesale.";
+      };
+    };
+  };
+
+  sceneCmds = lib.concatStrings (lib.mapAttrsToList (collection: c:
+    lib.concatStrings (lib.mapAttrsToList (name: s:
+      "obsPatchSource ${lib.escapeShellArgs [
+        "${obsDir}/basic/scenes/${collection}.json"
+        name
+        s.id
+        (jsonFormat.generate "obs-scene-source-settings.json" s.settings)
+      ]}\n"
+    ) c.sources)
+    + lib.concatStrings (lib.mapAttrsToList (slot: s:
+      "obsPatchAudioSlot ${lib.escapeShellArgs [
+        "${obsDir}/basic/scenes/${collection}.json"
+        slot
+        s.name
+        s.id
+        (jsonFormat.generate "obs-audio-slot-settings.json" s.settings)
+      ]}\n"
+    ) c.audioSlots)
+    + lib.concatStrings (lib.mapAttrsToList (scene: sources:
+      "obsEnsureScene ${lib.escapeShellArgs [
+        "${obsDir}/basic/scenes/${collection}.json"
+        scene
+        (jsonFormat.generate "obs-scene-sources.json" (map
+          (s: { inherit (s) name id settings audio; })
+          sources))
+      ]}\n"
+    ) c.scenes)
+  ) cfg.sceneCollections);
 in
 {
   options.programs.obs-studio.declarative = {
@@ -100,6 +192,42 @@ in
       description = ''
         Profiles keyed by their directory under basic/profiles. A profile
         that does not exist yet is created with General.Name set to the key.
+      '';
+    };
+
+    sceneCollections = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {
+        options.sources = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.submodule sourceModule);
+          default = { };
+          description = "Scene sources keyed by name; each one's id and settings are patched in.";
+        };
+        options.scenes = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.listOf (lib.types.submodule sceneSourceModule));
+          default = { };
+          description = ''
+            Scenes keyed by name, each a list of sources in stacking order.
+            A scene or source missing from the collection is created and the
+            sources are put in the scene; nothing is ever removed. The
+            collection file must already exist and hold a scene, a scene item
+            and a source, which new ones are copied from.
+          '';
+        };
+        options.audioSlots = lib.mkOption {
+          type = lib.types.attrsOf (lib.types.submodule audioSlotModule);
+          default = { };
+          description = ''
+            Global audio slots keyed by their collection-file key, e.g.
+            DesktopAudioDevice1 or AuxAudioDevice1; each one is switched to
+            the declared source kind. A slot absent from the file is skipped.
+          '';
+        };
+      });
+      default = { };
+      description = ''
+        Scene collections keyed by their file name under basic/scenes. A
+        source is matched by name; sources not listed are left as OBS wrote
+        them. A collection file that does not exist yet is not created.
       '';
     };
 
@@ -144,6 +272,7 @@ in
       ${patchIni "${obsDir}/global.ini" cfg.global}
       ${patchIni "${obsDir}/user.ini" cfg.user}
       ${profileCmds}
+      ${sceneCmds}
       ${patchJson {
         target = "${obsDir}/plugin_config/obs-websocket/config.json";
         inherit (cfg.websocket) settings;

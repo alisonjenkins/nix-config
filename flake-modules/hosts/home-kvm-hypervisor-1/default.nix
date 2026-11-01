@@ -38,6 +38,8 @@ in {
           bootLoader = "grub";
         };
         modules.libvirtd.enable = true;
+        # Server profile; see ADR 0057.
+        modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
 
         # VFIO passthrough device isolation. Single source of truth for every
@@ -143,10 +145,7 @@ in {
 
               # Push cold anonymous pages into zram. Only download-server-1 (8 GiB)
               # and host daemons can swap; k8s-master and storage are mlock'd pinned.
-              # page-cluster=0 reads one page per swap-in: zram is random-access RAM,
-              # so the default 8-page readahead just wastes work.
               "vm.swappiness" = 100;
-              "vm.page-cluster" = 0;
             };
           };
 

@@ -11,13 +11,14 @@ fn session_matcher(id: &str) -> Result<String, Error> {
     Ok(format!("session_id=\"{}\"", label_value("session id", id)?))
 }
 
-/// One ledger series: a user-prompt turn of one agent kind on one model. A turn
-/// holds the main agent's requests and any subagents', so the turn alone is not
-/// a series identity.
+/// One ledger series: a user-prompt turn of one agent kind on one model; a
+/// sub-agent's id is part of the key. A turn holds the main agent's requests and
+/// any subagents', so the turn alone is not a series identity.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct SeriesKey {
     turn: u64,
     agent: String,
+    agent_id: String,
     model: String,
 }
 
@@ -45,6 +46,7 @@ fn per_series(
         let key = SeriesKey {
             turn,
             agent: label(&s, "agent"),
+            agent_id: label(&s, "agent_id"),
             model: label(&s, "model"),
         };
         kept.insert(key, s.value);
@@ -92,6 +94,7 @@ fn fixed_tokens(ctx: &Ctx, id: &str) -> Result<Option<f64>, Error> {
 pub fn run(ctx: &Ctx, id: &str, detail: bool) -> Result<Report, Error> {
     let command = format!("session {id}");
     let (series, dropped) = per_series(ctx, CONTEXT, id)?;
+    ctx.note_missing_subagent_transcripts()?;
     if series.is_empty() {
         let why = if dropped > 0 {
             format!("{dropped} cc_obs_ledger series for session {id} have no numeric turn label")

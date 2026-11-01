@@ -108,7 +108,7 @@ Zen profile path there (`~/Library/Application Support/zen`) is unconfirmed.
 
 ## Using it
 
-```
+```bash
 claude-monitor                      # TUI
 claude-monitor list [--json]        # same overview as text or JSON
 claude-monitor show <id>            # detail: progress, summaries, notes, links

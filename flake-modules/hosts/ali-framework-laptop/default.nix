@@ -126,7 +126,10 @@ in {
         modules.desktop-1password.enable = true;
         modules.desktop-aws-tools.enable = true;
         modules.desktop-base.enable = true;
-        modules.desktop-greetd-regreet.enable = true;
+        modules.desktop-greetd-regreet = {
+          enable = true;
+          video.enable = true;
+        };
         modules.desktop-kde-connect.enable = true;
         modules.desktop-kubernetes.enable = true;
         modules.desktop-kwallet.enable = true;
@@ -156,6 +159,8 @@ in {
         };
 
         services.automatic-timezoned.enable = true;
+        # Adds to the profiles that modules.desktop enables.
+        modules.kernelTuning.profiles = [ "gaming" ];
         modules.locale.enable = true;
         modules.libvirtd.enable = true;
         modules.podman.enable = true;
@@ -358,12 +363,6 @@ in {
 
         environment = {
           pathsToLink = [ "/share/zsh" ];
-
-          # RX 7600M XT (RDNA 3) performance optimizations
-          variables = {
-            # Optimize shader compilation for RDNA 3
-            RADV_DEBUG = "zerovram";  # Zero VRAM allocations for better performance
-          };
 
           systemPackages = with pkgs; [
             amdgpu_top

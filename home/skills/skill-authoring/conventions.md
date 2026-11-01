@@ -47,7 +47,10 @@ Make a **family** when:
   pay for a full description in the listing.
 
 Keep it a **leaf** when it has a distinct trigger and no siblings:
-`process-todo` and `mcp-builder` are correctly standalone.
+`handoff` and `requirements` are correctly standalone. A leaf the model never
+invokes can still go `name-only` under a family that names it in its routing
+table (`mcp-builder` under `token-efficiency`), and a leaf only the user types
+(`process-todo`) goes `user-invocable-only` so it leaves the listing entirely.
 
 ## These files run on machines you are not sitting at
 

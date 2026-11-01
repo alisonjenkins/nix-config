@@ -60,7 +60,9 @@ in {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
-          imports = [ self.homeModules.home-linux self.homeModules.local-llm-client ];
+          imports = [ self.homeModules.home-linux self.homeModules.local-llm-client self.homeModules.rootly ];
+
+          modules.rootly.enable = true;
 
           # The delegation skill's scripts bypass their own profile queue and
           # talk to llama-swap (modules.llama-swap), which queues and swaps

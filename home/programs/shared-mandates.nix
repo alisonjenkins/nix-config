@@ -92,9 +92,9 @@
       - Step up to a "sonnet" sub-agent only when the task itself needs
         judgement, multi-step reasoning, or code whose design is still open.
       - Use `subagent_type: "haiku-worker"` for a haiku-shaped step; it is
-        pinned to Haiku. For any other Agent call, set `model`: without it the
-        sub-agent runs on the main loop's model, so "haiku" only happens if the
-        call says so.
+        pinned to Haiku. For any other Agent call, set `model` when the step
+        needs more than Haiku: without it the sub-agent falls through to
+        `CLAUDE_CODE_SUBAGENT_MODEL`, which this config sets to `haiku`.
       - Run independent delegations in parallel: several Agent calls in one
         message, and run_in_background for anything not needed before your
         next step. Parallel writers each get their own worktree.
@@ -104,7 +104,9 @@
         (file/dir names) when present, but do not assume they are installed
         or at any fixed path: probe with `command -v` first, fall back to
         `grep -r` / `find`, and note `fd` may be packaged as `fdfind` on
-        Debian/Ubuntu.
+        Debian/Ubuntu. Read a file in ranges (`offset`/`limit`) after a search
+        has located the lines; whole-file Reads averaged 6.4 KB and were 39% of
+        tool-result tokens in the 2026-10-25 review.
       - Invoke the `delegation` skill before spawning a sub-agent: it
         carries the model-tier decision test, when NOT to delegate at all,
         Explore vs general-purpose, and how to write a self-contained prompt.

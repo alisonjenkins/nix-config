@@ -21,6 +21,7 @@
     rust-build-cache = import ../home/modules/rust-build-cache;
     antigravity-cli = import ../home/modules/antigravity-cli;
     overseer = import ../home/modules/overseer;
+    rootly = import ../home/modules/rootly;
     wm-river = import ../home/wms/river;
 
     # Host-specific home-manager configs

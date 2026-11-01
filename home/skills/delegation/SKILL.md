@@ -1,7 +1,7 @@
 ---
 name: delegation
 description: >-
-  Use before doing a multi-step task yourself, not only once you're already considering a sub-agent: a multi-file sweep, several similar gh/GraphQL/API lookups, a log trawl, a round of mechanical edits across files, 2+ independent research questions, or any batch of same-shaped calls — check whether it belongs on a cheaper model, in a sub-agent, or fanned out in parallel before touching it inline. Also use when picking a model tier (haiku/sonnet/opus/fable), choosing Explore vs general-purpose, batching parallel Agent calls in one message, or when a delegated result came back wrong or incomplete. Covers background execution, self-contained prompts, Copilot CLI delegation, and delegating to a locally-hosted model. Not for escalating to a stronger model — see `consulting`.
+  Use before doing a multi-step task yourself, not only once you're already considering a sub-agent: a multi-file sweep, several similar gh/GraphQL/API lookups, a log trawl, a round of mechanical edits across files, 2+ independent research questions, or any batch of same-shaped calls — check whether it belongs on a cheaper model, in a sub-agent, or fanned out in parallel before touching it inline. Also use when picking a model tier (haiku/sonnet/opus/fable), choosing Explore vs general-purpose, batching parallel Agent calls in one message, or when a delegated result came back wrong or incomplete. Covers background execution, self-contained prompts, Copilot CLI delegation, delegating to a locally-hosted model, setting one up or benchmarking it (`local-llm-setup`), and caveman-style sub-agents (`cavecrew`). Not for escalating to a stronger model — see `consulting`.
 metadata:
   summary: "Use before any multi-step sweep, batch of similar lookups, or mechanical edits: pick a cheaper model or sub-agent, fan out in parallel."
 ---
@@ -22,6 +22,8 @@ sub-agent, not ground through inline.
 | Delegating to Google's Antigravity CLI (Gemini, `agy`) | [delegate-to-gemini.md](delegate-to-gemini.md) |
 | Delegating to a locally-hosted model | [delegate-to-local.md](delegate-to-local.md) |
 | Several code-writing sub-agents in one project | [parallel-writers.md](parallel-writers.md) |
+| Adding, configuring or benchmarking a locally hosted model (llama.cpp, mlx_lm) for the local rung | invoke `local-llm-setup` |
+| Choosing a caveman-style sub-agent (investigator, builder, reviewer) for terse hand-backs | invoke `cavecrew` |
 
 ## Before doing it yourself, check for these
 
@@ -142,14 +144,16 @@ For a haiku-shaped step with no need for MCP tools, spawn `subagent_type: "haiku
 it is pinned to Haiku and carries a short tool list, so forgetting `model` cannot make
 it run on Sonnet.
 
-**Set `model` on every other Agent call.** An Agent call without `model` runs on the
-main loop's model (Sonnet here), so the haiku default above only holds if the
-call says `model: "haiku"`. Measured by the observability stack over
+**Set `model` on every Agent call that should not run on Haiku.** An Agent call without
+`model` now falls through to `CLAUDE_CODE_SUBAGENT_MODEL`, which the nix config sets to
+`haiku`; name `sonnet` or a higher tier explicitly when the step needs judgement.
+Measured by the observability stack over
 2026-10-09/16 on `ali-desktop`: `general-purpose` sub-agents were 55.8% of
 estimated cost, and `cc-obs-query top subagent --by cost` (which splits by model)
-put 99.78% of sub-agent cost on Sonnet and 0.18% on Haiku. Do not set
-`CLAUDE_CODE_SUBAGENT_MODEL` to fix this: it overrides every sub-agent,
-including the consultant agents whose `model:` is deliberate.
+put 99.78% of sub-agent cost on Sonnet and 0.18% on Haiku. The nix config sets
+`CLAUDE_CODE_SUBAGENT_MODEL` to `haiku`; since Claude Code 2.1.251 it only applies when
+neither the Agent call nor the agent definition names a model, so per-agent `model:`
+still wins, including the consultant agents whose `model:` is deliberate.
 
 **Put edit-and-build workers on Haiku, and bound their runs.** One orchestration day on
 `ali-desktop` (2026-10-16, 37 sub-agents, $452 at list price) showed that 36 of 37 runs were

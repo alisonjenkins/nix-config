@@ -1,7 +1,7 @@
 # Optical-disc ripping dev shell (`nix develop .#ripping`).
 #
 # Redump-grade PS1 ripping for the emulation stack (see modules/emulation +
-# CLAUDE.md). dd is the wrong tool for PS1 — discs are multi-track (a data
+# PENDING.md). dd is the wrong tool for PS1 — discs are multi-track (a data
 # track + Red Book CD-DA audio tracks + subchannel), which dd flattens and
 # corrupts. `redumper` is the current Redump-standard dumper (multi-pass,
 # subchannel, error correction, audio-track aware, emits a verified .cue +

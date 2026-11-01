@@ -21,7 +21,7 @@ tm_arg2() {
 tm_zone_known() {
   local d dirs
   [[ $1 =~ ^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+)*$ ]] || return 1
-  IFS=: read -ra dirs <<<"${TM_ZONEINFO_DIRS:-/usr/share/zoneinfo:/usr/share/lib/zoneinfo:/etc/zoneinfo:/run/current-system/sw/share/zoneinfo}"
+  IFS=: read -ra dirs <<<"${TM_ZONEINFO_DIRS:-/usr/share/zoneinfo:/usr/share/lib/zoneinfo:/etc/zoneinfo}"
   if [[ -n ${TZDIR:-} ]] && date --version >/dev/null 2>&1; then
     dirs=("$TZDIR")
   fi

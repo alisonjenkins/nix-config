@@ -6,10 +6,23 @@ discovery installs `home/skills/nix-pull-build/` into both assistants' personal
 skill directories.
 
 The skill runs the Nix-managed `nix-pull-build` command without arguments. It is
-enabled by default wherever the shared programs module is imported, bound to
-`~/git/nix-config` unless overridden, and can also be run directly from a
-terminal. This Mac overrides the checkout path to `~/git/personal/nix-config`.
-It:
+enabled by default wherever the shared programs module is imported, and can also
+be run directly from a terminal.
+
+It finds the checkout at run time, first match wins:
+
+1. The main worktree of the Git repository containing the working directory,
+   if it holds `flake.nix` and its `origin` matches
+   `programs.nix-pull-build.origin` (scheme and a `.git` suffix are ignored). A
+   PR worktree therefore resolves to the main checkout, which stays on `main`.
+2. `programs.nix-pull-build.repository`, if set. Otherwise it fails with a
+   message naming the expected origin.
+
+The origin check is the trust boundary: the command is pre-approved, so a
+`flake.nix` in some other clone must not be enough to make it fetch and build
+that clone. There is no environment-variable override for the same reason.
+
+It then:
 
 1. Detects the operating system, hostname and current user, and requires the configured checkout's main branch to
    track origin/main, with no local-only commits.
@@ -68,18 +81,20 @@ programs.nix-pull-build = {
 };
 ```
 
-The module installs the command, adds a repository-scoped Copilot
-`commandPatterns` approval and a Claude `Bash(nix-pull-build)` approval. No new
+`repository` is optional (default `null`) and only the fallback in step 2. The
+module installs the command and adds a Claude `Bash(nix-pull-build)` approval.
+When `repository` is set it also adds a repository-scoped Copilot
+`commandPatterns` approval, which needs a path known at build time. No new
 broad Git, shell, notification or activation approval is added. The command
-rejects arguments so the approval cannot select another repository, hostname
-or operation. Existing broader permissions are not changed.
+rejects arguments, and only builds a checkout of `origin` or the configured
+fallback, so the approval cannot select another repository, hostname or
+operation. Existing broader permissions are not changed.
 
 Build the configuration, manually switch it, and start a new assistant session
 to pick up the installed command and approvals. Copilot can reload the skill
 with `/skills reload`; Claude exposes `/nix-pull-build` as a skill command.
 
-This workflow supports macOS and Linux. Configure a host's main checkout path
-using the same Home Manager module; set `enable = false` to opt out.
+This workflow supports macOS and Linux. Set `enable = false` to opt out.
 It never decrypts or displays secrets, but the Nix build still needs whatever
 encrypted input files the host configuration references.
 

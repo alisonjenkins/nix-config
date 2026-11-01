@@ -1,0 +1,61 @@
+name: ADR repo claims
+
+# ADR 0059 states what this repository sets today (which qdisc the desktop
+# gets, what base gives the servers, what the gateway module forces). Evaluate
+# each claim in docs/adr/*-sources.json and fail when the configuration and the
+# ADR disagree: either the ADR is stale or a change landed that the ADR should
+# record. Evaluates four hosts, so it only runs when a file that feeds those
+# values changes, and monthly in case something moved without touching them.
+# The path list names the modules the claims are known to depend on, plus
+# flake.lock, home/ and lib/. Any other module that base imports is covered
+# only by the monthly run.
+# The network checks live in adr-sources.yaml.
+
+on:
+  schedule:
+    - cron: "30 6 2 * *"
+  pull_request:
+    paths:
+      - scripts/adr-sources.py
+      - docs/adr/*-sources.json
+      - docs/adr/0059-*.md
+      - flake.lock
+      - home/**
+      - lib/**
+      - modules/base/**
+      - modules/kernel-tuning/**
+      - modules/desktop/**
+      - modules/amnezia-vpn-gateway/**
+      - flake-modules/hosts/ali-desktop/**
+      - flake-modules/hosts/home-storage-server-1/**
+      - flake-modules/hosts/home-vpn-gateway-1/**
+      - flake-modules/hosts/home-k8s-master-1/**
+      - flake-modules/hosts/ali-steam-deck/**
+      - flake-modules/hosts/ali-framework-laptop/**
+      - flake-modules/hosts/ali-work-laptop/**
+      - flake-modules/hosts/ali-mba-linux/**
+      - .github/workflows/adr-repo-claims.yaml
+  workflow_dispatch:
+
+concurrency:
+  group: adr-repo-claims-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repo-claims:
+    runs-on: home-nix-builder-amd64
+    timeout-minutes: 30
+    if: ${{ github.event.pull_request.head.repo.fork != true }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure host Nix
+        uses: ./.github/actions/setup-host-nix
+      - name: Evaluate the claims
+        run: |
+          set -euo pipefail
+          for manifest in docs/adr/*-sources.json; do
+            nix shell --inputs-from . nixpkgs#python3 \
+              --command python3 scripts/adr-sources.py repo "$manifest"
+          done

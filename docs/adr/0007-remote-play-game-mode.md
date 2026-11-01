@@ -78,7 +78,7 @@ All tried live on 2026-09-23 and 24:
 
 With HD2 launched bare and the 32-bit overlay removed by hand:
 
-```
+```text
 >>> Switching video stream from Desktop_MovieStream to GameOverlay_MovieStream_634286
 >>> Capture method set to Game Vulkan NV12 + VAAPI H264
 ```

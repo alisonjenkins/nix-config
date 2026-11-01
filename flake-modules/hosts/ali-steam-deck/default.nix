@@ -248,6 +248,10 @@ in {
           enable = true;
           # Jovian provides the Deck's own boot splash.
           flickerFreeBoot.enable = false;
+          logitech.enable = false;
+          # Jovian sets UPower's CriticalPowerAction to Ignore: Steam's own UI
+          # handles low battery on the Deck.
+          power.lowBattery.enable = false;
         };
 
         # Built-in-speaker audio underruns under demanding games: the 15 W APU
@@ -268,6 +272,8 @@ in {
         modules.desktop-base.enable = true;
         modules.desktop-kubernetes.enable = true;
         modules.desktop-media.enable = true;
+        # Adds to the profiles that modules.desktop enables.
+        modules.kernelTuning.profiles = [ "gaming" ];
         modules.locale.enable = true;
 
         # EmuDeck-equivalent emulation stack (modules/emulation). Initial set:
@@ -279,7 +285,7 @@ in {
         # `games` left empty for now: ROMs live in a private B2 bucket that
         # isn't set up yet. content sync is therefore NOT enabled — flip
         # content.enable + provision the sops B2 creds once the bucket exists
-        # (see modules/emulation/content.nix + CLAUDE.md "emulation follow-ups").
+        # (see modules/emulation/content.nix + PENDING.md "emulation module follow-ups").
         # Switch additionally needs prod.keys/title.keys + firmware (own dumps)
         # placed via a content set before games run.
         modules.emulation = {

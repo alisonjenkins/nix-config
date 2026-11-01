@@ -1,0 +1,106 @@
+name: ADR source currency
+
+# ADRs such as 0059 quote their sources. Once a month (and on demand), fetch
+# every source listed in docs/adr/*-sources.json and look for the quoted
+# strings. A pull request that touches the checker, a manifest or an ADR runs
+# only the unit tests and the offline lint: a network check there would fail a
+# PR on an upstream page that changed, or on a rate limit, not on its diff. A pinned source that lacks one means the ADR
+# quotes it wrongly; a floating source that lacks one means upstream changed.
+# A monthly failure opens one issue and a clean run closes it. See
+# scripts/adr-sources.py.
+#
+# The check only fetches public pages, so it runs on a GitHub-hosted runner.
+
+on:
+  schedule:
+    - cron: "0 6 2 * *"
+  pull_request:
+    paths:
+      - scripts/adr-sources.py
+      - scripts/tests/test_adr_sources.py
+      - docs/adr/*-sources.json
+      - docs/adr/*.md
+      - .github/workflows/adr-sources.yaml
+  workflow_dispatch:
+
+concurrency:
+  group: adr-sources-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Unit tests
+        id: tests
+        continue-on-error: true  # the scheduled run must still reach the issue step
+        run: python3 -m unittest discover -s scripts/tests -p 'test_adr_sources.py'
+      - name: Lint the manifests
+        run: |
+          for manifest in docs/adr/*-sources.json; do
+            python3 scripts/adr-sources.py lint "$manifest"
+          done
+      - name: Check the sources
+        id: check
+        if: github.event_name != 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}  # lifts the GitHub API rate limit for directory probes
+        run: |
+          set -uo pipefail
+          status=0
+          : > report.txt
+          for manifest in docs/adr/*-sources.json; do
+            python3 scripts/adr-sources.py check "$manifest" | tee -a report.txt || status=1
+          done
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+      - name: Open, update or close the issue
+        if: always() && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTS_OUTCOME: ${{ steps.tests.outcome }}
+          CHECK_OUTCOME: ${{ steps.check.outcome }}
+          STATUS: ${{ steps.check.outputs.status }}
+        run: |
+          set -euo pipefail
+          title="ADR sources need review"
+          touch report.txt
+          failed=0
+          if [[ "$TESTS_OUTCOME" != success ]]; then
+            echo "the checker's unit tests failed (see the run log)" >> report.txt
+            failed=1
+          fi
+          if [[ "$CHECK_OUTCOME" != success ]]; then
+            echo "the check step did not finish (outcome: $CHECK_OUTCOME)" >> report.txt
+            failed=1
+          fi
+          if [[ "$STATUS" != 0 ]]; then
+            failed=1
+          fi
+          number="$(gh issue list --state open --search "$title in:title" \
+            --json number,title --jq "[.[] | select(.title == \"$title\")][0].number // empty")"
+          if [[ "$failed" == 1 ]]; then
+            {
+              printf 'The monthly check found ADR sources that no longer match, or could not run:\n\n```\n'
+              cat report.txt
+              printf '```\n\n`wrong` is a quote the ADR gets wrong. `drifted` is upstream changing; re-read the source and revisit the ADR. `revisit` is an absence claim that stopped being true on a branch, so a decision resting on it needs another look. `rate limited` is the GitHub API quota, not a finding about the ADR: re-run the workflow later.\n'
+            } > body.md
+            if [[ -n "$number" ]]; then
+              gh issue edit "$number" --body-file body.md
+            else
+              gh issue create --title "$title" --body-file body.md
+            fi
+          elif [[ -n "$number" ]]; then
+            gh issue comment "$number" --body "All ADR sources are current."
+            gh issue close "$number"
+          fi
+      - name: Fail the run on findings
+        if: >-
+          always() && (steps.tests.outcome == 'failure'
+          || steps.check.outcome == 'failure'
+          || steps.check.outputs.status == '1')
+        run: exit 1

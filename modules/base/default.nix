@@ -8,6 +8,7 @@ in
     inputs.impermanence.nixosModules.impermanence
     inputs.lanzaboote.nixosModules.lanzaboote
     ../luksPCR15
+    ../kernel-tuning
     ./vm-variant.nix
   ] ++ lib.optional (builtins.pathExists /etc/nixos/cachix/ajenkins-public.nix) [ /etc/nixos/cachix/ajenkins-public.nix ];
 
@@ -220,65 +221,6 @@ in
           "hibernate=lz4"
           "preempt=full"
         ] ++ lib.optional (cfg.amdgpuPPFeatureMask != null) "amdgpu.ppfeaturemask=${cfg.amdgpuPPFeatureMask}";
-
-        kernel = {
-          sysctl = {
-            "dev.hpet.max-user-freq" = 1000;
-            "fs.dentry-negative" = 1;
-
-            # Network Perf Tuning
-            "net.core.default_qdisc" = lib.mkDefault "dualpi2";
-            "net.core.netdev_budget" = 600;
-            "net.core.netdev_budget_usecs" = 8000;
-            "net.core.netdev_max_backlog" = 16384;
-            "net.core.optmem_max" = 65536;
-            "net.core.rmem_default" = 1048576;
-            "net.core.rmem_max" = 16777216;
-            "net.core.somaxconn" = 8192;
-            "net.core.wmem_default" = 1048576;
-            "net.core.wmem_max" = 16777216;
-            "net.ipv4.conf.all.accept_redirects" = 0;
-            "net.ipv4.conf.all.log_martians" = 0;
-            "net.ipv4.conf.all.rp_filter" = 1;
-            "net.ipv4.conf.all.secure_redirects" = 0;
-            "net.ipv4.conf.all.send_redirects" = 0;
-            "net.ipv4.conf.default.accept_redirects" = 0;
-            "net.ipv4.conf.default.log_martians" = 0;
-            "net.ipv4.conf.default.rp_filter" = 1;
-            "net.ipv4.conf.default.secure_redirects" = 0;
-            "net.ipv4.conf.default.send_redirects" = 0;
-            "net.ipv4.icmp_echo_ignore_all" = if cfg.enableICMPPing then 0 else 1;
-            "net.ipv4.tcp_congestion_control" = "bbr";
-            "net.ipv4.tcp_ecn" = 1;
-            "net.ipv4.tcp_fastopen" = 3;
-            "net.ipv4.tcp_fin_timeout" = 10;
-            "net.ipv4.tcp_keepalive_intvl" = 10;
-            "net.ipv4.tcp_keepalive_probes" = 6;
-            "net.ipv4.tcp_keepalive_time" = 60;
-            "net.ipv4.tcp_max_syn_backlog" = 8192;
-            "net.ipv4.tcp_max_tw_buckets" = 2000000;
-            "net.ipv4.tcp_mtu_probing" = 1;
-            "net.ipv4.tcp_rfc1337" = 1;
-            "net.ipv4.tcp_rmem" = "4096 1048576 16777216";
-            "net.ipv4.tcp_sack" = 1;
-            "net.ipv4.tcp_slow_start_after_idle" = 0;
-            "net.ipv4.tcp_syncookies" = 1;
-            "net.ipv4.tcp_timestamps" = 1;
-            "net.ipv4.tcp_tw_reuse" = 1;
-            "net.ipv4.tcp_wmem" = "4096 1048576 16777216";
-            "net.ipv4.udp_rmem_min" = 8192;
-            "net.ipv4.udp_wmem_min" = 8192;
-            "net.ipv6.conf.all.accept_redirects" = 0;
-            "net.ipv6.conf.default.accept_redirects" = 0;
-            "net.ipv4.tcp_window_scaling" = 1;
-
-            # Virtual memory tuning
-            "vm.swappiness" = lib.mkDefault 10;
-            "vm.dirty_ratio" = 20;
-            "vm.dirty_background_ratio" = 5;
-            "vm.vfs_cache_pressure" = 25;
-          };
-        };
 
         loader = {
           timeout = lib.mkDefault 5;
@@ -554,6 +496,40 @@ in
           colord = {};
           realtime = {};
         };
+      };
+
+      # zswap in front of zram would keep pages out of it.
+      modules.kernelTuning = {
+        zswapOff = lib.mkDefault config.zramSwap.enable;
+        swappinessZram = lib.mkDefault config.zramSwap.enable;
+        swappinessDisk = lib.mkDefault (!config.zramSwap.enable);
+        pageClusterZero = lib.mkDefault config.zramSwap.enable;
+        dirtyRatioLow = lib.mkDefault true;
+        dirtyBackgroundRatioLow = lib.mkDefault true;
+        vfsCachePressureLow = lib.mkDefault true;
+        hpetUserFreqHigh = lib.mkDefault true;
+        dentryNegative = lib.mkDefault true;
+        qdiscDualpi2 = lib.mkDefault true;
+        netRxQueueLarge = lib.mkDefault true;
+        socketBacklogHigh = lib.mkDefault true;
+        socketBuffersLarge = lib.mkDefault true;
+        udpMinBuffers = lib.mkDefault true;
+        noIcmpRedirects = lib.mkDefault true;
+        rpFilterStrict = lib.mkDefault true;
+        icmpEchoReply = lib.mkDefault cfg.enableICMPPing;
+        icmpEchoIgnore = lib.mkDefault (!cfg.enableICMPPing);
+        tcpBbr = lib.mkDefault true;
+        tcpEcnOn = lib.mkDefault true;
+        tcpFastopenAll = lib.mkDefault true;
+        tcpFastTeardown = lib.mkDefault true;
+        tcpKeepaliveShort = lib.mkDefault true;
+        tcpSynBacklogHigh = lib.mkDefault true;
+        tcpSyncookies = lib.mkDefault true;
+        tcpMtuProbing = lib.mkDefault true;
+        tcpRfc1337 = lib.mkDefault true;
+        tcpBuffersLarge = lib.mkDefault true;
+        tcpSlowStartAfterIdleOff = lib.mkDefault true;
+        tcpStandardFeatures = lib.mkDefault true;
       };
 
       zramSwap = {

@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: GPL-2.0
+/* @NAME@: livepatch for @TARGET@ (@CVE@) */
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/livepatch.h>
+/* LIVEPATCH-TODO: add the includes the replacement body needs */
+
+/*
+ * LIVEPATCH-TODO: copy the body of @TARGET@ from the exact kernel source this module is built
+ * against, apply the fix, and delete this comment and the marker. Only symbols the kernel exports
+ * can be called; build-module.sh names any that it does not.
+ */
+static @RET@ livepatch_@TARGET@(@ARGS@)
+{
+	/* LIVEPATCH-TODO: fixed body */
+}
+
+static struct klp_func funcs[] = {
+	{
+		.old_name = "@TARGET@",
+		.new_func = livepatch_@TARGET@,
+	}, { }
+};
+
+static struct klp_object objs[] = {
+	{
+@OBJECT_NAME@
+		.funcs = funcs,
+	}, { }
+};
+
+static struct klp_patch patch = {
+	.mod = THIS_MODULE,
+	.objs = objs,
+	.replace = true,
+};
+
+static int livepatch_init(void)
+{
+	return klp_enable_patch(&patch);
+}
+
+static void livepatch_exit(void)
+{
+}
+
+module_init(livepatch_init);
+module_exit(livepatch_exit);
+MODULE_LICENSE("GPL");
+MODULE_INFO(livepatch, "Y");

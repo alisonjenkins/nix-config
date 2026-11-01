@@ -1,7 +1,7 @@
 ---
 name: review
 description: >-
-  Use when reviewing a diff, PR, or your own work before committing, including "look over this change", "is this right", or checking for bugs you introduced. Also for auditing an existing codebase against conventions with no diff to anchor against. Not for replying to review comments or resolving threads on your own PR (see git). Carries the rubric, severity ordering, how to phrase a finding, and how to verify a finding is real before reporting it.
+  Use when reviewing a diff, PR, or your own work before committing, including "look over this change", "is this right", or checking for bugs you introduced. Also for auditing an existing codebase against conventions with no diff to anchor against, and for a CVE or advisory audit of a repo's dependencies, which it routes to `security`. Not for replying to review comments or resolving threads on your own PR (see git). Carries the rubric, severity ordering, how to phrase a finding, and how to verify a finding is real before reporting it.
 metadata:
   summary: "Use when reviewing a diff, PR, or your own change before committing: 'look over this', 'is this right', audit against conventions."
 ---
@@ -60,6 +60,7 @@ say so in one line rather than manufacturing findings.
 | A pull request, with comments to post | [pr-review.md](pr-review.md) |
 | An existing codebase or module, with no diff to anchor against — checking it against current conventions | [codebase-audit.md](codebase-audit.md) |
 | Unsure what a rubric item covers, which programming files to load, or how to word a finding | [rubric.md](rubric.md) |
+| Dependencies rather than code: CVEs and advisories in a Nix closure, a Rust lockfile, or the packages a repo defines | invoke `security` |
 
 Receiving review on a PR of your own is the other direction; that is the
 `git` skill's `pr-review-responses.md`, not this one.

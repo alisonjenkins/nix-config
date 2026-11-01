@@ -228,6 +228,7 @@ fn action(cand: &Candidate, min_count: u64) -> &'static str {
 }
 
 pub fn run(ctx: &Ctx, min_count: u64) -> Result<Report, Error> {
+    ctx.note_missing_subagent_transcripts()?;
     let calls = load(ctx)?;
     if calls.is_empty() {
         return Ok(Report::unavailable("automate", NO_RECORDS));

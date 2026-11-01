@@ -56,7 +56,7 @@ split and keyed hashes of tool inputs. `memory-recall` adds its recall records.
 
 Two `cc-obs-query top` rankings have a definition worth knowing:
 
-- `top subagent` has one row per agent and model, referenced as `subagent:<agent>@<model>`;
+- `top subagent` has one row per agent and model, keyed `<agent>@<model>` and referenced as `subagent:<agent>@<model>`;
   `--format detailed` shows the model as its own field.
 - `top session --by cache-hit` ranks sessions by prompt-cache hit ratio, lowest first. The
   ratio is weighted by tokens: cacheRead divided by cacheRead + cacheCreation + input,
@@ -80,6 +80,16 @@ only expire by age, so a guard checks the data directories every five minutes ag
 and reports through the `observability_guard_over_budget` metric, the stack-health
 dashboard, a session-start notice and a desktop notification (at most once per 24 h).
 
+## Health
+
+`cc-obs-query health` probes `/-/ready` on Prometheus, and `/ready` on Loki and Tempo.
+A `down` row carries a `reason` field with the HTTP status and upstream message.
+Both stores run with `min_ready_duration` set to 0s: dskit starts that timer on the
+first `/ready` call, so the first probe after a start would otherwise answer 503 for
+15 s ([ADR 0052](adr/0052-readiness-counts-from-the-first-probe.md)).
+Tempo 2.10.8 answers `GET /status/buildinfo` with a nil-pointer panic in the handler
+and resets the connection (the process survives); probe `/ready` or `/status` instead.
+
 ## Checks
 
 ```bash
@@ -102,7 +112,7 @@ collector, a child of the Claude Code tool span that ran it, and appends the sam
 record to `~/.local/state/delegate/gemini-calls.jsonl`. Why and how: ADR 0046. In
 Grafana's Tempo, group by the session that asked for the work:
 
-```
+```text
 { resource.service.name = "delegate-to-gemini" } | select(span.claude.session_id, span.gen_ai.request.model, span.delegate.outcome, span.gen_ai.usage.input_tokens)
 ```
 
@@ -140,7 +150,61 @@ envelope; there is no cost, since agy bills a plan quota (`agy -p /usage`).
 - Sub-agent calls and requests reach the ledger through the `SubagentStop` hook, which
   reads `<session>/subagents/agent-<id>.jsonl` and tags records `agent=subagent` plus
   `agent_id`. A sub-agent still running when the session ends, or a session started
-  before the hook was installed, is missing its tail until its next stop.
+  before the hook was installed, is missing its tail until its next stop. Many SubagentStop
+  events name an agent with no transcript anywhere and no mention in any main
+  transcript; each is counted in
+  `cc_obs_ledger_subagent_transcript_missing_total{agent_type}`. The ledger-backed
+  views (`top session --by requests`, `--by context-growth`, `repeats`, `automate`)
+  report the count as a gap (`subagent: N sub-agent runs left no transcript, so their
+  requests, context and tool calls are not in this view`); `top subagent` ranks
+  Claude Code's own token and cost metrics and is unaffected.
+- `seq` and `turn` are numbered per transcript, so each sub-agent restarts at 0 and
+  `(session, agent, seq)` is not unique across the sub-agents of one session; the unique
+  key is `(session, agent, agent_id, seq)`. On 2026-10-25 `cc-obs-query repeats` reported
+  7111 of 14836 week-old records as duplicates under the shorter key; none were (every
+  collision had a distinct `agent_id`, `request_id` and `input_hash`, all `agent=subagent`),
+  and the ledger's per-transcript cursors emit each call once. The query's dedupe stays as
+  a safety net on the full key and its gap line names the key.
+
+### Ledger gap after a stack restart
+
+Symptom: the stack restarted (a home-manager activation) and for ~20 minutes no turn
+reached Grafana, though sessions were busy. On 2026-10-25 the hooks shipped at 12:38,
+then nothing until 13:01, when one hand-run `cc-obs-ledger --check turn` ended the gap.
+The collector took Claude Code's own OTLP data throughout.
+
+How to spot it: a session's file in `~/.local/state/cc-obs-ledger/cursors/` has an
+mtime older than its last turn, `spool/` is empty, and `ledger.log` has no `ship:`
+lines for the period (a `ship:` line is written whenever a run sent, expired or failed
+something, or skipped because another sender held `spool/.lock`). Lines like
+`subagent: reading ...: No such file` still appearing show the binary itself was being
+run by `SubagentStop`.
+
+What was ruled out, by reproducing against throwaway servers
+(`cc-obs-ledger/tests/hook_timeout.rs`): `turn` does not wait for the collector. It
+spools, starts `ship` detached and writes the cursor, and returned in ~2 ms against a
+server that accepts and never answers, one that refuses and one that answers 503. A
+blocked `ship` therefore cannot make a later `turn` time out, and a held spool lock
+cannot stop a cursor advancing. With nothing spooled and no cursor movement, `turn`
+did not reach its spool step; the log has no error from it, so the cause is upstream
+of the binary (Claude Code not running the `Stop` command, for instance after
+`settings.json` changed under running sessions) and is not proven.
+
+What changed so the next gap is diagnosable: a `ship` that finds the lock held now logs
+`ship: skipped, another sender holds ...`, an unreadable spool directory is logged, and
+one `ship` run stops starting files after 30 s so a hung collector cannot hold the
+lock for N times the 3 s request timeout.
+
+Recovery: nothing is lost that the transcript still holds, because the cursor only
+moves forward when `turn` runs. Run it by hand per session:
+
+```bash
+echo '{"session_id":"<id>","transcript_path":"<path>.jsonl","cwd":"<dir>"}' \
+  | cc-obs-ledger --check turn
+```
+
+then check `ledger.log` for a `ship: sent=` line. Spooled files that failed to send
+stay for 24 h and go out with the next successful `ship`.
 
 ## Troubleshooting
 
@@ -150,3 +214,4 @@ envelope; there is no cost, since agy bills a plan quota (`agy -p /usage`).
 | Grafana shows no data | `curl http://127.0.0.1:4318/` reaches the collector? Claude Code reads `OTEL_*` only from user-level settings, not a project's `.claude/settings.json` |
 | Disk budget exceeded | `cat ~/.local/state/observability-stack/guard.json`: `over` means the stores passed `maxDiskGB`; ingestion is still running |
 | Hook problems | `~/.local/state/cc-obs-ledger/ledger.log` |
+| Turns missing after a restart | `cursors/` mtimes against the last turn, and no `ship:` lines in `ledger.log`; see "Ledger gap after a stack restart" |

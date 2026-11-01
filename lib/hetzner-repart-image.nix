@@ -28,6 +28,8 @@ let
   initrd = "${config.system.build.initialRamdisk}/${config.system.boot.loader.initrdFile}";
   kernelParams = lib.concatStringsSep " " config.boot.kernelParams;
 
+  storeRegistration = pkgs.closureInfo { rootPaths = [ config.system.build.toplevel ]; };
+
   # GRUB config lives on the root ext4 at /boot/grub; core.img's prefix points here.
   grubCfg = pkgs.writeText "grub.cfg" ''
     set timeout=1
@@ -54,11 +56,13 @@ in
 {
   imports = [
     (modulesPath + "/image/repart.nix")
+    ./hetzner-store-registration.nix
   ];
 
   # UKI boot for UEFI — EFI binary and UKI placed as static files in the ESP.
+  # systemd-boot stays enabled in the config (modules/hetzner) so an in-place
+  # deploy installs its own entries; only the image's ESP contents are static.
   boot.loader.grub.enable = lib.mkForce false;
-  boot.loader.systemd-boot.enable = lib.mkForce false;
   boot.uki.tries = 0;
 
   # Fix growpart: use /run as TMPDIR since /tmp may not be mounted early in boot.
@@ -100,7 +104,10 @@ in
     // {
       "10-root" = {
         storePaths = [ config.system.build.toplevel ];
-        contents = lib.optionalAttrs isX86 {
+        contents = {
+          "/nix-path-registration".source = "${storeRegistration}/registration";
+        }
+        // lib.optionalAttrs isX86 {
           "/boot/grub/grub.cfg".source = grubCfg;
         };
         repartConfig = {

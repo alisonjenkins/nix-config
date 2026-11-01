@@ -69,7 +69,7 @@ in {
             (pkgs.azure-cli.withExtensions (with azure-cli-extensions; [ azure-devops ]))
             (pkgs.python3.withPackages (ps: with ps; [ boto3 pyyaml requests ]))
             alacritty
-            unstable.aws-sam-cli
+            aws-sam-cli
             aws-vault
             awscli2
             bacon
@@ -140,6 +140,7 @@ in {
             mitmproxy2swagger
             mustache-go
             neovide
+            nh
             nix-fast-build
             nodejs
             nushell
@@ -249,6 +250,7 @@ in {
             "amethyst"
             "apache-directory-studio"
             "audacity"
+            "claude"
             "discord"
             "firefox"
             "freeplane"
@@ -427,11 +429,23 @@ in {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${username} = { config, ... }: {
-          imports = [ self.homeModules.home-macos self.homeModules.memory-recall self.homeModules.observability-stack ];
+          imports = [ self.homeModules.home-macos self.homeModules.memory-recall self.homeModules.observability-stack self.homeModules.rootly ];
+
+          modules.rootly.enable = true;
 
           # Local Loki, Tempo, Prometheus and Grafana for Claude Code token spend.
           # Design: specs/007-local-observability-stack.
           modules.observabilityStack.enable = true;
+
+          # Skills only, so no work memories are indexed; keyword fallback keeps
+          # prompts flowing when llama-server is down, where `block` would stop them.
+          modules.memoryRecall = {
+            enable = true;
+            memory.enable = false;
+            skills.enable = true;
+            skills.shortListing.enable = true;
+            onUnavailable = "keyword";
+          };
 
           programs.nix-pull-build = {
             enable = true;

@@ -18,7 +18,9 @@ use cc_obs_ledger::config::{
 };
 use cc_obs_ledger::error::LedgerError;
 use cc_obs_ledger::notice::{notice_line, review_state_dir, stack_line, stack_state_dir};
-use cc_obs_ledger::otlp::{session_payloads, turn_payloads, Payload, Resource};
+use cc_obs_ledger::otlp::{
+    session_payloads, transcript_missing_payloads, turn_payloads, Payload, Resource,
+};
 use cc_obs_ledger::ship::{ship_spool, write_spool};
 use cc_obs_ledger::transcript::{
     complete_lines, parse, parse_from, read_unread, Position, ToolHasher,
@@ -64,6 +66,7 @@ struct Hook {
     cwd: Option<String>,
     agent_id: Option<String>,
     agent_transcript_path: Option<String>,
+    agent_type: Option<String>,
 }
 
 /// Where the last Stop stopped reading. `turn` and `seq` carry the session-wide
@@ -266,17 +269,30 @@ fn subagent_cmd(state: &Path) -> Result<(), LedgerError> {
         .filter(|id| !id.is_empty())
         .ok_or(LedgerError::MissingField { field: "agent_id" })?
         .to_owned();
-    let transcript = match (&hook.agent_transcript_path, &hook.transcript_path) {
-        (Some(path), _) => PathBuf::from(path),
-        (None, Some(main)) => PathBuf::from(main)
-            .with_extension("")
-            .join("subagents")
-            .join(format!("agent-{agent_id}.jsonl")),
-        (None, None) => {
-            return Err(LedgerError::MissingField {
-                field: "agent_transcript_path",
-            })
-        }
+    let candidates = transcript_candidates(&hook, &agent_id);
+    if candidates.is_empty() {
+        return Err(LedgerError::MissingField {
+            field: "agent_transcript_path",
+        });
+    }
+    let Some(transcript) = first_existing(&candidates)? else {
+        // Claude Code runs some agents that never write a transcript; count them
+        // so the missing cost shows up instead of vanishing.
+        let agent_type = hook.agent_type.as_deref().filter(|kind| !kind.is_empty());
+        log_line(
+            state,
+            &format!(
+                "subagent: no transcript for {session}/{agent_id} (agent_type {}, agent_transcript_path {}), tried {} paths",
+                agent_type.unwrap_or("unknown"),
+                if hook.agent_transcript_path.as_deref().is_some_and(|path| !path.is_empty()) { "supplied" } else { "absent" },
+                candidates.len()
+            ),
+        );
+        return spool_and_ship(
+            state,
+            &transcript_missing_payloads(&resource(), agent_type),
+            &spawn_ship,
+        );
     };
     let cursor_file = state
         .join("cursors")
@@ -290,6 +306,42 @@ fn subagent_cmd(state: &Path) -> Result<(), LedgerError> {
         Some(&agent_id),
         &spawn_ship,
     )
+}
+
+/// The first candidate that exists. Only "not found" means absent; any other error
+/// (permissions, I/O) is a failure to report, not a missing transcript to count.
+fn first_existing(candidates: &[PathBuf]) -> Result<Option<PathBuf>, LedgerError> {
+    for path in candidates {
+        match fs::metadata(path) {
+            Ok(_) => return Ok(Some(path.clone())),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(read_error(path)(error)),
+        }
+    }
+    Ok(None)
+}
+
+/// Where a sub-agent transcript can be: the path the hook names, then the
+/// id-named file under the main transcript's session directory. Empty strings
+/// count as absent, and the id is reduced to safe characters so it cannot
+/// leave the `subagents` directory.
+fn transcript_candidates(hook: &Hook, agent_id: &str) -> Vec<PathBuf> {
+    let named = hook
+        .agent_transcript_path
+        .as_deref()
+        .filter(|path| !path.is_empty())
+        .map(PathBuf::from);
+    let derived = hook
+        .transcript_path
+        .as_deref()
+        .filter(|path| !path.is_empty())
+        .map(|main| {
+            PathBuf::from(main)
+                .with_extension("")
+                .join("subagents")
+                .join(format!("agent-{}.jsonl", safe_name(agent_id)))
+        });
+    named.into_iter().chain(derived).collect()
 }
 
 fn turn_run(

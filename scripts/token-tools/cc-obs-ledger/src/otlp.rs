@@ -321,6 +321,28 @@ pub fn turn_payloads(resource: &Resource, parsed: &Parsed) -> Vec<Payload> {
     payloads
 }
 
+/// What a `SubagentStop` hook sends when the sub-agent left no transcript: one count,
+/// labelled with the agent type (a handful of names) and nothing per run.
+pub fn transcript_missing_payloads(resource: &Resource, agent_type: Option<&str>) -> Vec<Payload> {
+    let time = now_nanos();
+    let attrs =
+        attributes([("agent_type", agent_type.unwrap_or("unknown").to_owned())].into_iter());
+    let metric = json!({
+        "name": "cc_obs_ledger_subagent_transcript_missing_total",
+        "sum": {
+            "aggregationTemporality": AGGREGATION_DELTA,
+            "isMonotonic": true,
+            "dataPoints": [{
+                "asInt": "1",
+                "startTimeUnixNano": time,
+                "timeUnixNano": time,
+                "attributes": attrs,
+            }],
+        },
+    });
+    vec![metrics_payload(resource, vec![metric])]
+}
+
 /// What a `SessionEnd` hook sends: the measured fixed context split by the census,
 /// and one summary log record.
 pub fn session_payloads(

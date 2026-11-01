@@ -79,6 +79,9 @@ let
       retention_enabled = true;
       delete_request_store = "filesystem";
     };
+    # dskit counts min_ready_duration from the first /ready probe, not from start-up,
+    # so a single instance answered 503 to the first health check a day after starting.
+    ingester.lifecycler.min_ready_duration = "0s";
     analytics.reporting_enabled = false;
   };
 
@@ -92,6 +95,8 @@ let
       http.endpoint = "0.0.0.0:${toString tempoOtlpHttp}";
     };
     compactor.compaction.block_retention = hours;
+    # Same dskit lifecycler as Loki: see the loki block above.
+    ingester.lifecycler.min_ready_duration = "0s";
     storage.trace = {
       backend = "local";
       wal.path = "/var/tempo/wal";

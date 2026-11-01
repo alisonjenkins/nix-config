@@ -18,6 +18,7 @@ in {
       self.nixosModules.nohang
       self.nixosModules.servers
       self.nixosModules.storage-server
+      self.nixosModules.disk-evacuation
       self.nixosModules.home-storage-server-1-hardware
       self.nixosModules.home-storage-server-1-disko-config
 
@@ -279,8 +280,37 @@ in {
           enable = true;
           enableImpermanence = true;
         };
+        # Server profile; see ADR 0057.
+        modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
         modules.storage-server.enable = true;
+        # sdg (ST5000LM000, ~5.9k pending sectors) and sdk (ST4000DM004) sit
+        # outside the pool at /mnt/rescue, mounted read-only. sdr and sdh are
+        # still pool branches with pending sectors, so they are never a
+        # destination. Start with `systemctl start disk-evacuation`.
+        modules.diskEvacuation = {
+          enable = true;
+          sources = [ "/mnt/rescue/sdg" "/mnt/rescue/sdk" ];
+          # n8n (home-cluster) drives the evacuation through this API.
+          api = {
+            enable = true;
+            tokenFile = config.sops.secrets."disk-evacuation-api/token".path;
+          };
+          # Never fill a branch past the pool's own minfreespace floor, or
+          # mergerfs stops writing to it. Read from the mount so they cannot drift.
+          reserveGiB =
+            let
+              floors = builtins.filter (lib.hasPrefix "minfreespace=")
+                config.fileSystems."/media/storage".options;
+            in
+            assert lib.assertMsg (builtins.length floors == 1 && lib.hasSuffix "G" (builtins.head floors))
+              "/media/storage needs exactly one minfreespace=<n>G option";
+            lib.toInt (lib.removeSuffix "G" (lib.removePrefix "minfreespace=" (builtins.head floors)));
+          skipBranches = [
+            "/media/disks/ata-WDC_WD20EARX-00PASB0_WD-WCAZAC311606-part1"
+            "/media/disks/ata-SAMSUNG_HN-M101MBB_S2RXJ9AB908545-part1"
+          ];
+        };
         modules.servers = {
           enable = true;
           prometheus.smartctlExporter.enable = true;
@@ -383,6 +413,9 @@ in {
 
         # This VM only has 8GB RAM and has 32GB LVM swap; zram causes OOM during boot
         zramSwap.enable = lib.mkForce false;
+        # Disk-backed swap only: a compressed cache in front of it keeps cold
+        # pages off the LVM device. Trial; revert if swap-in latency regresses.
+        modules.kernelTuning.zswapOn = true;
 
         # An HBA discovery-error storm (mpt3sas, ~20 lines/s) grew the journal to
         # 3 GB and kept I/O busy; cap it so a repeat cannot fill the root volume.
@@ -1045,7 +1078,15 @@ in {
               owner = config.users.users.root.name;
               sopsFile = ./secrets/samba-passwords.enc.yaml;
             };
-          }) sambaUsers);
+          }) sambaUsers) // {
+            "disk-evacuation-api/token" = {
+              format = "yaml";
+              key = "data/token";
+              mode = "0400";
+              owner = "root";
+              sopsFile = ./secrets/disk-evacuation-api.enc.yaml;
+            };
+          };
         };
 
         systemd.services.samba-setup-passwords = {

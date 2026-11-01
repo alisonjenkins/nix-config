@@ -17,7 +17,7 @@ fullscreen, so a session built at `4470x1676` reports `4470x1676` first and
 learns it again. The loop never corrects itself. From `streaming_log.txt` on
 2026-09-24:
 
-```
+```text
 08:12:47 CLIENT: Video size: 2880x1080, output size: 4470x1676, overlay size: 4470x1676
 08:12:54 CLIENT: Video size: 2880x1080, output size: 2880x1080, overlay size: 2880x1080
 08:12:56 CLIENT: Video size: 2880x1080, output size: 2880x1800, overlay size: 2880x1800
@@ -29,7 +29,7 @@ fullscreen size, 2880x1800 physical pixels on a 1440x900 Retina display.
 The client also sends its resolution limit when the stream starts, before
 any of those:
 
-```
+```text
 Streaming started to ali-mba at 0.0.0.0:0, audio channels = 2, MTU = 1200
 Maximum capture: 2880x1080 60.00 FPS
 ```

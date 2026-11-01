@@ -6,7 +6,8 @@ let
     runtimeInputs = [ pkgs.git pkgs.nix pkgs.coreutils pkgs.jq ]
       ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.inetutils pkgs.libnotify ];
     text = ''
-      repository=${lib.escapeShellArg cfg.repository}
+      configured_repository=${lib.escapeShellArg (toString cfg.repository)}
+      expected_origin=${lib.escapeShellArg cfg.origin}
     '' + builtins.readFile ./build.sh;
   };
 in
@@ -14,10 +15,23 @@ in
   options.programs.nix-pull-build = {
     enable = lib.mkEnableOption "pull, build and notify for this system's nix-config"
       // { default = true; };
-    repository = lib.mkOption {
+    origin = lib.mkOption {
       type = lib.types.str;
-      default = "${config.home.homeDirectory}/git/nix-config";
-      description = "Absolute path to the main nix-config checkout to update and build.";
+      default = "https://github.com/alisonjenkins/nix-config.git";
+      description = ''
+        Remote a checkout's origin must match, ignoring scheme and a .git
+        suffix, for the command to pick it from the working directory.
+      '';
+    };
+    repository = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Absolute path to the main nix-config checkout, used when the command is
+        not run from inside a checkout of `origin`. The command otherwise finds
+        the checkout from the working directory. Setting it also pre-approves
+        the command for that checkout in Copilot CLI.
+      '';
     };
     package = lib.mkOption {
       type = lib.types.package;
@@ -34,14 +48,14 @@ in
         message = "programs.nix-pull-build supports macOS and Linux.";
       }
       {
-        assertion = lib.hasPrefix "/" cfg.repository;
+        assertion = cfg.repository == null || lib.hasPrefix "/" cfg.repository;
         message = "programs.nix-pull-build.repository must be an absolute path.";
       }
     ];
     home.packages = [ cfg.package ];
-    programs.copilot-cli.trustedProjects.${cfg.repository}.commandPatterns = [
-      "nix-pull-build"
-    ];
+    programs.copilot-cli.trustedProjects = lib.mkIf (cfg.repository != null) {
+      ${cfg.repository}.commandPatterns = [ "nix-pull-build" ];
+    };
     programs.claude-code.settings.permissions.allow = [
       "Bash(nix-pull-build)"
     ];

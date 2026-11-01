@@ -1,0 +1,101 @@
+diff --git a/lib/logitech_receiver/base.py b/lib/logitech_receiver/base.py
+index 354677128f..3fb89734b8 100644
+--- a/lib/logitech_receiver/base.py
++++ b/lib/logitech_receiver/base.py
+@@ -165,6 +165,9 @@ def _bluetooth_device(product_id: int) -> dict[str, Any]:
+     return {"vendor_id": LOGITECH_VENDOR_ID, "product_id": product_id, "bus_id": BusID.BLUETOOTH, "isDevice": True}
+ 
+ 
++# Dongles that only speak HID++ 2.0 and relay a single paired device, so they are handled as directly connected devices
++PASSTHROUGH_DONGLE_IDS = (0xC54F,)  # PRO X3 Superstrike
++
+ KNOWN_DEVICE_IDS = []
+ 
+ for _ignore, d in descriptors.DEVICES.items():
+@@ -253,6 +256,9 @@ def get_known_receiver_info(
+ 
+     If so return the receiver record for further checking.
+     """
++    if vendor_id == LOGITECH_VENDOR_ID and bus_id == BusID.USB.value and product_id in PASSTHROUGH_DONGLE_IDS:
++        return _usb_device(product_id, 2)
++
+     try:
+         record = base_usb.get_receiver_info(product_id)
+         if _match_device(record, bus_id, vendor_id, product_id):
+diff --git a/lib/logitech_receiver/device.py b/lib/logitech_receiver/device.py
+index 1285bf30bb..d0926c26d5 100644
+--- a/lib/logitech_receiver/device.py
++++ b/lib/logitech_receiver/device.py
+@@ -209,6 +209,8 @@ def __init__(
+             )
+             # for direct-connected devices get 'number' from descriptor protocol else use 0xFF
+             self.number = 0x00 if self.descriptor and self.descriptor.protocol and self.descriptor.protocol < 2.0 else 0xFF
++            if self.passthrough_dongle:
++                self.number = 0x01  # the dongle itself answers on 0xFF, its single paired device is on 1
+             try:  # determine whether a direct-connected device is online
+                 self.ping()
+             except exceptions.NoSuchDevice as e:
+@@ -373,6 +375,16 @@ def id(self):
+     def power_switch_location(self):
+         return self._power_switch
+ 
++    @property
++    def passthrough_dongle(self) -> bool:
++        """Whether this is the single device behind a HID++ 2.0 only dongle, which is not a receiver."""
++        return bool(not self.receiver and not self.bluetooth and int(self.product_id or "0", 16) in base.PASSTHROUGH_DONGLE_IDS)
++
++    @property
++    def extended_report_rate_connection(self) -> int:
++        """Connection type for 0x8061 report rate queries: 1 for wireless through a dongle, 0 otherwise."""
++        return 1 if self.passthrough_dongle else 0
++
+     @property
+     def polling_rate(self):
+         if self.online and self.protocol >= 2.0:
+diff --git a/lib/logitech_receiver/hidpp20.py b/lib/logitech_receiver/hidpp20.py
+index def630a2d7..6e751de72e 100644
+--- a/lib/logitech_receiver/hidpp20.py
++++ b/lib/logitech_receiver/hidpp20.py
+@@ -2129,7 +2129,9 @@ def get_polling_rate(self, device: Device):
+             return f"{str(rate)}ms"
+         else:
+             rates = ["8ms", "4ms", "2ms", "1ms", "500us", "250us", "125us"]
+-            state = device.feature_request(SupportedFeature.EXTENDED_ADJUSTABLE_REPORT_RATE, 0x20)
++            state = device.feature_request(
++                SupportedFeature.EXTENDED_ADJUSTABLE_REPORT_RATE, 0x20, device.extended_report_rate_connection
++            )
+             if state:
+                 rate = struct.unpack("!B", state[:1])[0]
+                 return rates[rate]
+diff --git a/lib/logitech_receiver/settings_templates.py b/lib/logitech_receiver/settings_templates.py
+index a3891b35ef..91bf06d799 100644
+--- a/lib/logitech_receiver/settings_templates.py
++++ b/lib/logitech_receiver/settings_templates.py
+@@ -630,6 +630,11 @@ class ExtendedReportRate(settings.Setting):
+     )
+     feature = _F.EXTENDED_ADJUSTABLE_REPORT_RATE
+     rw_options = {"read_fnid": 0x20, "write_fnid": 0x30}
++
++    class rw_class(settings.FeatureRW):
++        def read(self, device, data_bytes=b""):
++            # reading takes a connection type, and the default of 0 answers for a wired connection
++            return device.feature_request(self.feature, self.read_fnid, device.extended_report_rate_connection)
+     choices_universe = common.NamedInts()
+     choices_universe[0] = "8ms"
+     choices_universe[1] = "4ms"
+diff --git a/lib/solaar/listener.py b/lib/solaar/listener.py
+index f09a9f18ac..adad6e0b84 100644
+--- a/lib/solaar/listener.py
++++ b/lib/solaar/listener.py
+@@ -164,6 +164,11 @@ def _notifications_handler(self, n):
+             notifications.process(self.receiver, n)
+             return
+ 
++        # a device behind a pass-through dongle is addressed by its own index, so its notifications are its own
++        if self.receiver.isDevice and n.devnumber == self.receiver.number and n.devnumber not in (0x00, 0xFF):
++            notifications.process(self.receiver, n)
++            return
++
+         # a notification that came in to the device listener - strange, but nothing needs to be done here
+         if self.receiver.isDevice:
+             logger.debug("Notification %s via device %s being ignored.", n, self.receiver)

@@ -30,6 +30,8 @@ in {
           enable = true;
           enableImpermanence = true;
         };
+        # Server profile; see ADR 0057.
+        modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
 
         console.keyMap = "us";

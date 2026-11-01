@@ -1,6 +1,8 @@
 { config, lib, pkgs, inputs, ... }: {
   imports = [
     ./easyeffects
+    ./pipewire-camera-bridges
+    ../../programs/linux-only/obs-desktop-audio
     ../../programs/linux-only/steam-command-runner
     ../../programs/linux-only/sunshine-wrappers
     ../../programs/linux-only/steam-stream-mode
@@ -9,6 +11,46 @@
     # ./location-detection
     # ./audio-context
   ];
+
+  custom.noctalia.settings = {
+    # The 5120x1440 DP-2 monitor has no backlight; it dims over DDC/CI.
+    brightness.enable_ddcutil = true;
+
+    # Login box placed in the Settings menu for DP-2.
+    lockscreen_widgets = {
+      enabled = false;
+      schema_version = 2;
+      widget_order = [ "lockscreen-login-box@DP-2" ];
+      grid = {
+        cell_size = 16;
+        major_interval = 4;
+        visible = true;
+      };
+      widget."lockscreen-login-box@DP-2" = {
+        type = "login_box";
+        output = "DP-2";
+        box_height = 196.0;
+        box_width = 810.0;
+        cx = 2560.0;
+        cy = 1317.0;
+        placement_height = 1440.0;
+        placement_width = 5120.0;
+        rotation = 0.0;
+        settings = {
+          center_password_text = false;
+          layout = "regular";
+          show_caps_lock = true;
+          show_keyboard_layout = true;
+          show_login_button = true;
+          show_media = true;
+          show_password_reveal = true;
+          show_session_buttons = true;
+          show_unlock_hint = true;
+          show_weather = true;
+        };
+      };
+    };
+  };
 
   modules.vr.enableOpenSourceVR = true;
   modules.vr.steamvrSettings = {
@@ -178,6 +220,56 @@
         settings.server = "rtmp://stream.redwood-guild.com:1935/app";
       };
     };
+
+    # device_id is the raw node published by the obsbot-raw-camera service;
+    # OBS's PipeWire camera source cannot use the camera's MJPEG.
+    # "Webcam source BG" is the same camera with the Background Removal filter.
+    sceneCollections.Untitled.sources = let
+      webcam = {
+        id = "pipewire-camera-source";
+        settings.device_id = config.custom.obsbotRawCamera.nodeName;
+      };
+    in {
+      "Webcam source" = webcam;
+      "Webcam source BG" = webcam;
+    };
+
+    # The default "Desktop Audio" slot records the whole default sink; capture
+    # only streams that steamCommandRunner.innerEnv tags as obs-game.
+    sceneCollections.Untitled.audioSlots.DesktopAudioDevice1 = {
+      name = "Game Audio";
+      id = "pipewire-audio-capture-application";
+      settings.TargetName = "obs-game";
+    };
+
+    # Whole-desktop recording without voice chat. The audio is the sink
+    # custom.obsDesktopAudio fills, which is where the exclusions live.
+    sceneCollections.Untitled.scenes.Desktop = [
+      {
+        name = "Desktop screen";
+        id = "pipewire-screen-capture-source";
+      }
+      {
+        name = "Desktop audio";
+        id = "pulse_output_capture";
+        audio = true;
+        settings.device_id = "${config.custom.obsDesktopAudio.sink}.monitor";
+      }
+    ];
+  };
+
+  # Rules match properties read off live streams with pw-dump. Game Audio is
+  # a global OBS slot that records in every scene, so the game is excluded
+  # here or it would be mixed in twice. A browser tab shares its process's
+  # binary and app name, so Element Call is matched on the tab title instead.
+  custom.obsDesktopAudio = {
+    enable = true;
+    exclude = [
+      { "application.process.binary" = "Discord"; }
+      { "application.name" = "^ringrtc$"; }
+      { "node.name" = "^obs-game$"; }
+      { "media.name" = "^Element Call"; }
+    ];
   };
 
   # obs-gamecapture LD_PRELOADs obs-vkcapture's Vulkan/GL hook so OBS's Game
@@ -188,8 +280,14 @@
     preCommand = "obs-gamecapture gamemoderun";
     defaultProton = "DW-Proton Latest";
     shimDebug = true;
-    innerEnv.MANGOHUD = "1";
-    gamescopeArgs = "-w 2540 -h 1440 -W 2540 -H 1440 -b --rt --hdr-enabled --hdr-debug-force-support --force-grab-cursor -F fsr -r 120";
+    innerEnv = {
+      MANGOHUD = "1";
+      # Names the game's audio stream for OBS's app audio capture. libpulse
+      # applies the override to the context, so Proton's winepulse inherits it
+      # and node.name becomes obs-game (docs/adr/0053).
+      PULSE_PROP_OVERRIDE = "application.name=obs-game";
+    };
+    gamescopeArgs = "-w 2560 -h 1440 -W 2560 -H 1440 -b --rt --hdr-enabled --hdr-debug-force-support --force-grab-cursor -F fsr -r 120";
     # Almost every launch here goes through gamescope, so the module default
     # of skipping preCommand under gamescope would silently drop the
     # obs-gamecapture wrap for nearly all games.

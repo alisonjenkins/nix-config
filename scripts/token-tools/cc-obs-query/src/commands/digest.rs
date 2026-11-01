@@ -73,6 +73,20 @@ pub struct Validated {
     pub evidence_checked: usize,
 }
 
+/// One gap line per store that is not ready, shaped so `--write` accepts it back:
+/// control characters flattened and the whole line capped at MAX_GAP_CHARS.
+fn store_gap(store: &str, reason: &str) -> String {
+    let mut line = format!("{store} not ready: ");
+    let room = MAX_GAP_CHARS.saturating_sub(line.chars().count());
+    line.extend(
+        reason
+            .chars()
+            .map(|c| if c.is_control() { ' ' } else { c })
+            .take(room),
+    );
+    line
+}
+
 fn normalise(value: f64, unit: &str, window: Window) -> f64 {
     if unit.ends_with("/week") && window.secs > 0 {
         value * WEEK_SECS / window.secs as f64
@@ -301,8 +315,10 @@ pub fn baseline(backend: &Backend, opts: &Opts) -> Result<Value, Error> {
         "sessions": total(&mut gaps, "totals.sessions", count, sessions),
     });
     let state = health::state(&ctx);
-    if !state.stores_ok() {
-        gaps.push("a store is not ready; see `cc-obs-query health`".to_owned());
+    for (store, reason) in &state.stores {
+        if let Some(reason) = reason {
+            gaps.push(store_gap(store.name(), reason));
+        }
     }
     let mut questions = Vec::new();
     let mut current: BTreeMap<(String, String), f64> = BTreeMap::new();
@@ -811,6 +827,22 @@ pub fn validate(backend: &Backend, file: &Path, opts: &Opts) -> Result<Validated
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn store_gap_is_one_line_within_the_free_text_cap() {
+        let reason = format!(
+            "readiness check: the backend answered HTTP 503: Some services are not Ready:\n{}",
+            "x".repeat(400)
+        );
+        let gap = store_gap("tempo", &reason);
+        assert!(gap.starts_with("tempo not ready: readiness check"), "{gap}");
+        assert_eq!(gap.chars().count(), MAX_GAP_CHARS);
+        assert!(!gap.chars().any(char::is_control), "{gap}");
+        assert_eq!(
+            store_gap("loki", "HTTP 404: no fixture"),
+            "loki not ready: HTTP 404: no fixture"
+        );
+    }
 
     #[test]
     fn verdict_zero_baseline_is_inconclusive() {

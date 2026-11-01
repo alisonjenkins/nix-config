@@ -13,7 +13,7 @@ were wrong:
 - **`amdgpu.gfxoff=0`** did nothing. The parameter does not exist, and the
   kernel logs it at every boot:
 
-  ```
+  ```text
   amdgpu: unknown parameter 'gfxoff' ignored
   ```
 

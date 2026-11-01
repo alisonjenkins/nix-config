@@ -12,13 +12,19 @@ repos:
         name: flake8 (as writePython3Bin runs it)
         entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3Packages.flake8 --command flake8 --show-source --ignore=E501
         language: system
-        files: ^(home/programs/linux-only/(steam-stream-mode/stream_mode|lsfg-vk/patch_config)|pkgs/vr-foveation-bench/(vr_foveation_bench|tests)/[a-z_]+)\.py$
+        files: ^(home/programs/linux-only/(steam-stream-mode/stream_mode|lsfg-vk/patch_config|obs-desktop-audio/obs_desktop_audio)|pkgs/vr-foveation-bench/(vr_foveation_bench|tests)/[a-z_]+|modules/disk-evacuation/(disk_evac|evac_api))\.py$
       - id: stream-mode-tests
         name: stream-mode tests
         entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3 --command python3 -m unittest discover -s home/programs/linux-only/steam-stream-mode/tests
         language: system
         pass_filenames: false
         files: ^home/programs/linux-only/steam-stream-mode/
+      - id: obs-desktop-audio-tests
+        name: obs-desktop-audio tests
+        entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3 --command python3 -m unittest discover -s home/programs/linux-only/obs-desktop-audio/tests
+        language: system
+        pass_filenames: false
+        files: ^home/programs/linux-only/obs-desktop-audio/
       - id: vr-foveation-bench-tests
         name: vr-foveation-bench tests
         entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3 --command python3 -m unittest discover -s pkgs/vr-foveation-bench/tests -t pkgs/vr-foveation-bench
@@ -32,6 +38,12 @@ repos:
         language: system
         pass_filenames: false
         files: ^pkgs/.*\.nix$
+      - id: disk-evacuation-tests
+        name: disk-evacuation tests
+        entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3Packages.pytest --command pytest -q -p no:cacheprovider modules/disk-evacuation/tests
+        language: system
+        pass_filenames: false
+        files: ^modules/disk-evacuation/
       # Copilot CLI and other strict parsers drop a skill whose frontmatter
       # Claude Code happily loads (an unquoted ": " in a description).
       - id: skill-frontmatter

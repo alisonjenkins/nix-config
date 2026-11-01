@@ -1,4 +1,4 @@
-{ config, lib, pkgs, inputs, ... }:
+{ config, lib, pkgs, inputs, outputs, ... }:
 
 with lib;
 
@@ -7,6 +7,33 @@ let
   gcfg = cfg.gaming;
 
   binauralSurroundDefaults = import ./binaural-surround-defaults.nix;
+
+  patchesDir = builtins.path { path = inputs.self + "/patches"; name = "nix-config-patches"; };
+
+  # Steam's FHS sandbox cannot pass file capabilities to gamescope's
+  # /run/wrappers wrapper ("failed to inherit capabilities: Operation not
+  # permitted"), so it runs a bubblewrap that tolerates capabilities with
+  # --cap-add ALL.
+  steamBubblewrap = pkgs.bubblewrap.overrideAttrs (old: {
+    patches = (old.patches or []) ++ [
+      "${patchesDir}/bubblewrap-allow-caps.patch"
+    ];
+  });
+
+  # Arguments for `steam.override`, taking the package set the override is
+  # applied to (a host may pass its own extended set).
+  steamFhsArgs = p: {
+    buildFHSEnv = args: (p.buildFHSEnv.override {
+      bubblewrap = steamBubblewrap;
+    }) (args // {
+      extraBwrapArgs = (args.extraBwrapArgs or []) ++ [ "--cap-add" "ALL" ];
+    });
+    # hidapi: see NixOS/nixpkgs#518150 (Steam Controller 2026 firmware updater).
+    extraPkgs = pp: [ steamBubblewrap pp.hidapi ];
+    extraProfile = gcfg.steamFhsProfile;
+    # Tell pressure-vessel to use the patched bubblewrap instead of its bundled one.
+    extraEnv.BWRAP = "${steamBubblewrap}/bin/bwrap";
+  };
 
   # nixos-unstable's mesa expression, built with the system package set. Every
   # GUI process dlopen()s the graphics package, so it must link the system's
@@ -425,6 +452,17 @@ in
       '';
     };
 
+    logitech.enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Install Solaar and its udev rules (hardware.logitech.wireless) so
+        Logitech Lightspeed/Unifying mice can be inspected and configured,
+        e.g. the report rate, without root. Without the rules the hidraw
+        nodes are root-only and `solaar show` finds no device.
+      '';
+    };
+
     power = {
       hibernateDelaySec = mkOption {
         type = types.str;
@@ -447,6 +485,43 @@ in
           Only used when suspend-then-hibernate is active and battery monitoring is unavailable.
           Default: 3600 (1 hour)
         '';
+      };
+
+      lowBattery = {
+        enable = mkOption {
+          type = types.bool;
+          default = config.boot.resumeDevice != "";
+          defaultText = lib.literalExpression ''config.boot.resumeDevice != ""'';
+          description = ''
+            Set UPower's critical-battery action and thresholds explicitly
+            instead of taking UPower's defaults (HybridSleep at 2%, which
+            leaves little time to write the hibernation image). Defaults to on
+            wherever a resume device is set, since both HybridSleep and
+            Hibernate need one. Set to false on a host that must keep another
+            module's UPower settings.
+          '';
+        };
+
+        action = mkOption {
+          type = types.enum [ "HybridSleep" "Hibernate" ];
+          default = "HybridSleep";
+          description = ''
+            UPower's CriticalPowerAction. HybridSleep writes the hibernation
+            image and then suspends to RAM, so the machine sleeps for as long
+            as the battery lasts and resumes from the image if it dies.
+            Hibernate powers off after writing the image.
+          '';
+        };
+
+        percentageAction = mkOption {
+          type = types.ints.between 3 50;
+          default = 5;
+          description = ''
+            Battery percentage at which the action runs. UPower needs
+            low > critical > action, so critical is set 5 points above this and
+            low 15 points above it.
+          '';
+        };
       };
 
       handleLidSwitch = mkOption {
@@ -1011,6 +1086,43 @@ in
         '';
       };
 
+      steamFhsProfile = mkOption {
+        type = types.lines;
+        readOnly = true;
+        default = ''
+          export LD_LIBRARY_PATH=/run/opengl-driver/lib:${pkgs.libglvnd}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+        '';
+        description = ''
+          Shell snippet for the Steam FHS environment's `extraProfile`. Steam
+          preloads gameoverlayrenderer.so into every game launch; it needs
+          libGL.so.1 with only $ORIGIN as RUNPATH, so nix-built processes in
+          the launch chain (the steam-command-runner gamescope shim) abort
+          before main with "libGL.so.1: cannot open shared object file" (exit
+          127) unless libGL is on LD_LIBRARY_PATH. The driver directory only
+          has libGL.so.1 with some drivers (not Mesa, which ships just
+          libGLX_mesa), so libglvnd's own directory is listed after it.
+
+          Applied to `programs.steam.package` by default. A host that
+          overrides the package must pass this as `extraProfile` itself.
+        '';
+      };
+
+      steamFhsArgs = mkOption {
+        type = types.raw;
+        readOnly = true;
+        default = steamFhsArgs;
+        description = ''
+          Function from a package set to the arguments `steam.override` needs
+          for Steam's FHS sandbox: the capability-tolerant bubblewrap,
+          `--cap-add ALL`, `BWRAP` for pressure-vessel and `steamFhsProfile`.
+          Applied to `programs.steam.package` by default. A host that
+          overrides the package passes this through, so it keeps one
+          definition:
+
+              steamPkgs.steam.override (steamFhsArgs steamPkgs // { ... })
+        '';
+      };
+
       shaderCacheBasePath = mkOption {
         type = types.str;
         default = "\${HOME}/.cache";
@@ -1294,6 +1406,8 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.kernelTuning.profiles = [ "hardened-workstation" "desktop" ];
+
     home-manager = mkIf (config ? home-manager) {
       sharedModules =
         optionals cfg.rustBuildCache.enable [
@@ -1333,30 +1447,20 @@ in
       }
     ];
 
-    # Gaming-specific kernel and system optimizations
+    # Desktop and gaming kernel tuning lives in the modules.kernelTuning
+    # "desktop" and "gaming" profiles (hosts add "gaming" themselves). Only
+    # the zram-dependent value stays here.
     boot.kernel.sysctl = mkMerge [
       {
         # CAKE qdisc for per-flow fairness and DSCP-based traffic prioritisation
         "net.core.default_qdisc" = "cake";
       }
-      (mkIf cfg.gaming.enable {
-        # Memory management optimizations for gaming
-        "vm.compaction_proactiveness" = 0;          # Disable proactive compaction (reduce background CPU usage)
-        "vm.page-cluster" = 0;                      # Disable page clustering for swap (reduce latency)
-        "vm.watermark_boost_factor" = 0;            # Disable watermark boosting (reduce memory fragmentation overhead)
-        "vm.watermark_scale_factor" = 50;           # Balance between memory availability and disk caching (was 125, default is 10)
-
-        # Scheduler optimizations for gaming
-        # kernel.sched_child_runs_first dropped: not a real knob under
-        # CachyOS's scheduler (no /proc/sys/kernel/sched_child_runs_first —
-        # that's a legacy CFS-only tunable), was silently a no-op.
-        "kernel.sched_autogroup_enabled" = 1;       # Enable automatic process grouping for better desktop responsiveness
-        "kernel.sched_cfs_bandwidth_slice_us" = 500; # Reduce CFS bandwidth slice for lower latency
+      (mkIf (cfg.gaming.enable && config.zramSwap.enable) {
+        # zram swap is cheaper than refaulting file cache, so reclaim anon pages
+        # first. 900 beats the base mkDefault (100); a host mkForce still wins.
+        "vm.swappiness" = lib.mkOverride 900 150;
       })
     ];
-
-    # Set transparent hugepages to madvise to prevent khugepaged latency spikes during gaming
-    boot.kernelParams = mkIf cfg.gaming.enable [ "transparent_hugepage=madvise" ];
 
     # Load ntsync kernel module for Wine/Proton NT synchronization primitives
     boot.kernelModules = (optionals cfg.gaming.enable [ "ntsync" ])
@@ -1605,8 +1709,15 @@ in
       ];
     };
 
+    nixpkgs.overlays = mkIf cfg.logitech.enable [ outputs.overlays.solaar-pro-x3-superstrike ];
+
     hardware = {
       ksm.enable = true;
+
+      logitech.wireless = mkIf cfg.logitech.enable {
+        enable = true;
+        enableGraphical = true;
+      };
 
       bluetooth.settings = mkMerge [
         # Base Bluetooth settings - always enabled when desktop module is active
@@ -1727,6 +1838,7 @@ in
 
       steam = mkIf cfg.gaming.enable {
         enable = true;
+        package = mkDefault (pkgs.steam.override (steamFhsArgs pkgs));
         # allowedTCPPorts/allowedUDPPorts are global, so this covers LAN and
         # tailnet alike. Auto-discovery is LAN broadcast only and doesn't
         # cross Tailscale — add tailnet hosts by IP/MagicDNS name manually in
@@ -2282,7 +2394,14 @@ in
         enable = mkDefault true;
       };
 
-      upower.enable = true;
+      upower = {
+        enable = true;
+      } // lib.optionalAttrs cfg.power.lowBattery.enable {
+        criticalPowerAction = cfg.power.lowBattery.action;
+        percentageAction = cfg.power.lowBattery.percentageAction;
+        percentageCritical = cfg.power.lowBattery.percentageAction + 5;
+        percentageLow = cfg.power.lowBattery.percentageAction + 15;
+      };
 
       printing = mkIf cfg.printing.enable {
         enable = true;

@@ -36,6 +36,8 @@ something is wrong.
 | [0016](0016-performance-power-profile-during-vr.md) | Hold the performance power profile for a VR session's lifetime, event-driven | Accepted, causation unconfirmed |
 | [0025](0025-steam-link-vr-stream-lifecycle.md) | Start a Steam Link VR stream on desktop capture, end it when SteamVR exits | Accepted, pending live test |
 | [0028](0028-draw-cursor-into-vr-stream-capture.md) | Draw the cursor into the capture during a Steam Link VR stream | Accepted, pending live test |
+| [0053](0053-tag-game-audio-streams-for-obs.md) | Tag game audio streams for OBS instead of routing them through a sink | Accepted, pending live test |
+| [0054](0054-link-desktop-streams-to-an-obs-sink-by-title.md) | Link desktop streams to an OBS sink by title, not by app | Accepted, pending live test in OBS |
 
 steam-command-runner has its own records in its repo, `docs/adr/`. Its
 [0007](https://github.com/alisonjenkins/steam-command-runner/blob/main/docs/adr/0007-streamed-games-skip-gamescope.md)
@@ -71,9 +73,10 @@ for the live-maintenance runbook.
 
 | # | Decision | Status |
 |---|---|---|
-| [0021](0021-patch-hetzner-master-in-place.md) | Patch the Hetzner master in place, and keep calls on a separate edge node | Proposed |
+| [0021](0021-patch-hetzner-master-in-place.md) | Patch the Hetzner master in place, and keep calls on a separate edge node | Proposed, superseded in part by 0060 |
 | [0022](0022-encrypt-hetzner-volumes.md) | Encrypt every Hetzner data volume, behind a restore-tested backup | Proposed |
 | [0026](0026-hetzner-worker-node-networking.md) | Keep Hetzner worker nodes usable: dial kubelets by name, heal a stuck Cilium host datapath | Accepted |
+| [0060](0060-upgrade-the-hetzner-master-in-place-with-systemd-boot.md) | Upgrade the Hetzner master in place with systemd-boot, and defer the edge node | Accepted |
 
 ## CI
 
@@ -87,6 +90,20 @@ for the live-maintenance runbook.
 | # | Decision | Status |
 |---|---|---|
 | [0043](0043-rust-build-cache.md) | Share Rust compilation through sccache and sweep stale target directories | Accepted |
+
+## Memory tuning
+
+| # | Decision | Status |
+|---|---|---|
+| [0056](0056-tune-vm-sysctls-for-zram-in-base.md) | Tune swap sysctls for zram in base, per host where disk swap exists | Accepted |
+
+## Kernel options
+
+| # | Decision | Status |
+|---|---|---|
+| [0057](0057-manage-kernel-options-through-kernel-tuning-profiles.md) | Manage kernel options through composable `modules.kernelTuning` profiles | Accepted |
+| [0058](0058-set-swap-and-zswap-policy-by-swap-device.md) | Set swappiness and zswap by swap device type | Accepted |
+| [0059](0059-tune-network-sysctls-by-machine-type.md) | Tune network sysctls by machine type, from sourced claims only | Proposed |
 
 ## VR foveated rendering
 
@@ -111,6 +128,7 @@ works, how to enable it, and the benchmark results.
 | [0033](0033-route-more-work-to-cheap-delegates.md) | Route more work to cheap delegates; Haiku 5.5 first on Copilot | Accepted |
 | [0038](0038-shorten-the-skill-listing-at-install-and-cap-injected-tokens.md) | Shorten the skill listing at install, and cap injected tokens | Proposed; built, off by default |
 | [0039](0039-do-not-add-more-retrieval-machinery-to-the-memory-hook.md) | Do not add more retrieval machinery to the memory hook | Accepted; research closed |
+| [0055](0055-hide-user-typed-and-unused-skills-from-the-listing.md) | Hide user-typed and unused skills from the model's listing | Accepted |
 
 ## Token efficiency and observability
 
@@ -124,6 +142,7 @@ Design: [`specs/007-local-observability-stack/`](../../specs/007-local-observabi
 | [0046](0046-trace-delegated-agy-calls-from-the-wrapper.md) | Trace delegated agy calls from the wrapper, as children of Claude's tool span | Accepted |
 | [0047](0047-load-shared-skills-in-agy-through-a-declared-skills-json.md) | Load the shared skills in agy through a declared skills.json | Accepted |
 | [0048](0048-route-agy-work-to-flash-through-a-pinned-subagent.md) | Route agy's work to Flash through a pinned subagent, and enforce it with an orchestrator | Accepted |
+| [0052](0052-readiness-counts-from-the-first-probe.md) | Treat a store's first readiness answer as a probe artefact, not an outage | Accepted |
 
 ## AI control centre
 

@@ -26,7 +26,7 @@ inside the CLI package.
 
 In a session, inside the repo you want to set up:
 
-```
+```text
 /speckit-init
 ```
 
@@ -44,7 +44,7 @@ session** — project skills are only read at startup.
 
 Invocation uses hyphens, not dots:
 
-```
+```text
 /speckit-constitution   Define project principles
 /speckit-specify        Write the spec (what to build)
 /speckit-clarify        Resolve ambiguities in the spec
@@ -80,7 +80,7 @@ gh copilot
 
 Copilot's integration uses the dotted form:
 
-```
+```text
 /speckit.constitution Create principles focused on code quality...
 /speckit.specify Build an application that...
 /speckit.plan The application uses...

@@ -16,6 +16,12 @@ let
   # Prometheus scrapes from (pod traffic is masqueraded to the node IP).
   monitoringSources = qbittorrentAllowedIPs ++ [ "192.168.1.129" ];
 
+  # Proton WireGuard server (CH#540). Must match the Endpoint in
+  # secrets/vpn.yaml; the pinned route and the firewall allow-list below both
+  # derive from it.
+  vpnEndpointIP = "79.127.184.129";
+  vpnEndpointPort = "51820";
+
   # qBittorrent WebUI auth-bypass whitelist. Must cover BOTH loopback families:
   # a client connecting to "localhost" resolves to IPv6 ::1 on this
   # (IPv6-enabled) host, so without ::1/128 qbt demands auth for it; only
@@ -89,6 +95,8 @@ in {
           enableImpermanence = true;
           enableIPv6 = true;
         };
+        # Server profile; see ADR 0057.
+        modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
         modules.storage-server.enable = true;
         modules.servers = {
@@ -423,9 +431,9 @@ in {
             # hygiene matters.
             ExecStartPre = [
               "-${pkgs.iproute2}/bin/ip link delete primary-vpn"
-              "-${pkgs.iproute2}/bin/ip route add 62.169.136.223/32 via 192.168.1.1 dev enp1s0"
+              "-${pkgs.iproute2}/bin/ip route add ${vpnEndpointIP}/32 via 192.168.1.1 dev enp1s0"
             ];
-            ExecStopPost = "-${pkgs.iproute2}/bin/ip route del 62.169.136.223/32 via 192.168.1.1 dev enp1s0";
+            ExecStopPost = "-${pkgs.iproute2}/bin/ip route del ${vpnEndpointIP}/32 via 192.168.1.1 dev enp1s0";
           };
         };
 
@@ -2114,10 +2122,7 @@ EOF
               "enp7s0"
             ];
 
-            vpnEndpoints = [
-              "62.210.188.244:51820"
-              "62.169.136.223:51820"
-            ];
+            vpnEndpoints = [ "${vpnEndpointIP}:${vpnEndpointPort}" ];
 
             allowedServices = [
               {

@@ -128,6 +128,31 @@ fn session_main_and_subagent_in_one_turn_do_not_collide() {
 }
 
 #[test]
+fn session_sub_agents_at_the_same_turn_do_not_overwrite_each_other() {
+    let sub = |agent_id: &str| json!({"session_id": "s1", "agent": "subagent", "agent_id": agent_id, "model": "m", "turn": "1"});
+    for big_first in [true, false] {
+        let big = (sub("a1"), "50000");
+        let small = (sub("a2"), "10000");
+        let context = if big_first {
+            vector(&[big, small])
+        } else {
+            vector(&[small, big])
+        };
+        let fake = serve(session_rules(
+            context,
+            vector(&[]),
+            fixture("prom_session_fixed.json"),
+        ));
+        let out = cli(&fake, &["session", "s1"]).json();
+        assert_eq!(
+            out["max_context_tokens"],
+            json!(50000),
+            "big_first={big_first}: {out}"
+        );
+    }
+}
+
+#[test]
 fn session_context_without_cache_ratio_has_no_mean() {
     let context = vector(&[(ledger("main", "1"), "9000")]);
     let fake = serve(session_rules(

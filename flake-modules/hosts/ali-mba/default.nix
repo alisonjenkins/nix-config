@@ -140,6 +140,7 @@ in {
             mitmproxy2swagger
             mustache-go
             neovide
+            nh
             nix-fast-build
             nodejs
             nushell
@@ -254,6 +255,7 @@ in {
             "amethyst"
             "apache-directory-studio"
             "audacity"
+            "claude"
             "discord"
             "firefox"
             "freeplane"

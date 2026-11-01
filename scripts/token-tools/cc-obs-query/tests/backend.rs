@@ -135,9 +135,21 @@ fn a_5xx_with_a_plain_text_body_keeps_the_text() {
 }
 
 #[test]
-fn readiness_is_false_on_a_non_2xx() {
-    let base = serve_fn(|_| (503, "not ready".to_owned()));
-    assert!(!backend(&base).ready(cc_obs_query::backend::Store::Loki));
+fn readiness_error_carries_the_status_and_the_store_message() {
+    let base = serve_fn(|_| {
+        (
+            503,
+            "Ingester not ready: waiting for 15s after being ready".to_owned(),
+        )
+    });
+    let error = backend(&base)
+        .ready(cc_obs_query::backend::Store::Loki)
+        .unwrap_err();
+    assert!(
+        matches!(&error, Error::BackendRejected { status, detail, .. }
+            if status == "HTTP 503" && detail.contains("waiting for 15s")),
+        "{error:?}"
+    );
 }
 
 /// A Loki that behaves like the real one for paging: forward order, inclusive

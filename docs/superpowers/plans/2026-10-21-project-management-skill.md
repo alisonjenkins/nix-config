@@ -37,7 +37,7 @@ Delegation: Tasks 3 to 9 are mechanical given the code below. Per the delegation
 
 ## File structure
 
-```
+```text
 home/skills/project-management/
   SKILL.md  triggers.json  tracking.md  breakdown.md  docs.md  github.md  local.md
   scripts/

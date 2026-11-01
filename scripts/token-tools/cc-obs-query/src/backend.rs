@@ -508,15 +508,15 @@ impl Backend {
         self.get_json("tempo trace fetch", &url, &[])
     }
 
-    /// True when the store's readiness endpoint answers 2xx.
-    pub fn ready(&self, store: Store) -> bool {
+    /// Ok when the store's readiness endpoint answers 2xx; the error says why it did not.
+    pub fn ready(&self, store: Store) -> Result<(), Error> {
         let (base, path) = match store {
             Store::Prometheus => (&self.endpoints.urls.prometheus, "/-/ready"),
             Store::Loki => (&self.endpoints.urls.loki, "/ready"),
             Store::Tempo => (&self.endpoints.urls.tempo, "/ready"),
         };
         self.get_text("readiness check", &join(base, path), &[])
-            .is_ok()
+            .map(|_| ())
     }
 }
 
