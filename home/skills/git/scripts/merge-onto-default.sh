@@ -148,6 +148,14 @@ fi
 echo "== pushing $current_branch ($local_head_sha) onto origin/$default_branch (fast-forward) =="
 if push_output="$(git push origin "$local_head_sha:refs/heads/$default_branch" 2>&1)"; then
   echo "$push_output"
+  # A zero exit alone doesn't prove the merge landed; confirm the remote
+  # branch now points at the gated SHA before claiming success.
+  git fetch --quiet origin "+refs/heads/$default_branch:refs/remotes/origin/$default_branch"
+  remote_sha="$(git rev-parse "refs/remotes/origin/$default_branch")"
+  if [[ "$remote_sha" != "$local_head_sha" ]]; then
+    echo "error: push exited 0 but origin/$default_branch is $remote_sha, not the gated $local_head_sha — nothing merged" >&2
+    exit 1
+  fi
   echo "== done: $current_branch is now on $default_branch, signatures intact"
   exit 0
 fi
