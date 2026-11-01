@@ -15,12 +15,17 @@ writeShellApplication {
     # carry noctalia (home-manager profile, per-user NixOS profile, system).
     PATH="$PATH:''${HOME:-}/.nix-profile/bin:/etc/profiles/per-user/''${USER:-}/bin:/run/current-system/sw/bin"
 
-    # noctalia owns the lock when its shell is running. Its grace period is
-    # lockscreen.grace_period_seconds in its config, so the arguments below
-    # only apply to the swaylock fallback (Plasma sessions, noctalia down).
+    # noctalia owns the lock when its shell is running. The grace argument is
+    # passed as `--grace` (needs the patched noctalia); the fade argument only
+    # applies to the swaylock fallback (Plasma sessions, noctalia down).
+    NOCTALIA_ARGS=()
+    if [[ "$GRACE_SECONDS" ]]; then
+      NOCTALIA_ARGS+=("--grace" "$GRACE_SECONDS")
+    fi
+
     if ! command -v noctalia >/dev/null; then
       echo "event=lock locker=swaylock reason=noctalia_not_found" >&2
-    elif noctalia msg session lock; then
+    elif noctalia msg session lock "''${NOCTALIA_ARGS[@]}"; then
       echo "event=lock locker=noctalia" >&2
       exit 0
     else
