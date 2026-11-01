@@ -259,6 +259,26 @@ feature_branch_with_commit() {
   [ "${output%%$'\t'*}" = "$gated_sha" ]
 }
 
+@test "reports failure when the push exits 0 but origin's default branch isn't the gated SHA" {
+  feature_branch_with_commit "one"
+  run git ls-remote origin refs/heads/main
+  before_main="${output%%$'\t'*}"
+
+  # A post-receive hook that rewinds main: the push itself succeeds, but
+  # the remote doesn't end up at the gated SHA.
+  mkdir -p "$origin/hooks"
+  cat >"$origin/hooks/post-receive" <<HOOK
+#!$(command -v bash)
+git update-ref refs/heads/main $before_main
+HOOK
+  chmod +x "$origin/hooks/post-receive"
+
+  run bash "$script"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"nothing merged"* ]]
+  [[ "$output" != *"signatures intact"* ]]
+}
+
 @test "a protected branch (rejected direct push) reports the gh pr merge fallback plainly" {
   feature_branch_with_commit "one"
 
