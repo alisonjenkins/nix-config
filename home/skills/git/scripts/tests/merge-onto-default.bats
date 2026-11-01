@@ -243,6 +243,22 @@ feature_branch_with_commit() {
   [[ "$output" == *"pushing feature to update PR #1 before checking CI"* ]]
 }
 
+@test "pushes the gated SHA even if the checkout switches to main during the CI wait" {
+  feature_branch_with_commit "one"
+  gated_sha="$(git rev-parse HEAD)"
+  # The 2026-11-01 incident: switching to main mid-wait made the script
+  # push main's own tip ("Everything up-to-date") and claim success.
+  echo 'git switch -q main' >"$FAKE_GH_FIXTURES/checks-watch-hook"
+
+  run bash "$script"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"HEAD moved during the wait"* ]]
+  [[ "$output" == *"signatures intact"* ]]
+
+  run git ls-remote origin refs/heads/main
+  [ "${output%%$'\t'*}" = "$gated_sha" ]
+}
+
 @test "a protected branch (rejected direct push) reports the gh pr merge fallback plainly" {
   feature_branch_with_commit "one"
 

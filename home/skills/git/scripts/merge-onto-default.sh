@@ -136,8 +136,17 @@ else
   fi
 fi
 
-echo "== pushing $current_branch onto origin/$default_branch (fast-forward) =="
-if push_output="$(git push origin "HEAD:$default_branch" 2>&1)"; then
+# Push the SHA the checks gated on, not HEAD: the wait above takes
+# minutes, and a checkout switched meanwhile (e.g. `git switch main &&
+# git pull`) would otherwise push whatever HEAD now is -- possibly
+# $default_branch's own tip, which "succeeds" as "Everything up-to-date"
+# without merging anything.
+if [[ "$(git rev-parse HEAD)" != "$local_head_sha" ]]; then
+  echo "warning: HEAD moved during the wait (now $(git rev-parse --short HEAD) on $(git symbolic-ref --short -q HEAD || echo 'detached HEAD')); pushing the gated $local_head_sha regardless" >&2
+fi
+
+echo "== pushing $current_branch ($local_head_sha) onto origin/$default_branch (fast-forward) =="
+if push_output="$(git push origin "$local_head_sha:refs/heads/$default_branch" 2>&1)"; then
   echo "$push_output"
   echo "== done: $current_branch is now on $default_branch, signatures intact"
   exit 0
