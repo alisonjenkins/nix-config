@@ -76,5 +76,25 @@ in {
       # of throwing its window in front of whatever you were doing at login.
       ".config/autostart/steam.desktop".source = "${steam-autostart-silent}/share/applications/steam-autostart-silent.desktop";
       ".config/autostart/zapzap.desktop".source = "${pkgs.zapzap}/share/applications/com.rtosta.zapzap.desktop";
-    } else { });
+    } else { })
+  // (if pkgs.stdenv.isLinux then {
+    # The app writes these itself with its own store path in Exec=, which goes
+    # stale on every upgrade; and the autostart one execs the unwrapped
+    # binary, skipping the CLAUDE_CODE_LOCAL_BINARY wrapper. Resolve through
+    # PATH instead, and force over the app-written files.
+    ".config/autostart/claude-desktop.desktop" = {
+      force = true;
+      text = ''
+        [Desktop Entry]
+        Type=Application
+        Name=Claude
+        Exec=claude-desktop --startup
+        X-GNOME-Autostart-enabled=true
+      '';
+    };
+    ".local/share/applications/com.anthropic.Claude.desktop" = {
+      force = true;
+      source = "${pkgs.claude-desktop}/share/applications/com.anthropic.Claude.desktop";
+    };
+  } else { });
 }
