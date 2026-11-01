@@ -1,9 +1,14 @@
 { pkgs, inputs, ... }:
 let
+  # Without this gamescope composites on the 780M iGPU (it drives eDP-2) while
+  # games render on the RX 7700S, so every frame crosses GPUs. A per-game
+  # gamescope_args replaces the global one, so each must carry this.
+  preferDgpu = "--prefer-vk-device 1002:7480";
+
   # 1440 high with a borderless window. These launched with `LD_PRELOAD=""`
   # to keep Steam's preloads off gamescope; the runner no longer needs that.
   borderless1440Game = {
-    gamescope_args = "-w 2560 -h 1440 -b";
+    gamescope_args = "${preferDgpu} -w 2560 -h 1440 -b";
   };
 
   # VR games: pressure-vessel has to see the host's OpenXR runtime (SteamVR),
@@ -83,7 +88,7 @@ in
     shimDebug = true;
     env.LD_LIBRARY_PATH = "/run/opengl-driver/lib:/run/opengl-driver-32/lib:/run/current-system/sw/lib";
     innerEnv.MANGOHUD = "1";
-    gamescopeArgs = "-w 2560 -h 1600";
+    gamescopeArgs = "${preferDgpu} -w 2560 -h 1600";
 
     games."582160" = borderless1440Game; # Assassin's Creed Origins
     games."812140" = borderless1440Game; # Assassin's Creed Odyssey
