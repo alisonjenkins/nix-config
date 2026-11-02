@@ -688,6 +688,19 @@ in
     });
   };
 
+  # sccache 0.15 applies SCCACHE_BASEDIRS to C/C++ only: the Rust hash key
+  # still holds the cwd and CARGO_MANIFEST_DIR, so one crate built in two
+  # worktrees never shares a cache entry. Upstream PR mozilla/sccache#2678
+  # (open, head 3845d98) strips basedirs there too; drop this once a release
+  # contains it. Applied by modules/desktop with rustBuildCache only.
+  sccache-rust-basedirs = _final: prev: {
+    sccache = prev.sccache.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [
+        "${patchesDir}/sccache-rust-basedirs.patch"
+      ];
+    });
+  };
+
   snapper = final: _prev: {
     snapper = _prev.snapper.overrideAttrs (oldAttrs: {
       buildInputs = oldAttrs.buildInputs ++ [ _prev.zlib ];
