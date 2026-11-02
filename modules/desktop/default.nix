@@ -1709,7 +1709,10 @@ in
       ];
     };
 
-    nixpkgs.overlays = mkIf cfg.logitech.enable [ outputs.overlays.solaar-pro-x3-superstrike ];
+    nixpkgs.overlays = mkMerge [
+      (mkIf cfg.logitech.enable [ outputs.overlays.solaar-pro-x3-superstrike ])
+      (mkIf cfg.rustBuildCache.enable [ outputs.overlays.sccache-rust-basedirs ])
+    ];
 
     hardware = {
       ksm.enable = true;
