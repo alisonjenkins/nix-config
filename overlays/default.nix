@@ -263,6 +263,13 @@ in
       })
     ];
 
+    # Nx's background daemon never answers inside the Darwin build sandbox,
+    # so `nx build:ts` dies with "The daemon timed out while processing
+    # REQUEST_PROJECT_GRAPH".
+    element-desktop = prev.element-desktop.overrideAttrs (old: {
+      env = (old.env or { }) // { NX_DAEMON = "false"; };
+    });
+
     # obs-do 0.1.13 only exposes toggle-stream, so a which-key "start
     # streaming" binding has no way to avoid toggling the wrong direction
     # if a stream is already live. Pull in start-stream/stop-stream, plus
