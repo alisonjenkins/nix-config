@@ -26,6 +26,31 @@ let
     '';
   };
 
+  # The sccache server reads SCCACHE_BASEDIRS once, from the client that
+  # spawns it, so the list is rebuilt on every call: a worktree created
+  # while a server is up shares hits only after that server exits.
+  sccacheWithBasedirs = pkgs.writeShellApplication {
+    name = "sccache";
+    text = ''
+      shopt -s nullglob
+      basedirs=()
+      for pattern in ${lib.escapeShellArgs cfg.sccacheBasedirGlobs}; do
+        # the glob is the point: it must expand here
+        # shellcheck disable=SC2231
+        for dir in $pattern; do
+          if [[ -e $dir/.git ]]; then
+            basedirs+=("$dir")
+          fi
+        done
+      done
+      if ((''${#basedirs[@]})); then
+        SCCACHE_BASEDIRS=$(IFS=:; printf '%s' "''${basedirs[*]}")
+        export SCCACHE_BASEDIRS
+      fi
+      exec ${lib.getExe pkgs.sccache} "$@"
+    '';
+  };
+
   sweepSchedule = {
     OnCalendar = cfg.sweep.frequency;
     Persistent = true;
@@ -34,6 +59,22 @@ let
 in {
   options.modules.rustBuildCache = {
     enable = lib.mkEnableOption "sccache, slimmer dev profiles and periodic cargo-sweep of target dirs";
+
+    sccacheBasedirGlobs = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = map (p: "${config.home.homeDirectory}/git/${p}") [
+        "*/*/.claude/worktrees/*"
+        "*/.claude/worktrees/*"
+        "*/*"
+        "*"
+      ];
+      description = ''
+        Globs for git checkouts whose root sccache strips from Rust hash keys
+        (SCCACHE_BASEDIRS), so one crate built in two worktrees shares a
+        cache entry. The first matching root wins, so list nested checkouts
+        before their parents.
+      '';
+    };
 
     sccacheSize = lib.mkOption {
       type = lib.types.str;
@@ -84,13 +125,13 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    home.packages = [ pkgs.sccache pkgs.cargo-sweep ];
+    home.packages = [ sccacheWithBasedirs pkgs.cargo-sweep ];
 
     # `[env]` reaches the compiler through cargo, so agents and IDEs that
     # never source a login shell still get the cache cap.
     home.file.".cargo/config.toml".source = tomlFormat.generate "cargo-config.toml" {
       build = {
-        rustc-wrapper = lib.getExe pkgs.sccache;
+        rustc-wrapper = lib.getExe sccacheWithBasedirs;
         incremental = false;
       };
       env.SCCACHE_CACHE_SIZE = cfg.sccacheSize;
