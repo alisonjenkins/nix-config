@@ -251,6 +251,16 @@ in
           ];
         });
       })
+      # python-lsp-server's test_set_flake8_using_init_opts hits a
+      # TimeoutError on Darwin (the run took 756s), failing the whole
+      # system build. Pulled in via nixvim.
+      (python-final: python-prev: {
+        python-lsp-server = python-prev.python-lsp-server.overridePythonAttrs (old: {
+          disabledTests = (old.disabledTests or []) ++ [
+            "test_set_flake8_using_init_opts"
+          ];
+        });
+      })
     ];
 
     # obs-do 0.1.13 only exposes toggle-stream, so a which-key "start
