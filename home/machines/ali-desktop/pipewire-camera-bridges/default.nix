@@ -17,6 +17,7 @@
     pkgs.gst_all_1.gstreamer.out
     pkgs.gst_all_1.gst-plugins-base
     pkgs.gst_all_1.gst-plugins-good
+    pkgs.gst_all_1.gst-plugins-bad
     pkgs.pipewire
   ];
 
@@ -61,11 +62,10 @@
     description,
     size ? null,
   }: let
-    scale = lib.optionalString (size != null) "videoscale ! ";
     dimensions = lib.optionalString (size != null) ",width=${toString size.width},height=${toString size.height}";
   in
     bridge name ''
-      exec gst-launch-1.0 pipewiresrc target-object=${cameraNode} ! image/jpeg,width=1920,height=1080,framerate=60/1 ! jpegdec ! ${scale}videoconvert ! video/x-raw,format=YUY2${dimensions} ! pipewiresink mode=provide stream-properties="props,media.class=Video/Source,media.role=Camera,${driverProps},node.name=${node},node.description=${description}"
+      exec gst-launch-1.0 pipewiresrc target-object=${cameraNode} ! image/jpeg,width=1920,height=1080,framerate=60/1 ! queue ! jpegparse ! vajpegdec ! vapostproc ! video/x-raw,format=YUY2${dimensions} ! queue ! pipewiresink mode=provide stream-properties="props,media.class=Video/Source,media.role=Camera,${driverProps},node.name=${node},node.description=${description}"
     '';
 
   # OBS writes 1080p60 (~250 MB/s) and the call consumer needs far less, so drop frames and
