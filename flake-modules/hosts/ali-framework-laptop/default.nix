@@ -31,6 +31,7 @@ in {
       self.nixosModules.hardware-touchpad
       self.nixosModules.audio-context-suspend
       self.nixosModules.wifi-sleep-reload
+      self.nixosModules.tpm-resume-rebind
       self.nixosModules.base
       self.nixosModules.desktop
       self.nixosModules.development-web
@@ -298,6 +299,7 @@ in {
         };
 
         services.wifi-sleep-reload.enable = true;
+        services.tpm-resume-rebind.enable = true;
 
         # Nullify the disko-generated keyFile so systemd-cryptsetup uses the TPM2 token
         boot.initrd.luks.devices.crypted.keyFile = lib.mkForce null;
