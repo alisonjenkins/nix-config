@@ -42,7 +42,12 @@ let
       ''}
 
       ${lib.optionalString cfg.onBattery.wifiPowerSave ''
-        run_step "wifi-power-save" iw dev wlan0 set power_save on
+        wifi_power_save_on() {
+          for dev in /sys/class/net/*/wireless; do
+            iw dev "$(basename "$(dirname "$dev")")" set power_save on
+          done
+        }
+        run_step "wifi-power-save" wifi_power_save_on
       ''}
 
       ${lib.optionalString cfg.onBattery.pciRuntimePM ''
@@ -194,7 +199,12 @@ let
       ''}
 
       ${lib.optionalString cfg.onBattery.wifiPowerSave ''
-        run_step "wifi-power-save" iw dev wlan0 set power_save off
+        wifi_power_save_off() {
+          for dev in /sys/class/net/*/wireless; do
+            iw dev "$(basename "$(dirname "$dev")")" set power_save off
+          done
+        }
+        run_step "wifi-power-save" wifi_power_save_off
       ''}
 
       ${lib.optionalString (cfg.onAC.cpuFreqGovernor != null) ''
