@@ -30,6 +30,7 @@
     servers = import ../modules/servers;
     sunshine = import ../modules/sunshine;
     tts = import ../modules/tts;
+    tpm-resume-rebind = import ../modules/tpm-resume-rebind.nix;
     uresourced = import ../modules/uresourced;
     virtual-cameras = import ../modules/virtual-cameras;
     vr = import ../modules/vr;
