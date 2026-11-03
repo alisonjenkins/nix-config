@@ -30,6 +30,7 @@ in {
       self.nixosModules.hardware-fingerprint
       self.nixosModules.hardware-touchpad
       self.nixosModules.audio-context-suspend
+      self.nixosModules.wifi-sleep-reload
       self.nixosModules.base
       self.nixosModules.desktop
       self.nixosModules.development-web
@@ -295,6 +296,8 @@ in {
           enable = true;
           user = "ali";
         };
+
+        services.wifi-sleep-reload.enable = true;
 
         # Nullify the disko-generated keyFile so systemd-cryptsetup uses the TPM2 token
         boot.initrd.luks.devices.crypted.keyFile = lib.mkForce null;

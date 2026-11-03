@@ -34,6 +34,7 @@
     virtual-cameras = import ../modules/virtual-cameras;
     vr = import ../modules/vr;
     wifi-regdom-from-timezone = import ../modules/wifi-regdom-from-timezone.nix;
+    wifi-sleep-reload = import ../modules/wifi-sleep-reload.nix;
 
     # Network/VPN modules
     amnezia-vpn-gateway = import ../modules/amnezia-vpn-gateway;
