@@ -6,6 +6,12 @@
 }:
 with lib; let
   cfg = config.services.tpm-resume-rebind;
+  sleepTargets = [
+    "suspend.target"
+    "hibernate.target"
+    "hybrid-sleep.target"
+    "suspend-then-hibernate.target"
+  ];
 
   rebind = pkgs.writeShellApplication {
     name = "tpm-resume-rebind";
@@ -101,18 +107,8 @@ in {
   config = mkIf cfg.enable {
     systemd.services.tpm-resume-rebind = {
       description = "Rebind TPM driver after resume if the TPM stopped answering";
-      after = [
-        "suspend.target"
-        "hibernate.target"
-        "hybrid-sleep.target"
-        "suspend-then-hibernate.target"
-      ];
-      wantedBy = [
-        "suspend.target"
-        "hibernate.target"
-        "hybrid-sleep.target"
-        "suspend-then-hibernate.target"
-      ];
+      after = sleepTargets;
+      wantedBy = sleepTargets;
 
       serviceConfig = {
         Type = "oneshot";
