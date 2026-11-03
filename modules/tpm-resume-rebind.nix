@@ -119,5 +119,31 @@ in {
         ExecStart = getExe rebind;
       };
     };
+
+    # The kernel only notices the stale null seed on its first HMAC-session TPM use, about 25 s
+    # after resume, so the resume-time probe above usually still passes. The 2 s sleep lets the
+    # kernel finish disabling the chip, which happens just after it logs the message.
+    systemd.services.tpm-null-seed-watch = {
+      description = "Rebind the TPM driver when the kernel reports a stale null seed";
+      wantedBy = ["multi-user.target"];
+      path = [pkgs.systemd pkgs.coreutils];
+
+      serviceConfig = {
+        Restart = "always";
+        RestartSec = 5;
+        ExecStart = pkgs.writeShellScript "tpm-null-seed-watch" ''
+          set -u
+          journalctl --dmesg --follow --lines=0 --output=cat \
+            --grep='NULL Seed name comparison failed' |
+            while read -r line; do
+              echo "tpm-null-seed-watch: kernel reported: $line"
+              sleep 2
+              systemctl start tpm-resume-rebind.service ||
+                echo "tpm-null-seed-watch: tpm-resume-rebind failed" >&2
+              sleep 30
+            done
+        '';
+      };
+    };
   };
 }
