@@ -265,7 +265,7 @@ in {
           wifi = {
             optimizeForLowLatency = true;  # Enable low-latency WiFi for gaming/Discord/media
             roamThreshold = -70;           # Aggressive roaming on 2.4GHz (-70 dBm)
-            roamThreshold5G = -72;         # Aggressive roaming on 5GHz (-72 dBm)
+            roamThreshold5G = -78;         # Below iwd's -76 default: office sits at -74 on 5/6 GHz, and each roam scan stalls traffic ~7 s
             bandModifier5GHz = 1.3;        # Prefer 5GHz band (30% bonus)
             bandModifier6GHz = 1.5;        # Strongly prefer 6GHz if available (50% bonus)
           };
