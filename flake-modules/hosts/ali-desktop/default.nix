@@ -70,6 +70,7 @@ in {
       # set — but only if the module is in the list at all.
       self.nixosModules.desktop-wm-plasma6
       self.nixosModules.audio-context-suspend
+      self.nixosModules.tpm-resume-rebind
       self.nixosModules.audio-usb-reconnect-heal
       self.nixosModules.base
       self.nixosModules.camera-resume
@@ -585,6 +586,8 @@ in {
           };
         };
 
+
+        services.tpm-resume-rebind.enable = true;
 
         services.audio-context-suspend = {
           enable = true;
