@@ -16,6 +16,12 @@ with lib; let
     SUBSYSTEM=="video4linux", ATTRS{idVendor}=="${d.vendorId}", ATTRS{idProduct}=="${d.productId}", ATTR{index}=="0", SYMLINK+="${d.symlink}"
   '') (filter (d: d.symlink != null) cfg.devices);
 
+  # UVC controls reset to the firmware default on every enumeration, so they are
+  # applied from udev rather than once at boot.
+  controlRules = concatMapStringsSep "\n" (d: ''
+    ACTION=="add", SUBSYSTEM=="video4linux", ATTRS{idVendor}=="${d.vendorId}", ATTRS{idProduct}=="${d.productId}", ATTR{index}=="0", RUN+="${pkgs.v4l-utils}/bin/v4l2-ctl --device $devnode ${concatStringsSep " " (mapAttrsToList (n: v: "--set-ctrl=${n}=${toString v}") d.controls)}"
+  '') (filter (d: d.controls != {}) cfg.devices);
+
   # A video4linux "add" fires for every re-enumeration, not only after suspend:
   # the OBSBOT's hub drops on its own. Index 0 only, as UVC adds a metadata node.
   reenumerateRules = concatMapStringsSep "\n" (d: ''
@@ -91,6 +97,15 @@ in {
               UVC cameras expose a second one for metadata.
             '';
           };
+          controls = mkOption {
+            type = types.attrsOf types.int;
+            default = {};
+            example = {power_line_frequency = 1;};
+            description = ''
+              V4L2 controls to set each time the camera enumerates, by the name
+              `v4l2-ctl --list-ctrls` prints.
+            '';
+          };
         };
       });
     };
@@ -149,8 +164,8 @@ in {
       }
     ];
 
-    services.udev.extraRules = mkIf (udevRules != "" || cfg.restartUserUnits != []) (
-      udevRules + optionalString (cfg.restartUserUnits != []) reenumerateRules
+    services.udev.extraRules = mkIf (udevRules != "" || controlRules != "" || cfg.restartUserUnits != []) (
+      udevRules + controlRules + optionalString (cfg.restartUserUnits != []) reenumerateRules
     );
 
     systemd.services.camera-reenumerated = mkIf (cfg.restartUserUnits != []) {

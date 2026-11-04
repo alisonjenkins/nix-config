@@ -633,6 +633,8 @@ in {
               vendorId = "3564";
               productId = "fef9";
               symlink = "webcam";
+              # 50 Hz mains: the camera defaults to a setting that flickers under UK lighting.
+              controls.power_line_frequency = 1;
             }
           ];
           # The hub also drops on its own (no suspend), leaving the bridges
