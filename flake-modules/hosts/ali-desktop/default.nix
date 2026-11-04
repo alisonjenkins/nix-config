@@ -999,7 +999,8 @@ in {
         # gamemode (via nix-gaming-gamemode.service) or by the poller when a
         # Steam game or gamescope is running; stopped by the poller once
         # neither signal is present. Active: new remote builds are refused and
-        # the running nix-daemon is cut to ~4 of 32 threads at minimum weight.
+        # the running nix-daemon is cut to 80% of one thread at minimum weight,
+        # matching the shared gamemode hook this replaces.
         systemd.services.nix-gaming-throttle = {
           description = "Throttle nix-daemon and refuse remote builds while gaming";
           serviceConfig = {
