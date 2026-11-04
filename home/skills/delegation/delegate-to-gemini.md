@@ -88,12 +88,16 @@ command is checked). A profile only chooses whether file edits are approved:
 
 - `read` (default) — no flag. Reads inside the working directory plus
   allowlisted commands (build, test, search, local git) work; file edits in the
-  repo are denied. agy can still write to its own scratch directory under
+  repo are denied. The script runs agy under `bwrap` with the repository (and a
+  worktree's common `.git`) mounted read-only, so no allowed command
+  (formatters, `sed --in-place`) can change it; without bubblewrap the read
+  profile refuses to run. agy can still write to its own scratch directory under
   `~/.gemini/antigravity-cli/`, which is outside the repo. The command rules
   are shared by every profile, so none of them rewrites or deletes files: `rm`,
-  `mv`, `cp` and friends are not allowed, and `sed -i`, `git clean`,
-  `git reset --hard` and `git restore` are denied. Deletions go through
-  `git rm`, which history can undo.
+  `mv`, `cp` and friends are not allowed, and `sed -i`, `sed --in-place`,
+  `git clean`, `git reset --hard`, `git restore` and `git checkout` (use
+  `git switch` to change branches) are denied. Deletions go through `git rm`,
+  which history can undo.
 - `write-workdir` and `write-shell` — `--mode accept-edits`. File edits are
   approved, plus the same allowlisted commands. Nothing uses
   `--dangerously-skip-permissions` any more. Implementation tasks (edit, build,

@@ -8,9 +8,10 @@ setup() {
   stage_fakes_and_export_path "$script_dir"
   export FAKE_AGY_CALLS="$BATS_TEST_TMPDIR/calls.log"
   : >"$FAKE_AGY_CALLS"
-  unset DELEGATE_REASONING_EFFORT DELEGATE_MODEL FAKE_AGY_MODE DELEGATE_TELEMETRY \
-    DELEGATE_OTLP_ENDPOINT TRACEPARENT CLAUDE_CODE_SESSION_ID XDG_STATE_HOME \
-    SSH_CONNECTION XDG_RUNTIME_DIR
+  export FAKE_BWRAP_CALLS="$BATS_TEST_TMPDIR/bwrap-calls"
+  unset DELEGATE_REASONING_EFFORT DELEGATE_MODEL DELEGATE_BWRAP FAKE_AGY_MODE \
+    DELEGATE_TELEMETRY DELEGATE_OTLP_ENDPOINT TRACEPARENT \
+    CLAUDE_CODE_SESSION_ID XDG_STATE_HOME SSH_CONNECTION XDG_RUNTIME_DIR
   export DELEGATE_RETRY_BASE_DELAY=0
   # A real ~/.config/cc-obs/endpoints.json or state dir must never be touched.
   export HOME="$BATS_TEST_TMPDIR/home"
@@ -50,6 +51,27 @@ setup() {
   [[ "$output" == "response for model=gemini-3.8-flash-medium: do it" ]]
   call="$(<"$FAKE_AGY_CALLS")"
   [[ "$call" == *$'mode=\tskip_perms=no'* ]]
+}
+
+@test "read runs agy under a read-only bind of the repo" {
+  repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  run bash "$delegate" "do it" read
+  [ "$status" -eq 0 ]
+  bwrap_call="$(<"$FAKE_BWRAP_CALLS")"
+  [[ "$bwrap_call" == *"--ro-bind"* ]]
+  [[ "$bwrap_call" == *"$repo_root"* ]]
+}
+
+@test "write-workdir does not use bwrap" {
+  run bash "$delegate" "do it" write-workdir
+  [ "$status" -eq 0 ]
+  [ ! -s "$FAKE_BWRAP_CALLS" ]
+}
+
+@test "read fails closed without bubblewrap" {
+  DELEGATE_BWRAP=no-such-bwrap run bash "$delegate" "do it" read
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"needs bubblewrap"* ]]
 }
 
 @test "write-workdir uses accept-edits mode" {

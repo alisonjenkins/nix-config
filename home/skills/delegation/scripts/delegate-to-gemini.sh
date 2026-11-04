@@ -33,8 +33,9 @@ profile="${2:-read}"
 skills_arg="${3:-}"
 
 # Headless agy auto-denies any tool that needs approval (exit 0, notice on
-# stderr). Profiles only choose whether file edits are approved; which commands
-# run is the settings allow/deny list, the same for every profile.
+# stderr). Profiles only choose whether file edits are approved (and read also
+# runs under a read-only mount); which commands run is the settings allow/deny
+# list, the same for every profile.
 profile_args=()
 case "$profile" in
   read) ;;
@@ -45,6 +46,24 @@ case "$profile" in
     exit 1
     ;;
 esac
+
+# Command rules are shared by every profile and prefix rules cannot stop
+# `sed --in-place`, formatters or `git checkout <rev> -- path`, so read gets a
+# read-only mount instead.
+sandbox_cmd=()
+if [[ "$profile" == "read" ]]; then
+  repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  git_common_dir="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+  bwrap_bin="${DELEGATE_BWRAP:-bwrap}"
+  if ! command -v "$bwrap_bin" >/dev/null 2>&1; then
+    echo "error: profile 'read' needs bubblewrap ('$bwrap_bin') to mount the repository read-only; install bubblewrap or use write-workdir in a worktree" >&2
+    exit 1
+  fi
+  sandbox_cmd=("$bwrap_bin" --dev-bind / / --ro-bind "$repo_root" "$repo_root")
+  if [[ -n "$git_common_dir" && "$git_common_dir" != "$repo_root"/* ]]; then
+    sandbox_cmd+=(--ro-bind "$git_common_dir" "$git_common_dir")
+  fi
+fi
 
 numeric_env_or_default() {
   local var_name="$1" default="$2" value="${!1:-}"
@@ -211,14 +230,14 @@ call_agy() {
   while :; do
     call_attempts=$((call_attempts + 1))
     if (( use_json )); then
-      if call_output="$("${trace_env[@]}" agy -p "$task" --model "$model" --print-timeout "${DELEGATE_PRINT_TIMEOUT:-15m}" \
+      if call_output="$("${trace_env[@]}" "${sandbox_cmd[@]}" agy -p "$task" --model "$model" --print-timeout "${DELEGATE_PRINT_TIMEOUT:-15m}" \
         --output-format json "${effort_args[@]}" "${profile_args[@]}" "${extra_args[@]}" 2>"$err_file")"; then
         call_err="$(<"$err_file")"
         return 0
       fi
       call_err="$(<"$err_file")"
     else
-      if call_output="$("${trace_env[@]}" agy -p "$task" --model "$model" --print-timeout "${DELEGATE_PRINT_TIMEOUT:-15m}" \
+      if call_output="$("${trace_env[@]}" "${sandbox_cmd[@]}" agy -p "$task" --model "$model" --print-timeout "${DELEGATE_PRINT_TIMEOUT:-15m}" \
         "${effort_args[@]}" "${profile_args[@]}" "${extra_args[@]}" 2>&1)"; then
         call_err=""
         return 0
