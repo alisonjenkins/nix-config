@@ -65,6 +65,12 @@ current tuning and how to triage a GPU hang.
 | [0023](0023-gpu-undervolt-margin.md) | Undervolt the RX 9070 XT to -40mV, not to the edge | Accepted, pending soak |
 | [0024](0024-amdgpu-kernel-parameters.md) | Override amdgpu kernel parameters only with a measured reason | Accepted |
 
+## ali-desktop camera
+
+| # | Decision | Status |
+|---|---|---|
+| [0061](0061-restart-camera-bridges-on-every-enumeration-and-decode-on-the-gpu.md) | Restart the camera bridges on every enumeration, and decode on the GPU | Accepted |
+
 ## Hetzner cluster
 
 Start with [`docs/hetzner-inplace-patching-design.md`](../hetzner-inplace-patching-design.md)
