@@ -16,6 +16,16 @@ with lib; let
     SUBSYSTEM=="video4linux", ATTRS{idVendor}=="${d.vendorId}", ATTRS{idProduct}=="${d.productId}", ATTR{index}=="0", SYMLINK+="${d.symlink}"
   '') (filter (d: d.symlink != null) cfg.devices);
 
+  # A video4linux "add" fires for every re-enumeration, not only after suspend:
+  # the OBSBOT's hub drops on its own. Index 0 only, as UVC adds a metadata node.
+  reenumerateRules = concatMapStringsSep "\n" (d: ''
+    ACTION=="add", SUBSYSTEM=="video4linux", ATTRS{idVendor}=="${d.vendorId}", ATTRS{idProduct}=="${d.productId}", ATTR{index}=="0", TAG+="systemd", ENV{SYSTEMD_WANTS}+="camera-reenumerated.service"
+  '') cfg.devices;
+
+  # WirePlumber needs a moment after the udev add to publish the new node;
+  # restarting a bridge before then relinks it to nothing.
+  nodeAppearSeconds = 3;
+
   # Root, because rebinding a USB port writes to /sys/bus/usb/drivers/usb.
   # Anything that has to talk to the user's PipeWire goes through this.
   asUser = "${pkgs.util-linux}/bin/runuser -u ${cfg.user} --";
@@ -107,6 +117,19 @@ in {
       '';
     };
 
+    restartUserUnits = mkOption {
+      type = types.listOf types.str;
+      default = [];
+      example = ["obsbot-raw-camera.service"];
+      description = ''
+        User units to restart whenever a tracked camera enumerates, whether
+        after suspend or because its hub dropped by itself. They hold links to
+        the old PipeWire node and show a blank picture until restarted. Only
+        units that are already active are touched, so a deliberately stopped
+        bridge stays stopped.
+      '';
+    };
+
     restartVirtualCameras = mkOption {
       type = types.bool;
       default = true;
@@ -126,7 +149,31 @@ in {
       }
     ];
 
-    services.udev.extraRules = mkIf (udevRules != "") udevRules;
+    services.udev.extraRules = mkIf (udevRules != "" || cfg.restartUserUnits != []) (
+      udevRules + optionalString (cfg.restartUserUnits != []) reenumerateRules
+    );
+
+    systemd.services.camera-reenumerated = mkIf (cfg.restartUserUnits != []) {
+      description = "Restart camera consumers after a tracked camera enumerates";
+
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = pkgs.writeShellScript "camera-reenumerated" ''
+          set -u
+          uid=$(${pkgs.coreutils}/bin/id -u ${cfg.user})
+          export XDG_RUNTIME_DIR="/run/user/$uid"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus"
+
+          ${pkgs.coreutils}/bin/sleep ${toString nodeAppearSeconds}
+
+          # try-restart: no session yet (boot) or a stopped unit is not an error.
+          for unit in ${escapeShellArgs cfg.restartUserUnits}; do
+            echo "camera-reenumerated: restarting $unit"
+            ${asUser} ${pkgs.systemd}/bin/systemctl --user try-restart "$unit" || true
+          done
+        '';
+      };
+    };
 
     # Records where each camera currently sits on the USB tree. On resume the
     # device may be gone entirely, and then there is nothing left to derive

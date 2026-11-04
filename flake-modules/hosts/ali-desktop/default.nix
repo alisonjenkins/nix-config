@@ -635,6 +635,12 @@ in {
               symlink = "webcam";
             }
           ];
+          # The hub also drops on its own (no suspend), leaving the bridges
+          # linked to a dead node and the picture blank.
+          restartUserUnits = [
+            "obsbot-raw-camera.service"
+            "obsbot-raw-camera-720p.service"
+          ];
         };
 
         # Pin the Scarlett's internal mixer matrix to unity so PipeWire is the
