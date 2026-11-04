@@ -18,7 +18,11 @@ let
   # Headless agy runs a command only if each segment matches an allow prefix,
   # and deny beats allow. The allow list is what a worker needs inside a
   # worktree to build, test, search and commit; the deny list is the guardrail
-  # on pushing, publishing, the cluster, secrets and system state. Interpreters
+  # on pushing, publishing, the cluster, secrets and system state. The rules are
+  # shared by every profile, read included, so no shell command that rewrites or
+  # deletes files is allowed (rm, mv, cp, sed -i, git clean, git reset --hard):
+  # file changes go through agy's edit tools, which only accept-edits approves,
+  # and `git rm` keeps a deletion recoverable from history. Interpreters
   # on the allow list (python3, node, npx) could still do anything — the deny
   # list stops direct calls, not a determined script, so delegated runs still go
   # in a worktree and their diff gets reviewed.
@@ -95,13 +99,6 @@ let
     "realpath"
     "dirname"
     "basename"
-    "mkdir"
-    "touch"
-    "cp"
-    "mv"
-    "rm"
-    "ln"
-    "chmod"
     "date"
     "which"
     "true"
@@ -182,6 +179,15 @@ let
     "journalctl --vacuum"
     "docker push"
     "podman push"
+    "sed -i"
+    "git clean"
+    "git reset --hard"
+    "git checkout --"
+    "git restore"
+    "git stash drop"
+    "git stash clear"
+    "git branch -D"
+    "git worktree remove"
     "rm -rf /"
     "rm -rf ~"
     "rm -rf $HOME"
