@@ -79,19 +79,23 @@ but a delegated Claude is still reviewed like any other delegate output.
 
 ## Profiles
 
-Headless `agy` has no per-tool allow flag. A tool that needs approval is
-auto-denied: the run exits 0 and a notice goes to stderr. A profile is
-therefore a permission mode (checked 2026-10-17, agy 1.2.16):
+Headless `agy` has no per-tool CLI flag. A tool that needs approval is
+auto-denied: the run exits 0 and a notice goes to stderr. Commands are
+governed by `permissions.allow`/`permissions.deny` prefix rules that
+`home/modules/antigravity-cli` merges into `~/.gemini/antigravity-cli/settings.json`
+(checked 2026-11-04, agy 1.4.8; deny beats allow; each segment of a compound
+command is checked). A profile only chooses whether file edits are approved:
 
-- `read` (default) — no flag. Reads inside the working directory work; writes
-  inside it and commands are denied. agy can still write to its own scratch
-  directory under `~/.gemini/antigravity-cli/`, which is outside the repo.
-- `write-workdir` — `--mode accept-edits`. File edits are approved, commands
-  are still denied. Review the diff.
-- `write-shell` — `--dangerously-skip-permissions`. Every tool call is
-  approved, including shell commands, with no allow-list and no deny-list.
-  Run it in a worktree or a clean branch and review the diff. There is no
-  equivalent of Copilot's `write-shell` allow-list.
+- `read` (default) — no flag. Reads inside the working directory plus
+  allowlisted commands (build, test, search, local git) work; file edits in the
+  repo are denied. agy can still write to its own scratch directory under
+  `~/.gemini/antigravity-cli/`, which is outside the repo.
+- `write-workdir` and `write-shell` — `--mode accept-edits`. File edits are
+  approved, plus the same allowlisted commands. Nothing uses
+  `--dangerously-skip-permissions` any more. Implementation tasks (edit, build,
+  test, commit locally) go under `write-shell` in a worktree and have their diff
+  reviewed; pushing, PRs, merges, the cluster and secrets are on the deny list
+  and stay with Claude.
 
 `--mode plan` is not a read profile: it writes an implementation plan and
 asks for approval instead of answering.
@@ -99,10 +103,11 @@ asks for approval instead of answering.
 ## Facts that bite
 
 - A denied tool leaves the run with no response, and agy itself exits 0 with
-  just a notice. The script turns that into exit 3 with the denied tool and
-  the profile that allows it (`command` needs `write-shell`, `write_file`
-  needs `write-workdir`). Anything that must run a command, tests included,
-  goes under `write-shell` in a worktree.
+  just a notice. The script turns that into exit 3 naming what is needed
+  (`write_file` needs `write-workdir`; a denied `command` either is missing from
+  the allow list in `home/modules/antigravity-cli` — add it there rather than
+  reaching for skip-permissions — or hit the deny list on purpose: push,
+  publish, cluster, secrets).
 - `agy` reads only inside the working directory plus `--add-dir` roots.
   Run it from the repo that holds the files.
 - `~/.claude/skills` is symlinks into the Nix store and `--add-dir` on it is
