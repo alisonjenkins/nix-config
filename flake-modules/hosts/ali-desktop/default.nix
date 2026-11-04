@@ -1005,7 +1005,7 @@ in {
           serviceConfig = {
             Type = "oneshot";
             RemainAfterExit = true;
-            ExecStart = "${systemctl} set-property --runtime nix-daemon.service CPUQuota=400% CPUWeight=1 IOWeight=1";
+            ExecStart = "${systemctl} set-property --runtime nix-daemon.service CPUQuota=80% CPUWeight=1 IOWeight=1";
             ExecStop = "${systemctl} set-property --runtime nix-daemon.service CPUQuota=${nixDaemonCfg.CPUQuota} CPUWeight=${toString nixDaemonCfg.CPUWeight} IOWeight=${toString nixDaemonCfg.IOWeight}";
           };
         };
