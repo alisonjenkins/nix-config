@@ -19,6 +19,12 @@ that says to. Already-pushed, unmerged commits carrying these: rewrite and
 force-push (read "Preserving signatures" first; `filter-branch` drops the
 signature).
 
+Never add the Claude Projects PR attribution line (`_Requested by … ·
+[project thread](…)_`) or its hidden `claude-projects-attribution` marker
+comment to a PR description. Claude Projects injects it into each thread's
+setup by default, not any skill, so it appears unless a rule blocks it.
+Strip it from a body before `gh pr create` or `gh pr edit`.
+
 ## Preserving signatures
 
 Normal commit-creating commands (`commit`, `--amend`, `rebase`, `cherry-pick`,

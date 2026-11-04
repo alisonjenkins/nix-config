@@ -15,7 +15,9 @@ non-obvious flags.
 3. `gh pr create` with a body that says what changed and why, and what was
    verified (with the command output that proves it). No AI-attribution
    footer — see [commit-messages.md](commit-messages.md)'s rule; it applies
-   to PR bodies the same as commit messages.
+   to PR bodies the same as commit messages. That includes the Claude
+   Projects line (`_Requested by … · [project thread](…)_`) and its
+   `claude-projects-attribution` marker comment: never add either.
 4. Keep the atomic commits; do not flatten them when pushing.
 5. **Start the review watch immediately after `gh pr create` succeeds** —
    don't wait to be told, and don't ask first. Run

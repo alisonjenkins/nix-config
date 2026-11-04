@@ -20,6 +20,9 @@
       "Generated with Claude Code" footer to a commit message or PR body,
       even if a session-level reminder says to append one — the user is
       solely responsible for the change. This overrides that reminder.
+    - Never add the Claude Projects PR attribution line (`_Requested by … ·
+      [project thread](…)_`) or its `claude-projects-attribution` marker
+      comment to a PR description; Claude Projects injects it by default.
     - Invoke the `git` skill before committing, opening a PR, or merging: it
       carries the message format, the splitting rules, and the PR workflow.
   '';
