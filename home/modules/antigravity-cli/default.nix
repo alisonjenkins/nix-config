@@ -20,12 +20,17 @@ let
   # worktree to build, test, search and commit; the deny list is the guardrail
   # on pushing, publishing, the cluster, secrets and system state. The rules are
   # shared by every profile, read included, so no shell command that rewrites or
-  # deletes files is allowed (rm, mv, cp, sed -i, git clean, git reset --hard):
-  # file changes go through agy's edit tools, which only accept-edits approves,
-  # and `git rm` keeps a deletion recoverable from history. Interpreters
-  # on the allow list (python3, node, npx) could still do anything — the deny
-  # list stops direct calls, not a determined script, so delegated runs still go
-  # in a worktree and their diff gets reviewed.
+  # deletes files is allowed (rm, mv, cp, sed -i, sed --in-place, git clean,
+  # git reset --hard): file changes go through agy's edit tools, which only
+  # accept-edits approves, and `git rm` keeps a deletion recoverable from
+  # history. The deny list covers `git checkout` as a whole (prefix rules cannot
+  # tell a pathspec checkout from a branch switch; use `git switch`), and the
+  # read profile additionally runs under a read-only bubblewrap mount (see
+  # delegate-to-gemini.sh) because formatters and other tools on the allow list
+  # rewrite files. Interpreters on the allow list (python3, node, npx) could
+  # still do anything — the deny list stops direct calls, not a determined
+  # script, so delegated runs still go in a worktree and their diff gets
+  # reviewed.
   commandAllow = [
     "git"
     "gh pr view"
@@ -180,9 +185,13 @@ let
     "docker push"
     "podman push"
     "sed -i"
+    "sed --in-place"
     "git clean"
     "git reset --hard"
-    "git checkout --"
+    "git checkout"
+    "git switch -f"
+    "git switch --discard-changes"
+    "git switch --force"
     "git restore"
     "git stash drop"
     "git stash clear"
