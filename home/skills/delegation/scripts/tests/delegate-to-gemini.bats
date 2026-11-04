@@ -58,10 +58,10 @@ setup() {
   [[ "$(<"$FAKE_AGY_CALLS")" == *$'mode=accept-edits\tskip_perms=no'* ]]
 }
 
-@test "write-shell skips permissions" {
+@test "write-shell uses accept-edits mode, not skip-permissions" {
   run bash "$delegate" "do it" write-shell
   [ "$status" -eq 0 ]
-  [[ "$(<"$FAKE_AGY_CALLS")" == *$'mode=\tskip_perms=yes'* ]]
+  [[ "$(<"$FAKE_AGY_CALLS")" == *$'mode=accept-edits\tskip_perms=no'* ]]
 }
 
 @test "reasoning effort is passed through and a bad value is ignored" {
@@ -83,10 +83,10 @@ setup() {
   [ "$(wc -l <"$FAKE_AGY_CALLS")" -eq 2 ]
 }
 
-@test "a denied command exits 3 and names write-shell" {
+@test "a denied command exits 3 and names the allow list" {
   FAKE_AGY_MODE=soft-denied-command run bash "$delegate" "do it" write-workdir
   [ "$status" -eq 3 ]
-  [[ "$output" == *"needs write-shell"* ]]
+  [[ "$output" == *"allow list"* ]]
   [[ "$output" == *"under profile 'write-workdir'"* ]]
 }
 

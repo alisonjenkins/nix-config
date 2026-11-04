@@ -33,13 +33,12 @@ profile="${2:-read}"
 skills_arg="${3:-}"
 
 # Headless agy auto-denies any tool that needs approval (exit 0, notice on
-# stderr), so a profile is just a permission mode: default reads only,
-# accept-edits also writes files, and the shell profile approves everything.
+# stderr). Profiles only choose whether file edits are approved; which commands
+# run is the settings allow/deny list, the same for every profile.
 profile_args=()
 case "$profile" in
   read) ;;
-  write-workdir) profile_args=(--mode accept-edits) ;;
-  write-shell) profile_args=(--dangerously-skip-permissions) ;;
+  write-workdir|write-shell) profile_args=(--mode accept-edits) ;;
   *)
     echo "error: invalid profile '$profile'" >&2
     echo "valid profiles: read, write-workdir, write-shell" >&2
@@ -192,7 +191,7 @@ record_call() {
 report_denied() {
   local tool="$1" shown="$2" needed
   case "$tool" in
-    command) needed="write-shell (run it in a worktree)" ;;
+    command) needed="a command on the allow list in home/modules/antigravity-cli (or it hit the deny list on purpose: push, publish, cluster, secrets)" ;;
     write_file) needed="write-workdir" ;;
     *) needed="a wider profile, or run from the repo that holds the files" ;;
   esac
