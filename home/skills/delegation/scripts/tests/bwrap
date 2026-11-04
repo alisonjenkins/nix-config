@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Stand-in for `bwrap` so tests can verify the read profile's read-only bind
+# mounts without needing user namespaces in the test sandbox. Records its args
+# to FAKE_BWRAP_CALLS (one line per call, space-joined), strips the bind options
+# and execs the wrapped command.
+set -euo pipefail
+
+if [[ -n "${FAKE_BWRAP_CALLS:-}" ]]; then
+  printf '%s\n' "$*" >>"$FAKE_BWRAP_CALLS"
+fi
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dev-bind|--ro-bind) shift 3 ;;
+    *) break ;;
+  esac
+done
+
+exec "$@"
