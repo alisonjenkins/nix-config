@@ -589,6 +589,15 @@ in
           "Bash(nix-prefetch-url:*)"
           "Bash(nix-collect-garbage:*)"
           "Bash(just:*)"
+          # Gemini delegation. Auto mode's classifier refuses to start agy under
+          # write-shell (an agent that runs commands), so delegated build and
+          # test work never ran. agy's own allow/deny rules from
+          # home/modules/antigravity-cli are the guardrail: no push, PR writes,
+          # cluster, secrets or deploy.
+          "Bash(bash ${config.home.homeDirectory}/.claude/skills/delegation/scripts/delegate-to-gemini.sh:*)"
+          "Bash(bash ~/.claude/skills/delegation/scripts/delegate-to-gemini.sh:*)"
+          "Bash(DELEGATE_MODEL=gemini-4-argon-medium bash ~/.claude/skills/delegation/scripts/delegate-to-gemini.sh:*)"
+          "Bash(DELEGATE_MODEL=gemini-4-argon-high bash ~/.claude/skills/delegation/scripts/delegate-to-gemini.sh:*)"
           "Bash(grep:*)"
           "Bash(find:*)"
           "Bash(ls:*)"
