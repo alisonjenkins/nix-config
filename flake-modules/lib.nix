@@ -11,6 +11,10 @@ let
   # Authorize on hosts that should accept incoming nix builds via
   # nix.buildMachines.<entry>.sshKey = /root/.ssh/id_remote_builder.
   nixBuilderLaptop = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDA14oK6m/gMcRaAUnMbiI1Tr5c3aLORWyzX2U+IU6Eq nix-builder-laptop";
+  # Dedicated key for nix-daemon (root) on home-k8s-master-1 to offload CI
+  # builds to ali-desktop's restricted nix-builder account. The private half
+  # is sops-encrypted in secrets/home-k8s-master-1/nix-builder-key.enc.yaml.
+  nixBuilderCi = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKWLFyKyQJ8podLl1yx8dWuhN8xq65proisnR70KVMPQ nix-builder-ci";
   # Agent skills, shared across every agent runtime rather than owned by one.
   # Each entry is a directory holding SKILL.md plus its bundled child files
   # (languages/*.md, per-tool guides) — consumers must link the *directory*,
@@ -39,7 +43,7 @@ in
   flake.lib.skills = lib.genAttrs skillNames (name: skillsDir + "/${name}");
 
   flake.lib.sshKeys = {
-    inherit primary phone nixBuilderLaptop;
+    inherit primary phone nixBuilderLaptop nixBuilderCi;
     all = [
       primary
       phone
