@@ -500,6 +500,10 @@ in {
           azureDevopsRsaKey = "~/.ssh/id_work_rsa.pub";
           workIdentity = true;
           workIdentitySecretsFile = self + "/secrets/ali-work-laptop-macos/work-identity.enc.yaml";
+          # The work 1Password account is broken, so work-identity.enc.yaml has
+          # no secretspec_work_1password_uri and the sops manifest fails to
+          # build. Re-enable once the key is added.
+          enableWorkSiftProvider = false;
         };
       })
     ];

@@ -31,6 +31,10 @@
   _module.args.workIdentity = lib.mkDefault false;
   _module.args.workIdentitySecretsFile = lib.mkDefault null;
 
+  # Work machines render sift's work_1password alias from the work sops file;
+  # set this false while that file lacks secretspec_work_1password_uri.
+  _module.args.enableWorkSiftProvider = lib.mkDefault true;
+
   # Total idle seconds before swayidle powers the displays off (DPMS) via niri.
   # Default 30 min for all niri hosts; a host can override via extraSpecialArgs,
   # or set to null to disable. See home/programs/linux-only/swayidle.
