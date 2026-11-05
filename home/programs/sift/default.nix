@@ -3,6 +3,7 @@
   lib,
   workIdentity ? false,
   workIdentitySecretsFile ? null,
+  enableWorkSiftProvider ? true,
   ...
 }:
 {
@@ -11,7 +12,7 @@
   # undefined, because its URI names the work 1Password account. The whole
   # URI ("onepassword://<account>@<vault>") comes from sops, so the account
   # never reaches this public repo or the world-readable nix store.
-  sops = lib.mkIf workIdentity {
+  sops = lib.mkIf (workIdentity && enableWorkSiftProvider) {
     secrets."secretspec_work_1password_uri".sopsFile = workIdentitySecretsFile;
 
     templates."secretspec-config.toml" = {
