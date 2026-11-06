@@ -82,6 +82,14 @@ class DetectTests(unittest.TestCase):
         self.assertEqual(sorted(found["pnpm-1"]), ["a.nix", "b.nix"])
         self.assertEqual(found["x-2"], ["a.nix"])
 
+    def test_detect_insecure_ignores_agent_worktrees(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            copy = root / ".claude" / "worktrees" / "wt"
+            copy.mkdir(parents=True)
+            (copy / "o.nix").write_text('permittedInsecurePackages = [ "stale-1" ];')
+            self.assertEqual(pins.detect_insecure(root), {})
+
 
 class ValidateTests(unittest.TestCase):
     def setUp(self) -> None:

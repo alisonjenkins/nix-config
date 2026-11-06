@@ -39,7 +39,9 @@ CLASSES = ("workaround", "exception", "lockstep", "tracked")
 REQUIRED = ("id", "class", "kind", "site", "pinned", "since", "reviewed",
             "review_by", "reason", "removal")
 PROBE_TIMEOUT_SECONDS = 1800
-SKIP_DIRS = {".git", "node_modules", "result"}
+# .claude holds agent worktrees: full copies of the repo whose overlays would be
+# counted as live pins.
+SKIP_DIRS = {".git", ".claude", "node_modules", "result"}
 
 Runner = Callable[[list[str], int], "subprocess.CompletedProcess[str]"]
 
