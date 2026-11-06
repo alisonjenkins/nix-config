@@ -10,7 +10,7 @@ inputs:
     description: >-
       Space-separated substituter URLs to append to the shared defaults.
       For jobs that need caches beyond the repo-wide set (e.g. the closure
-      report pulls nix-gaming / rust-overlay / lantian).
+      report pulls nix-gaming / rust-overlay).
     required: false
     default: ''
   extra-trusted-public-keys:
@@ -69,8 +69,12 @@ runs:
         # with a 503 or hangs until connect-timeout, which showed up as ~40
         # "unable to download .../nix-cache-info: HTTP error 503" warnings in a
         # single desktop build.
-        SUBSTITUTERS="https://cache.nixcache.org https://nix-community.cachix.org"
-        TRUSTED_KEYS="nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+        #
+        # cache.lantian.pub/lantian is the CachyOS kernel cache
+        # (xddxdd/nix-cachyos-kernel); without it the desktop build compiles
+        # the LTO kernel from source.
+        SUBSTITUTERS="https://cache.nixcache.org https://nix-community.cachix.org https://cache.lantian.pub/lantian"
+        TRUSTED_KEYS="nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ="
         if [ -n "$EXTRA_SUBSTITUTERS" ]; then SUBSTITUTERS="$SUBSTITUTERS $EXTRA_SUBSTITUTERS"; fi
         if [ -n "$EXTRA_TRUSTED_KEYS" ]; then TRUSTED_KEYS="$TRUSTED_KEYS $EXTRA_TRUSTED_KEYS"; fi
 
