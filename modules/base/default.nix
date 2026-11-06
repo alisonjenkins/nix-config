@@ -333,7 +333,7 @@ in
           max-jobs = lib.mkDefault "auto";
           trusted-users = [ "root" "@wheel" ];
 
-          substituters = lib.mkBefore [
+          substituters = lib.mkBefore ([
             "https://cache.nixcache.org"
             "https://cache.nixos.org"
             "https://jovian.cachix.org"
@@ -345,7 +345,7 @@ in
             "https://nix-gaming.cachix.org"
             "https://nixpkgs-wayland.cachix.org"
             "https://fenix.cachix.org"
-          ];
+          ] ++ lib.optional cfg.enableCachyOSKernel "https://cache.lantian.pub/lantian");
 
           trusted-public-keys = [
             "nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak="
@@ -360,7 +360,7 @@ in
             "nix-gaming.cachix.org-1:nbjlureqMbRAxR1gJ/f3hxemL9svXaZF/Ees8vCUUs4="
             "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
             "fenix.cachix.org-1:ecJhr+RdYEdcVgUkjruiYhjbBloIEGov7bos90cZi0Q="
-          ];
+          ] ++ lib.optional cfg.enableCachyOSKernel "lantian:WVGO7vsRMSEN+h7Lp7kv6SAmrkEXgUGbbXm7jMDjBuQ=";
         };
       };
 
