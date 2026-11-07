@@ -19,6 +19,8 @@ on:
       - "overlays/**"
       - "flake-modules/cloud-kit.nix"
       - "flake-modules/lib.nix"
+      - "flake-modules/overlays.nix"
+      - "flake.nix"
       - "flake.lock"
       - ".github/workflows/cloud-kit.yaml"
   workflow_dispatch:
