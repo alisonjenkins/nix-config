@@ -25,11 +25,11 @@ setup script.
 2. On every push to `main` that can change the kit,
    `.github/workflows/cloud-kit.yaml` builds it for x86_64-linux, pushes the
    closure to `cache.nixcache.org` (niks3), checks every path in the closure
-   is in that cache or cache.nixos.org, and force-pushes the store path as a
-   one-file orphan commit to the `cloud-kit` branch. Nothing is pushed when
+   is in that cache or cache.nixos.org, and uploads the store path as the
+   `x86_64-linux` asset of the `cloud-kit` release. Nothing is uploaded when
    the path is unchanged.
-3. The cloud environment's setup script reads the store path from that branch
-   with git, substitutes it from the caches, and runs
+3. The cloud environment's setup script downloads that asset, substitutes the
+   path from the caches, and runs
    `bin/cloud-kit-bootstrap`. The bootstrap links the skills and agents into
    `~/.claude`, writes the mandates into a marked block of
    `~/.claude/CLAUDE.md` (whatever else is in that file stays), and links into
@@ -37,13 +37,17 @@ setup script.
    `yq` is not mikefarah/yq). The image's git, gh and curl stay, because they
    carry the environment's proxy configuration.
 
-## Why a branch holds the path
+## Why a release asset holds the path
 
 The cloud egress proxy refuses GitHub tarball and API downloads for
 repositories not attached to the session. Every input in `flake.lock` is a
 `github:` input, which Nix fetches as a tarball, so a cloud session cannot
-evaluate this flake. `git clone` over HTTPS is allowed, so the branch carries
-the one thing a session cannot compute: the store path.
+evaluate this flake. A store path is a hash of the kit's contents, so it
+changes with every skill edit and a session cannot guess it; binary caches
+have no named "latest" entry. Something readable has to say which path is
+current. Release downloads pass the proxy, so a fixed `cloud-kit` release
+holds that one line. A branch would work too but clutters the branch list,
+and a file on `main` would mean a bot commit after every skill change.
 
 ## Cloud environment
 
@@ -53,11 +57,8 @@ The Default environment's network allowlist must include
 ```bash
 #!/bin/bash
 # Claude cloud kit: skills, mandates and tools. See nix-config docs/cloud-kit.md.
-repo="${CLOUD_KIT_REPO:-https://github.com/alisonjenkins/nix-config}"
-ptr=/tmp/cloud-kit-pointer
-rm -rf "$ptr"
-if git clone -q --depth 1 -b cloud-kit "$repo" "$ptr" \
-  && kit="$(cat "$ptr/$(uname -m)-linux")" \
+url="${CLOUD_KIT_URL:-https://github.com/alisonjenkins/nix-config/releases/download/cloud-kit}"
+if kit="$(curl -fsSL "$url/$(uname -m)-linux")" \
   && nix-store --realise "$kit" --add-root /nix/var/nix/gcroots/cloud-kit \
     --option extra-substituters https://cache.nixcache.org \
     --option extra-trusted-public-keys nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= \
@@ -74,8 +75,8 @@ default cloud image ships Nix 2.34).
 
 ## Changing what it ships
 
-- A skill: edit `home/skills/`. Never edit the `cloud-kit` branch; the next
-  publish replaces it.
+- A skill: edit `home/skills/`. Never edit the `cloud-kit` release; the next
+  publish replaces its asset.
 - A tool a skill script needs: add it to `toolsFor` in
   `flake-modules/cloud-kit.nix`.
 - A mandate: edit `home/programs/shared-mandates.nix`; laptops and the cloud

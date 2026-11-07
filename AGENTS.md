@@ -154,7 +154,7 @@ Detail in `docs/subsystems.md`; read the entry before touching the code.
 - **`modules.observabilityStack`** (`home/modules/observability-stack`, `scripts/token-tools`): `docs/observability-stack.md`, ADRs 0034, 0035, 0037.
 - **Kernel livepatch** (`scripts/livepatch`, skill `.claude/skills/kernel-livepatch`): hand-written rebootless kernel patches for the Hetzner nodes (x86_64, `CONFIG_LIVEPATCH`).
 - **`modules.rustBuildCache`** (`home/modules/rust-build-cache`): ADR 0043.
-- **Cloud kit** (`pkgs/cloud-kit`, `flake-modules/cloud-kit.nix`, `.github/workflows/cloud-kit.yaml`): skills, mandates and tools for Claude cloud sessions, `docs/cloud-kit.md`. Edit `home/skills/`, never the `cloud-kit` branch.
+- **Cloud kit** (`pkgs/cloud-kit`, `flake-modules/cloud-kit.nix`, `.github/workflows/cloud-kit.yaml`): skills, mandates and tools for Claude cloud sessions, `docs/cloud-kit.md`. Edit `home/skills/`, never the `cloud-kit` release.
 
 ## Development Workflow
 
