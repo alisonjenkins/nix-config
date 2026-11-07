@@ -32,4 +32,4 @@ Lives in the **`helldivers2-modding`** skill (`.claude/skills/helldivers2-moddin
 
 ## Cloud kit
 
-`packages.<linux>.cloud-kit` (`pkgs/cloud-kit`, `flake-modules/cloud-kit.nix`) carries the personal skills, the curated anthropics/skills subset, the user-level CLAUDE.md mandates, the agents and the skills' tools into Claude cloud sessions. CI pushes it to cache.nixcache.org and records its store path on the generated `cloud-kit` branch; the cloud environment's setup script reads that path, substitutes it and runs its bootstrap. Setup, limits and how to change what it ships: `docs/cloud-kit.md`.
+`packages.<linux>.cloud-kit` (`pkgs/cloud-kit`, `flake-modules/cloud-kit.nix`) carries the personal skills, the curated anthropics/skills subset, the user-level CLAUDE.md mandates, the agents and the skills' tools into Claude cloud sessions. CI pushes it to cache.nixcache.org and records its store path as the `cloud-kit` release asset; the cloud environment's setup script reads that path, substitutes it and runs its bootstrap. Setup, limits and how to change what it ships: `docs/cloud-kit.md`.
