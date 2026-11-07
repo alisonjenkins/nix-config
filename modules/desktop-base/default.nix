@@ -1,4 +1,4 @@
-{ config, lib, pkgs, inputs, ... }:
+{ config, lib, pkgs, inputs, username, ... }:
 let
   cfg = config.modules.desktop-base;
 in
@@ -24,6 +24,12 @@ in
     '';
 
     networking.nftables.enable = true;
+
+    # Claude desktop signs its device key with the TPM via /dev/tpmrm0. Without
+    # access it registers "keyless" and threads refuse to link the computer.
+    # Creates the tss group and the udev rule that makes the node group-owned.
+    security.tpm2.enable = true;
+    users.users.${username}.extraGroups = [ "tss" ];
 
     # SSDP (UPnP discovery): a router's reply to a multicast M-SEARCH arrives
     # as unicast from a different source address than the multicast
