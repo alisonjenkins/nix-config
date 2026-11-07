@@ -63,15 +63,21 @@ jobs:
             --out-link "$(niks3_gcroot_path 'cloud-kit')" \
             .#packages.x86_64-linux.cloud-kit > kit-path
           cat kit-path >> "$NIKS3_QUEUE"
+          # List the closure while the out-link still roots it: the final push
+          # drops this run's GC roots, and the host collects garbage under
+          # disk pressure.
+          nix path-info --recursive "$(cat kit-path)" > closure
           niks3_stop_and_final_push
           echo "path=$(cat kit-path)" >> "$GITHUB_OUTPUT"
       - name: Check the whole closure substitutes from the caches
         # Sessions substitute from cache.nixcache.org and cache.nixos.org only;
         # a path missing from both would fail the session's setup script.
-        env:
-          KIT: ${{ steps.build.outputs.path }}
         run: |
           set -euo pipefail
+          if [ ! -s closure ]; then
+            echo "::error::the kit's closure list is empty"
+            exit 1
+          fi
           missing=0
           while read -r p; do
             if ! nix path-info --store https://cache.nixcache.org "$p" > /dev/null 2>&1 \
@@ -79,7 +85,7 @@ jobs:
               echo "::error::not in either cache: $p"
               missing=1
             fi
-          done < <(nix path-info --recursive "$KIT")
+          done < closure
           exit "$missing"
       - name: Publish the store path as the cloud-kit release asset
         env:
