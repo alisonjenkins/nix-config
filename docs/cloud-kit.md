@@ -69,9 +69,21 @@ else
 fi
 ```
 
-It never fails the session start. New sessions pick up the latest published
-kit; a resumed session keeps what it had. The image must have Nix (the
-default cloud image ships Nix 2.34).
+It never fails the session start. The image must have Nix (the default cloud
+image ships Nix 2.34).
+
+The environment caches the filesystem after the setup script finishes and
+starts later sessions from that snapshot without running the script again.
+The snapshot is rebuilt when the setup script or the allowed hosts change, or
+after about seven days. So:
+
+- A session can run a kit up to about a week older than the latest publish.
+- A setup run that could not fetch the kit is cached the same way, so sessions
+  start without it until the next rebuild.
+
+To pick up a new kit in a session now, run the script above in it. To make
+every new session pick it up, change the setup script (a comment will do),
+which forces a rebuild.
 
 ## Changing what it ships
 
