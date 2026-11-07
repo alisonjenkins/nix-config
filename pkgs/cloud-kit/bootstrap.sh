@@ -45,14 +45,21 @@ begin='<!-- cloud-kit:begin -->'
 end='<!-- cloud-kit:end -->'
 md="$claude_dir/CLAUDE.md"
 touch "$md"
-rest="$(awk -v b="$begin" -v e="$end" '$0 == b { skip = 1 } !skip { print } $0 == e { skip = 0 }' "$md")"
-{
-    if [ -n "$rest" ]; then printf '%s\n\n' "$rest"; fi
-    printf '%s\n' "$begin"
-    cat "$kit/CLAUDE.md"
-    printf '%s\n' "$end"
-} > "$md.tmp"
-mv "$md.tmp" "$md"
+begins="$(grep -cxF "$begin" "$md" || true)"
+ends="$(grep -cxF "$end" "$md" || true)"
+if [ "$begins" != "$ends" ] || [ "$begins" -gt 1 ]; then
+    # A half-written block: removing it could take the user's own text with it.
+    log "left $md alone: its cloud-kit markers are unbalanced"
+else
+    rest="$(awk -v b="$begin" -v e="$end" '$0 == b { skip = 1 } !skip { print } $0 == e { skip = 0 }' "$md")"
+    {
+        if [ -n "$rest" ]; then printf '%s\n\n' "$rest"; fi
+        printf '%s\n' "$begin"
+        cat "$kit/CLAUDE.md"
+        printf '%s\n' "$end"
+    } > "$md.tmp"
+    mv "$md.tmp" "$md"
+fi
 log "linked $(find "$kit/skills" -mindepth 1 -maxdepth 1 | wc -l) skills into $claude_dir"
 
 # Link only tools the image lacks (or ones in prefer_kit): the image's git, gh
