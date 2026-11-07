@@ -123,9 +123,13 @@ in
       ovrCompatSearchPaths = "${prev.opencomposite}/lib/opencomposite";
     };
 
-    # Pin claude-code to nixpkgs-master — nixos-unstable often lags behind
-    # and yanked versions (e.g. 2.1.88) cause build failures.
-    inherit (final.master) claude-code;
+    # claude-code from nixpkgs-master — nixos-unstable often lags behind
+    # and yanked versions (e.g. 2.1.88) cause build failures. The manifest
+    # is vendored from Anthropic's release bucket to run ahead of master
+    # (see pins/registry.json, id claude-code-manifest).
+    claude-code = final.master.claude-code.override {
+      manifest = builtins.fromJSON (builtins.readFile (self + "/pkgs/claude-code/manifest.zst.json"));
+    };
 
     # Only apply pipewireFix to the Jovian fork (1.6.4-jupiter1.5).
     # Upstream nixpkgs pipewire is at 1.4.9 in nixos-25.11, where:
