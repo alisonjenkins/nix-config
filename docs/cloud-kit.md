@@ -58,7 +58,7 @@ The Default environment's network allowlist must include
 #!/bin/bash
 # Claude cloud kit: skills, mandates and tools. See nix-config docs/cloud-kit.md.
 url="${CLOUD_KIT_URL:-https://github.com/alisonjenkins/nix-config/releases/download/cloud-kit}"
-if kit="$(curl -fsSL "$url/$(uname -m)-linux")" \
+if kit="$(curl -fsSL --connect-timeout 10 --max-time 30 "$url/$(uname -m)-linux")" \
   && nix-store --realise "$kit" --add-root /nix/var/nix/gcroots/cloud-kit \
     --option extra-substituters https://cache.nixcache.org \
     --option extra-trusted-public-keys nixcache.org-1:fd7sIL2BDxZa68s/IqZ8kvDsxsjt3SV4mQKdROuPoak= \
