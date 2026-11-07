@@ -34,9 +34,10 @@ apply, touches nothing.
 
 - Idempotent: re-running against an already-compliant repo reports all-pass,
   never re-applies anything.
-- Resolve tools (`gh`, `jq`, `git`) through each script's `nix-shell`
-  shebang, not ambient `PATH`: these run on machines with no global package
-  pool.
+- Each check names its tools (`gh`, `jq`, `git`) in a `nix-shell` shebang,
+  because these run on machines with no global package pool. `audit.sh` runs
+  a check with plain `bash` only when every tool on that line is already on
+  `PATH` (a cloud session with the kit), so it skips a slow first nix-shell.
 - An unsupported forge (GitLab today; no forge at all, e.g. CodeCommit) gets
   an "unsupported forge" report for the forge-dependent topics, not an error.
   Local-only topics (pre-commit, dev-shell) still run.
