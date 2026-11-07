@@ -1,12 +1,5 @@
 { pkgs, lib, config, inputs, ... } @ args:
 let
-  anthropicSkills = pkgs.fetchFromGitHub {
-    owner = "anthropics";
-    repo = "skills";
-    rev = "1ed29a03dc852d30fa6ef2ca53a67dc2c2c2c563";
-    hash = "sha256-9FGubcwHcGBJcKl02aJ+YsTMiwDOdgU/FHALjARG51c=";
-  };
-
   mandates = import ../shared-mandates.nix;
   inherit (mandates) gitStrategy workStyle;
 
@@ -134,33 +127,10 @@ let
   '';
 
   # Merge skill directories from three sources: the curated anthropics/skills
-  # subset below, the runtime-agnostic families in home/skills/, and the
-  # skill-shipping packages (caveman, claude-statusbar, spec-kit).
-  #
-  # Curated subset of anthropics/skills rather than the whole repo: every skill's
-  # name+description loads into every agent/subagent, so the unused ones
-  # (algorithmic-art, brand-guidelines, canvas-design, theme-factory) are dropped
-  # to trim the subagent baseline.
-  anthropicSkillNames = [
-    # Document / office
-    "docx" "pdf" "pptx" "xlsx"
-    # Dev / web
-    "frontend-design" "web-artifacts-builder" "webapp-testing" "mcp-builder"
-    # Authoring / meta
-    "doc-coauthoring" "internal-comms" "skill-creator"
-    # Misc kept
-    "slack-gif-creator"
-  ];
-  # Each anthropic entry is a single skill *directory*, so it has to keep its own
-  # name: symlinkJoin merges directory contents, which would flatten every skill
-  # into the root (one winning SKILL.md, colliding scripts/ and reference/ dirs).
-  # linkFarm names each one, and the join below then merges those named dirs.
-  anthropicSkillsFarm = pkgs.linkFarm "anthropic-skills" (
-    map (n: {
-      name = n;
-      path = "${anthropicSkills}/skills/${n}";
-    }) anthropicSkillNames
-  );
+  # subset (anthropic-skills.nix, shared with the cloud-kit package), the
+  # runtime-agnostic families in home/skills/, and the skill-shipping packages
+  # (caveman, claude-statusbar, spec-kit).
+  anthropicSkillsFarm = pkgs.callPackage ./anthropic-skills.nix { };
   # Locally-authored skills live at home/skills/, not under this module: they
   # carry agentskills.io spec frontmatter only and are linked into opencode too,
   # so no single agent runtime owns them. flake.lib.skills auto-discovers that

@@ -29,3 +29,7 @@ Lives in the **`helldivers2-modding`** skill (`.claude/skills/helldivers2-moddin
 ## Rust build cache
 
 `modules.rustBuildCache` (`home/modules/rust-build-cache`, on by default for `modules.desktop` hosts) sets sccache as the cargo rustc wrapper and runs a daily `cargo-sweep` over `~/git` (targets unused for 1 day) so worktrees stop filling `/home`. Why and the measurements: ADR 0043.
+
+## Cloud kit
+
+`packages.<linux>.cloud-kit` (`pkgs/cloud-kit`, `flake-modules/cloud-kit.nix`) carries the personal skills, the curated anthropics/skills subset, the user-level CLAUDE.md mandates, the agents and the skills' tools into Claude cloud sessions. CI pushes it to cache.nixcache.org and records its store path as the `cloud-kit` release asset; the cloud environment's setup script reads that path, substitutes it and runs its bootstrap. Setup, limits and how to change what it ships: `docs/cloud-kit.md`.
