@@ -30,7 +30,8 @@
   # cheapDelegate names the host's first rung below the main loop: "copilot"
   # on work machines, where the Claude allowance is the one worth
   # conserving, "gemini" on personal desktops and laptops that have the
-  # Antigravity CLI, "local" everywhere else.
+  # Antigravity CLI, "local" everywhere else. "cloud" is for Claude cloud
+  # sessions (the cloud-kit package), which have none of those delegates.
   mkModelRouting = cheapDelegate:
     let
       cheapRung = {
@@ -73,6 +74,14 @@
             one-call exception above does not apply here either: a single
             self-contained step goes to the local model or a haiku sub-agent,
             not inline.
+        '';
+        cloud = ''
+          - Cheapest rung in a Claude cloud session: a "haiku" sub-agent.
+            The local, Copilot and Gemini delegates are not installed here,
+            so do not run the `delegation` skill's delegate scripts; its tier
+            test and prompt-writing rules still apply. This environment does
+            not set `CLAUDE_CODE_SUBAGENT_MODEL`, so pass `model` on every
+            Agent call that is not `haiku-worker`, `haiku` included.
         '';
       }.${cheapDelegate};
     in
