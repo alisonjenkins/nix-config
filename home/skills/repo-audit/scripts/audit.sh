@@ -44,9 +44,32 @@ done
 RUN_TOPICS=("${TOPICS[@]}")
 [[ -n "$REQUESTED_TOPIC" ]] && RUN_TOPICS=("$REQUESTED_TOPIC")
 
+# Runs a check with the tools already on PATH when every package its
+# `#!nix-shell -p` line names is there, and through that nix-shell otherwise.
+# The first nix-shell in a cloud session fetches nixpkgs and ~260 MB of
+# packages the image (plus the cloud kit) already has, and the image's gh is
+# the one configured for its proxy.
+run_check() {
+    local script="$1"
+    shift
+    local deps pkg bin
+    deps="$(sed -n '2s/^#!nix-shell -i bash -p //p' "$script")"
+    if [[ -n "$deps" ]]; then
+        for pkg in $deps; do
+            bin="$pkg"
+            [[ "$pkg" == ripgrep ]] && bin=rg
+            if ! command -v "$bin" >/dev/null 2>&1; then
+                "$script" "$@"
+                return
+            fi
+        done
+    fi
+    bash "$script" "$@"
+}
+
 for topic in "${RUN_TOPICS[@]}"; do
     echo
-    "$SCRIPT_DIR/checks/$topic.sh" "$TARGET" "${PASSTHROUGH_ARGS[@]}" || true
+    run_check "$SCRIPT_DIR/checks/$topic.sh" "$TARGET" "${PASSTHROUGH_ARGS[@]}" || true
 done
 
 echo
