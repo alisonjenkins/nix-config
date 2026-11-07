@@ -77,6 +77,13 @@ log "linked $(find "$kit/skills" -mindepth 1 -maxdepth 1 | wc -l) skills into $c
 # and curl carry the environment's proxy configuration. Links point through
 # $kit/tools so they follow the kit they came from.
 mkdir -p "$bin_dir"
+# Drop our links to tools this kit no longer ships, as link_entries does for
+# skills, so narrowing the tool list takes effect on a re-run.
+for target in "$bin_dir"/*; do
+    if ours "$target" && [ ! -e "$kit/tools/bin/$(basename "$target")" ]; then
+        rm -f "$target"
+    fi
+done
 linked=0
 for exe in "$kit"/tools/bin/*; do
     [ -e "$exe" ] || continue
