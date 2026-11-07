@@ -63,14 +63,14 @@ jobs:
       # changes.
       NIKS3_QUEUE: /var/tmp/niks3-queue-servers
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           lfs: false
       - name: Skip if superseded
         uses: ./.github/actions/skip-if-superseded
       - name: Configure host Nix
         uses: ./.github/actions/setup-host-nix
-      - uses: DeterminateSystems/flake-checker-action@v14
+      - uses: DeterminateSystems/flake-checker-action@786422608c7bded2bbc9741ad9f91356842bf520 # v14
       - name: Check if build is needed
         id: dry-run
         run: |
@@ -130,7 +130,7 @@ jobs:
       # Host nix daemon post-build-hook writes to /var/tmp/niks3-queue
       NIKS3_QUEUE: /var/tmp/niks3-queue
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           lfs: false
       - name: Skip if superseded
@@ -228,7 +228,7 @@ jobs:
       # Host nix daemon post-build-hook writes to /var/tmp/niks3-queue
       NIKS3_QUEUE: /var/tmp/niks3-queue
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           lfs: false
       - name: Skip if superseded

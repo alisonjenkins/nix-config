@@ -125,7 +125,7 @@ jobs:
       S3_BUCKET: ajj-ami-builds-eu-west-1
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Skip if superseded
         uses: ./.github/actions/skip-if-superseded
 
@@ -485,7 +485,7 @@ jobs:
       S3_BUCKET: ajj-ami-builds-eu-west-1
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Skip if superseded
         uses: ./.github/actions/skip-if-superseded
 
