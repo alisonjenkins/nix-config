@@ -178,6 +178,8 @@ stdenv.mkDerivation {
   # Claude Code ELF that NixOS cannot exec (exit 127, stub-ld);
   # CLAUDE_CODE_LOCAL_BINARY (revived by the postInstall patch) makes it use the user's own profile `claude`
   # (the home-manager wrapper), falling back to the nixpkgs build.
+  # Electron picks its keyring from XDG_CURRENT_DESKTOP; niri falls to
+  # basic_text and safeStorage reports unavailable, so pin kwallet6.
   installPhase = ''
     runHook preInstall
 
@@ -185,6 +187,7 @@ stdenv.mkDerivation {
     cp -a usr/lib usr/share $out/
     makeWrapper $out/lib/claude-desktop/claude-desktop \
       $out/bin/claude-desktop \
+      --add-flags "--password-store=kwallet6" \
       --prefix VK_ADD_DRIVER_FILES : \
         "${addDriverRunpath.driverLink}/share/vulkan/icd.d" \
       --run '
