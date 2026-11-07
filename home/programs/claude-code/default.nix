@@ -365,14 +365,14 @@ let
   # entrypoint is preserved as bin/.claude-real.
   claudeWrapped = pkgs.symlinkJoin {
     name = "claude-code";
-    paths = [ pkgs.master.claude-code ];
+    paths = [ pkgs.claude-code ];
     postBuild = ''
       mv $out/bin/claude $out/bin/.claude-real
       install -m755 ${claudeDispatcher} $out/bin/claude
       substituteInPlace $out/bin/claude --replace '@REAL@' "$out/bin/.claude-real"
       chmod 555 $out/bin/claude
     '';
-    inherit (pkgs.master.claude-code) meta;
+    inherit (pkgs.claude-code) meta;
   };
 
   # Map friendly name → binary path from neovim flake's exports.

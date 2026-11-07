@@ -1,6 +1,6 @@
 { pkgs, ... }:
 let
-  claude-code = pkgs.master.claude-code;
+  claude-code = pkgs.claude-code;
 in
 pkgs.writeShellScriptBin "claude-wt" ''
   BRANCH_NAME="$1"
