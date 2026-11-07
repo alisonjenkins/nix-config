@@ -121,7 +121,17 @@ runs:
             : # already provided by the runner image
           else
             echo "Realising $tool from nixpkgs..."
-            toolpath=$(nix build --no-link --print-out-paths "nixpkgs#$tool^out")
+            # Root it where the host daemon can see it: the host collects
+            # garbage under disk pressure, and an unrooted tool can vanish
+            # before a later step uses it. The "tools-" prefix keeps it out of
+            # niks3_gcroot_cleanup's "<run id>-*" sweep; its day-old sweep
+            # removes these too.
+            root=(--no-link)
+            mkdir -p /nix/var/nix/gcroots/gha 2>/dev/null || true
+            if [ -w /nix/var/nix/gcroots/gha ]; then
+              root=(--out-link "/nix/var/nix/gcroots/gha/tools-${GITHUB_RUN_ID:-manual}-$tool")
+            fi
+            toolpath=$(nix build "${root[@]}" --print-out-paths "nixpkgs#$tool^out")
             ln -sf "$toolpath/bin/$tool" "/tmp/nix-bin/$tool"
           fi
         done
