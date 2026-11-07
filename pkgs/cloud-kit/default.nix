@@ -6,9 +6,9 @@
 # Cloud sessions cannot evaluate this flake: their egress proxy refuses GitHub
 # tarball fetches for repos not attached to the session, and every flake input
 # is a github: tarball. So CI builds this kit, pushes its closure to
-# cache.nixcache.org, and records the store path on the `cloud-kit` branch
-# (see .github/workflows/cloud-kit.yaml). The session's setup script reads that
-# path with git, substitutes it, and runs bin/cloud-kit-bootstrap.
+# cache.nixcache.org, and records the store path as the `cloud-kit` release
+# asset (see .github/workflows/cloud-kit.yaml). The session's setup script
+# downloads that path, substitutes it, and runs bin/cloud-kit-bootstrap.
 { lib
 , runCommand
 , writeText
