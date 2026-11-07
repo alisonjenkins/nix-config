@@ -41,7 +41,7 @@ jobs:
       NIKS3_SERVER_URL: https://api.nixcache.org
       NIKS3_QUEUE: /var/tmp/niks3-queue-cloud-kit
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Configure host Nix
         uses: ./.github/actions/setup-host-nix
         with:
