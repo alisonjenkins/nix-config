@@ -19,10 +19,16 @@ log() { printf 'cloud-kit: %s\n' "$*" >&2; }
 ours() { [ -L "$1" ] && [[ "$(readlink "$1")" == /nix/store/*-cloud-kit/* ]]; }
 
 # Link every entry of $1 into $2, replacing our own links but never a file,
-# directory or link something else put there.
+# directory or link something else put there. Our links to names the new kit
+# no longer ships are removed, so a deleted skill does not linger.
 link_entries() {
     local src="$1" dest="$2" entry target
     mkdir -p "$dest"
+    for target in "$dest"/*; do
+        if ours "$target" && [ ! -e "$src/$(basename "$target")" ]; then
+            rm -f "$target"
+        fi
+    done
     for entry in "$src"/*; do
         [ -e "$entry" ] || continue
         target="$dest/$(basename "$entry")"
@@ -45,11 +51,16 @@ begin='<!-- cloud-kit:begin -->'
 end='<!-- cloud-kit:end -->'
 md="$claude_dir/CLAUDE.md"
 touch "$md"
-begins="$(grep -cxF "$begin" "$md" || true)"
-ends="$(grep -cxF "$end" "$md" || true)"
-if [ "$begins" != "$ends" ] || [ "$begins" -gt 1 ]; then
-    # A half-written block: removing it could take the user's own text with it.
-    log "left $md alone: its cloud-kit markers are unbalanced"
+# Markers are valid when absent, or when there is exactly one of each with the
+# end after the begin. Anything else is a half-written or hand-edited block,
+# and removing it could take the user's own text with it.
+markers="$(awk -v b="$begin" -v e="$end" '
+    $0 == b { nb++; lb = NR }
+    $0 == e { ne++; le = NR }
+    END { print ((nb == 0 && ne == 0) || (nb == 1 && ne == 1 && lb < le)) ? "ok" : "bad" }
+' "$md")"
+if [ "$markers" != ok ]; then
+    log "left $md alone: its cloud-kit markers are unbalanced or out of order"
 else
     rest="$(awk -v b="$begin" -v e="$end" '$0 == b { skip = 1 } !skip { print } $0 == e { skip = 0 }' "$md")"
     {
