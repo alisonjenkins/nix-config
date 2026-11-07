@@ -30,7 +30,12 @@ let
     p.ripgrep
     p.shellcheck
     p.sift
-    p.util-linux # column, flock
+    # Only the two util-linux binaries the skills call; the whole package
+    # would link fdisk, mount, hwclock and ~90 more into /usr/local/bin.
+    (p.runCommand "util-linux-column-flock" { } ''
+      mkdir -p $out/bin
+      ln -s ${p.util-linux}/bin/column ${p.util-linux}/bin/flock $out/bin/
+    '')
     p.yq-go
   ];
 in
