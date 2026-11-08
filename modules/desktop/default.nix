@@ -2255,7 +2255,8 @@ in
                 }
               ]
             '')
-          ] ++ (optionals (cfg.pipewire.suspendTimeoutSeconds > 0) [
+            # Written for every value: WirePlumber reads 0 as "never suspend",
+            # and with no rule at all it falls back to its own 5 s default.
             (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/51-suspend-on-idle.conf" ''
               monitor.alsa.rules = [
                 {
@@ -2275,7 +2276,7 @@ in
                 }
               ]
             '')
-          ]) ++ [
+          ] ++ [
             # Per-device quantum/latency rules for optimal performance
             (pkgs.writeTextDir "share/wireplumber/wireplumber.conf.d/52-device-latency.conf" ''
               # Low-latency settings for wired ALSA audio devices
