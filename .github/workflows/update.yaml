@@ -9,6 +9,13 @@ on:
   repository_dispatch:
     types: [update-flake-lock]
 
+# Serialise runs: each run closes the open flake-update PRs other than its
+# own, so two overlapping runs would close each other's PR. Never cancel a
+# run that may already have opened its PR.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   build:
     # Self-hosted NixOS runner: it already has Nix, so no installer action is
@@ -92,13 +99,14 @@ jobs:
           # Each week's lock supersedes the last. A week whose flake-check
           # fails leaves its PR open and BEHIND main forever, so they pile up
           # unless the next run closes them. Matches this repo's own
-          # flake-update-* branches only (never a fork's), whoever opened
-          # them, so the old github-actions[bot] PRs are tidied too. Best
+          # flake-update-* branches with a chore(flake) title only (never a
+          # fork's), whoever opened them, so the old github-actions[bot]
+          # nightly PRs are tidied too. Best
           # effort: failing to tidy must not stop this PR's auto-merge.
           new_number="${pr_url##*/}"
           for old in $(gh pr list --state open --base main \
-              --json number,headRefName,isCrossRepository \
-              --jq ".[] | select(.isCrossRepository | not) | select(.headRefName | startswith(\"flake-update-\")) | select(.number != $new_number) | .number"); do
+              --json number,title,headRefName,isCrossRepository \
+              --jq ".[] | select(.isCrossRepository | not) | select(.headRefName | startswith(\"flake-update-\")) | select(.title | startswith(\"chore(flake): \")) | select(.number != $new_number) | .number"); do
             gh pr close "$old" --delete-branch --comment "Superseded by $pr_url." \
               || echo "::warning::could not close superseded PR #$old"
           done
