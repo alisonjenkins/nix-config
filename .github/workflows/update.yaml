@@ -2,9 +2,8 @@ name: Update and push flake lock
 
 on:
   schedule:
-    # Weekly, Saturday 02:00 UTC (03:00 London in summer time). Nightly bumps
-    # mostly superseded each other
-    # before anyone deployed them.
+    # Weekly, Saturday 02:00 UTC (03:00 London in summer time). Nightly
+    # bumps mostly superseded each other before anyone deployed them.
     - cron: "0 2 * * 6"
   workflow_dispatch:
   repository_dispatch:
