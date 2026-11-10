@@ -45,7 +45,8 @@ Both lines are in `flake-modules/hosts/ali-mba-linux/default.nix`:
   to evaluate with `error: attribute 'avd-fw' missing` (or
   `'asahi-va-driver' missing`). **Drop each line once 26.05 has the package.**
 - `hardware.asahi.avd.codecs` is left at upstream's default, `all_free`, which
-  builds the firmware with VP9 and AV1 decode only. Set it to `[ "all" ]` to
+  builds the firmware with VP9 and AV1 decode only. The M1 has no AV1
+  decoder, so on this machine that means VP9 only. Set it to `[ "all" ]` to
   get H.264 and HEVC too.
 
 The PR check evaluates every aarch64 host, so a nixpkgs or
@@ -58,8 +59,8 @@ Run these on the MacBook after `just switch` and a reboot. None of them have
 been run on this machine yet, so record what you see.
 
 1. **The driver loads.** `vainfo` should name the `asahi` driver and list
-   the decode profiles the firmware was built with (VP9 and AV1 by default;
-   see `codecs` above). An error about `asahi_drv_video.so` means the VA-API
+   the decode profiles the firmware was built with and the M1 supports (VP9
+   only by default; see `codecs` above). An error about `asahi_drv_video.so` means the VA-API
    layer is missing;
    check `echo $LIBVA_DRIVER_NAME` in the same shell first.
 2. **mpv decodes on the hardware.**
@@ -69,7 +70,8 @@ been run on this machine yet, so record what you see.
    Both flags are needed. mpv's default output (`gpu-next`) does not work
    with this path yet. Watch the terminal for the line saying hardware
    decoding is in use, and compare CPU use in `htop` against `--hwdec=no`.
-   Test one file per codec the firmware has (VP9 and AV1 by default).
+   Test one VP9 file (plus H.264 and HEVC if `codecs` includes them). AV1
+   stays on the CPU on the M1.
 3. **Chromium.** Play something on YouTube. Known bug:
    [AsahiLinux/linux#628](https://github.com/AsahiLinux/linux/issues/628),
    green frames or stalled playback on H.264 from a memory allocation
