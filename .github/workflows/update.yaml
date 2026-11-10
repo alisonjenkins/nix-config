@@ -2,7 +2,8 @@ name: Update and push flake lock
 
 on:
   schedule:
-    - cron: "0 2 * * *"
+    # Saturday 02:00 UTC
+    - cron: "0 2 * * 6"
   workflow_dispatch:
   repository_dispatch:
     types: [update-flake-lock]
