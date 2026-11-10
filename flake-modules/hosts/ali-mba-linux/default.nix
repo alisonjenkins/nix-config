@@ -247,8 +247,13 @@ in {
             outputs.overlays.modifications
             outputs.overlays.stable-packages
             outputs.overlays.tmux-sessionizer
-            # nixos-apple-silicon's AVD module needs avd-fw, which is not in 26.05.
-            (final: _prev: { avd-fw = final.master.avd-fw; })
+            # nixos-apple-silicon's AVD module needs avd-fw, and (with
+            # avd.vaapi-support) asahi-va-driver, now that upstream dropped its
+            # own copy. Neither is in 26.05.
+            (final: _prev: {
+              avd-fw = final.master.avd-fw;
+              asahi-va-driver = final.master.asahi-va-driver;
+            })
           ];
           config = {
             allowUnfree = true;
