@@ -101,7 +101,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({service_name=\"claude-code\"} | event_name=\"api_error\" [$__range]))",
+          "expr": "sum(count_over_time({service_name=~\"claude-code(-.+)?\"} | event_name=\"api_error\" [$__range]))",
           "legendFormat": "__auto",
           "queryType": "instant",
           "refId": "A",
@@ -134,7 +134,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({service_name=\"claude-code\"} | event_name=~\".*compact.*\" [$__range]))",
+          "expr": "sum(count_over_time({service_name=~\"claude-code(-.+)?\"} | event_name=~\".*compact.*\" [$__range]))",
           "legendFormat": "__auto",
           "queryType": "instant",
           "refId": "A",
@@ -220,7 +220,7 @@
       "id": 7,
       "type": "timeseries",
       "title": "Tool call latency p50 / p95",
-      "description": "Median and 95th percentile tool duration by tool. Fields event_name=tool_result, duration_ms, tool_name: name unverified; unavailable until tool_result logs are exported.",
+      "description": "Median and 95th percentile tool duration by tool. Fields event_name=tool_result, duration_ms, tool_name: verified against live tool_result logs (service_name=claude-code-desktop, 2026-11-11).",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -233,7 +233,7 @@
       },
       "targets": [
         {
-          "expr": "quantile_over_time(0.5, {service_name=\"claude-code\"} | event_name=\"tool_result\" | unwrap duration_ms [5m]) by (tool_name)",
+          "expr": "quantile_over_time(0.5, {service_name=~\"claude-code(-.+)?\"} | event_name=\"tool_result\" | unwrap duration_ms [5m]) by (tool_name)",
           "legendFormat": "p50 {{tool_name}}",
           "queryType": "range",
           "refId": "A",
@@ -243,7 +243,7 @@
           }
         },
         {
-          "expr": "quantile_over_time(0.95, {service_name=\"claude-code\"} | event_name=\"tool_result\" | unwrap duration_ms [5m]) by (tool_name)",
+          "expr": "quantile_over_time(0.95, {service_name=~\"claude-code(-.+)?\"} | event_name=\"tool_result\" | unwrap duration_ms [5m]) by (tool_name)",
           "legendFormat": "p95 {{tool_name}}",
           "queryType": "range",
           "refId": "B",
@@ -265,7 +265,7 @@
       "id": 8,
       "type": "timeseries",
       "title": "Tool error rate",
-      "description": "Share of tool_result events with success=false, per tool. Field success: name unverified; unavailable until tool_result logs are exported.",
+      "description": "Share of tool_result events with success=false, per tool. Field success: verified against live tool_result logs (service_name=claude-code-desktop, 2026-11-11).",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -278,7 +278,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (tool_name) (rate({service_name=\"claude-code\"} | event_name=\"tool_result\" | success=\"false\" [5m])) / sum by (tool_name) (rate({service_name=\"claude-code\"} | event_name=\"tool_result\" [5m]))",
+          "expr": "sum by (tool_name) (rate({service_name=~\"claude-code(-.+)?\"} | event_name=\"tool_result\" | success=\"false\" [5m])) / sum by (tool_name) (rate({service_name=~\"claude-code(-.+)?\"} | event_name=\"tool_result\" [5m]))",
           "legendFormat": "{{tool_name}}",
           "queryType": "range",
           "refId": "A",
@@ -313,7 +313,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (status_code) (count_over_time({service_name=\"claude-code\"} | event_name=\"api_error\" [15m]))",
+          "expr": "sum by (status_code) (count_over_time({service_name=~\"claude-code(-.+)?\"} | event_name=\"api_error\" [15m]))",
           "legendFormat": "{{status_code}}",
           "queryType": "range",
           "refId": "A",
@@ -414,7 +414,7 @@
       },
       "targets": [
         {
-          "expr": "sum(count_over_time({service_name=\"claude-code\"} | event_name=~\".*compact.*\" [1h]))",
+          "expr": "sum(count_over_time({service_name=~\"claude-code(-.+)?\"} | event_name=~\".*compact.*\" [1h]))",
           "legendFormat": "compactions",
           "queryType": "range",
           "refId": "A",
@@ -447,7 +447,7 @@
       },
       "targets": [
         {
-          "expr": "quantile_over_time(0.95, {service_name=\"claude-code\"} | event_name=~\"hook.*\" | unwrap duration_ms [15m]) by (hook_name)",
+          "expr": "quantile_over_time(0.95, {service_name=~\"claude-code(-.+)?\"} | event_name=~\"hook.*\" | unwrap duration_ms [15m]) by (hook_name)",
           "legendFormat": "p95 {{hook_name}}",
           "queryType": "range",
           "refId": "A",
