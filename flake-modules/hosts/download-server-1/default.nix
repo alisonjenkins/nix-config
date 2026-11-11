@@ -829,16 +829,18 @@ in {
             fi
             ${pkgs.gnused}/bin/sed -i "s|^WebUI\\\\AuthSubnetWhitelistEnabled=.*|WebUI\\\\AuthSubnetWhitelistEnabled=true|" "$CONFIG_FILE"
 
-            # Enforce the connection-churn limits on every start. The merger
-            # keeps the persisted conf, so serverConfig alone never lowers a
-            # value qBittorrent already saved. Each entry is Key=Value under
+            # Enforce the connection-churn limits and TCP-only, no-DHT mode on
+            # every start. The merger keeps the persisted conf, so serverConfig
+            # alone never changes a value qBittorrent already saved. Each entry is Key=Value under
             # [BitTorrent]; backslash escaping matches the sed calls above.
             for KV in \
               "MaxConnections=200" \
               "MaxConnectionsPerTorrent=40" \
               "ConnectionSpeed=5" \
               "MaxConcurrentHTTPAnnounces=10" \
-              "AnnounceToAllTrackers=false"; do
+              "AnnounceToAllTrackers=false" \
+              "DHTEnabled=false" \
+              "BTProtocol=TCP"; do
               KEY="''${KV%%=*}"
               if grep -q "^Session\\\\$KEY=" "$CONFIG_FILE"; then
                 ${pkgs.gnused}/bin/sed -i "s|^Session\\\\$KEY=.*|Session\\\\$KV|" "$CONFIG_FILE"
@@ -2050,7 +2052,11 @@ EOF
                 # Protocol settings
                 "Session\\uTPRateLimited" = true;                  # Rate limit uTP protocol
                 "Session\\uTP_mix_mode" = 0;                       # Prefer TCP over uTP (better for VPN)
-                "Session\\DHTEnabled" = true;                      # Enable DHT for peer discovery
+                # DHT and uTP are UDP: they pushed conntrack to 12k-16k and got
+                # the Proton server to drop us even with the caps above. TCP
+                # only + no DHT held ~600 flows. Enforced by config-merger.sh.
+                "Session\\BTProtocol" = "TCP";                     # TCP only, no uTP
+                "Session\\DHTEnabled" = false;                     # No DHT; trackers + PeX find peers
                 "Session\\PeXEnabled" = true;                      # Enable Peer Exchange
                 "Session\\LSDEnabled" = false;                     # Disable LSD (doesn't work over VPN)
 
