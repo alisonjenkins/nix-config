@@ -98,6 +98,7 @@ Architectural decisions are tracked in `docs/adr/`. The recording process is est
 | 0053 | [Tag game audio streams for OBS instead of routing them through a sink](./adr/0053-tag-game-audio-streams-for-obs.md) |
 | 0054 | [Link desktop streams to an OBS sink by title, not by app](./adr/0054-link-desktop-streams-to-an-obs-sink-by-title.md) |
 | 0055 | [Hide user-typed and unused skills from the model's listing](./adr/0055-hide-user-typed-and-unused-skills-from-the-listing.md) |
+| 0062 | [Scope the PR check to what the PR changes](./adr/0062-scope-the-pr-check-to-what-the-pr-changes.md) |
 
 ## Design specs and plans
 
