@@ -829,6 +829,26 @@ in {
             fi
             ${pkgs.gnused}/bin/sed -i "s|^WebUI\\\\AuthSubnetWhitelistEnabled=.*|WebUI\\\\AuthSubnetWhitelistEnabled=true|" "$CONFIG_FILE"
 
+            # Enforce the connection-churn limits on every start. The merger
+            # keeps the persisted conf, so serverConfig alone never lowers a
+            # value qBittorrent already saved. Each entry is Key=Value under
+            # [BitTorrent]; backslash escaping matches the sed calls above.
+            for KV in \
+              "MaxConnections=200" \
+              "MaxConnectionsPerTorrent=40" \
+              "ConnectionSpeed=5" \
+              "MaxConcurrentHTTPAnnounces=10" \
+              "AnnounceToAllTrackers=false"; do
+              KEY="''${KV%%=*}"
+              if grep -q "^Session\\\\$KEY=" "$CONFIG_FILE"; then
+                ${pkgs.gnused}/bin/sed -i "s|^Session\\\\$KEY=.*|Session\\\\$KV|" "$CONFIG_FILE"
+              elif grep -q "^\[BitTorrent\]" "$CONFIG_FILE"; then
+                ${pkgs.gnused}/bin/sed -i "/^\[BitTorrent\]/a Session\\\\$KV" "$CONFIG_FILE"
+              else
+                printf '\n[BitTorrent]\nSession\\%s\n' "$KV" >> "$CONFIG_FILE"
+              fi
+            done
+
             # Set proper permissions
             ${pkgs.coreutils}/bin/chmod 0640 "$CONFIG_FILE"
             ${pkgs.coreutils}/bin/chown qbittorrent:qbittorrent "$CONFIG_FILE"
