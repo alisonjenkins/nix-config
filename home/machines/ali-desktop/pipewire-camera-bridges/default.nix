@@ -7,7 +7,7 @@
 }: let
   cameraNode = "v4l2_input.pci-0000_15_00.0-usb-0_1.1_1.0";
   nodeName = config.custom.obsbotRawCamera.nodeName;
-  nodeName720p = "obsbot-raw";
+  nodeName720p = config.custom.obsbotRawCamera.nodeName720p;
   virtualCameraNode = "obs-virtual-camera";
   # The first v4l2loopback device, numbered by modules.virtual-cameras.
   loopbackDevice = "/dev/video${toString osConfig.modules.virtual-cameras.firstVideoNr}";
@@ -80,6 +80,13 @@ in {
     default = "obsbot-raw-1080p";
     readOnly = true;
     description = "PipeWire node.name of the raw 1080p60 copy of the OBSBOT Tiny 2 Lite.";
+  };
+
+  options.custom.obsbotRawCamera.nodeName720p = lib.mkOption {
+    type = lib.types.str;
+    default = "obsbot-raw";
+    readOnly = true;
+    description = "PipeWire node.name of the raw 720p60 copy of the OBSBOT Tiny 2 Lite.";
   };
 
   config.systemd.user.services = {
