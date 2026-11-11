@@ -48,7 +48,7 @@ print_suppressed_findings() {
       flush()
       next
     }
-    have && /^\* / {
+    have && /^(\*|-|\+) / {
       # a bare bullet with no header of its own ends the previous findings
       # continuation; it is not itself captured (same as a header-less bullet)
       flush()
