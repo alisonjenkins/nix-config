@@ -5,8 +5,9 @@ list:
     @just --list
 
 # Fast sanity check: reusable outputs only (modules, overlays, devShells,
-# packages), no host evaluation. Same script PR check CI runs. Plain `nix
-# flake check` also evaluates every nixosConfigurations.*.toplevel across
+# packages), no host evaluation. Same script PR check CI runs, scoped to
+# what differs from origin/main (`PR_CHECK_FULL=1 just check` runs all of
+# it). Plain `nix flake check` also evaluates every nixosConfigurations.*.toplevel across
 # every host (there's no flag to skip that) plus builds every `checks`
 # entry -- both genuinely slow here, which is why this exists and why CI
 # doesn't use `nix flake check` either. Run this for routine iteration;

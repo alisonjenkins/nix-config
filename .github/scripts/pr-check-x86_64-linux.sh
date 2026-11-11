@@ -11,7 +11,13 @@
 # exception: they are evaluated here (check_hosts_for_system), since nothing
 # else covers them.
 #
-# Usage: pr-check-x86_64-linux.sh
+# Scoped to the PR (select_sections): each section runs only when the diff
+# against the base branch touches something it depends on, and a change to
+# the flake's wiring (flake.nix, flake.lock, overlays/, lib/, flake-modules/
+# outside hosts/, this gate) runs everything. A docs- or prose-only PR skips
+# every nix eval. PR_CHECK_FULL=1 forces the full run.
+#
+# Usage: [PR_CHECK_FULL=1] pr-check-x86_64-linux.sh
 set -uo pipefail
 
 TARGET_SYSTEM="x86_64-linux"
@@ -19,6 +25,126 @@ FAILED=0
 # Too heavy to build inside the PR check's 30 minutes; build-and-cache.yaml
 # builds them on push.
 SKIP_BUILD="camoufox-browser"
+
+BASE_REF="${GITHUB_BASE_REF:-main}"
+BASE_FETCHED=0
+
+# fetch_base — fetch the base branch into FETCH_HEAD, so the diffs below
+# compare it with the working tree (in CI that is the PR's merge commit).
+# --depth rewrites .git/shallow, so only use it where the checkout already
+# is shallow (CI); in a full clone it would break merge-base and rebases.
+fetch_base() {
+    local depth=()
+    if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
+        depth=(--depth=1)
+    fi
+    if git fetch --no-tags "${depth[@]}" origin "${BASE_REF}" >/dev/null 2>&1; then
+        BASE_FETCHED=1
+    fi
+}
+
+# forces_full_run <path> — a change here can reach every section: the
+# flake's wiring and inputs, the overlays and lib every output imports, and
+# this gate itself. flake-modules/hosts/ is the exception: a host directory
+# only defines that host (and its -hardware/-disko-config modules).
+forces_full_run() {
+    case "$1" in
+        flake-modules/hosts/*) return 1 ;;
+        flake.nix | flake.lock | overlays/* | lib/* | flake-modules/* | \
+            .github/actions/* | .github/workflows/pr-check.yaml | \
+            .github/scripts/pr-check-x86_64-linux.sh)
+            return 0
+            ;;
+    esac
+    return 1
+}
+
+# affects_eval <status> <path> — can this change alter or break a nix
+# evaluation? Files no nix expression reads never can. Anywhere else an
+# added or deleted file can (readDir auto-discovery, e.g. home/skills/; a
+# path that no longer exists), and so can a modified .nix file or one nix
+# parses at eval time (importJSON, fromTOML, importCargoLock, ...), which is
+# why only the plain-content extensions below are exempt: a modified script,
+# markdown file or source file reaches a derivation's build, never the eval.
+# Unknown extensions count as evaluated.
+affects_eval() {
+    local status="$1" path="$2"
+    case "${path}" in
+        docs/token-efficiency/*) ;; # read by pkgs/token-tools and observability-stack
+        docs/* | specs/* | .claude/* | .github/* | README.md | AGENTS.md | \
+            CLAUDE.md | PENDING.md | justfile | renovate.json)
+            return 1
+            ;;
+    esac
+    [ "${status}" = M ] || return 0
+    case "${path}" in
+        *.md | *.txt | *.sh | *.bash | *.zsh | *.fish | *.bats | *.py | \
+            *.lua | *.vim | *.el | *.rs | *.go | *.c | *.h | *.ts | *.js | \
+            *.mjs | *.css | *.html | *.svg | *.png | *.jpg | *.kdl | *.sql | \
+            *.patch | *.conf | *.ini)
+            return 1
+            ;;
+    esac
+    return 0
+}
+
+RUN_ALL=0
+EVAL_CHANGED=0       # some change can alter an evaluation
+EVAL_OUTSIDE_HOSTS=0 # ...and lies outside flake-modules/hosts/
+HOST_DIRS=""         # flake-modules/hosts/<dir> with such a change, one per line
+CHANGED_PATHS=""     # every changed path, one per line
+
+# select_sections — read the diff against the base branch and set the
+# variables above. Anything it cannot tell (no base, no diff) runs everything.
+select_sections() {
+    local changes status path
+    if [ "${PR_CHECK_FULL:-}" = 1 ]; then
+        echo "PR_CHECK_FULL=1: running every section"
+        RUN_ALL=1
+        return
+    fi
+    # --no-renames reports a rename as a delete plus an add, both of which
+    # affects_eval treats as evaluated.
+    if [ "${BASE_FETCHED}" != 1 ] ||
+        ! changes="$(git diff --name-status --no-renames FETCH_HEAD)"; then
+        echo "could not diff against origin/${BASE_REF}: running every section"
+        RUN_ALL=1
+        return
+    fi
+    if [ -z "${changes}" ]; then
+        echo "no changes against origin/${BASE_REF}: running every section"
+        RUN_ALL=1
+        return
+    fi
+    while IFS=$'\t' read -r status path; do
+        [ -n "${path}" ] || continue
+        CHANGED_PATHS+="${path}"$'\n'
+        if forces_full_run "${path}"; then
+            echo "${path} changed: running every section"
+            RUN_ALL=1
+            return
+        fi
+        affects_eval "${status}" "${path}" || continue
+        EVAL_CHANGED=1
+        case "${path}" in
+            flake-modules/hosts/*/*) HOST_DIRS+="$(cut -d/ -f3 <<<"${path}")"$'\n' ;;
+            *) EVAL_OUTSIDE_HOSTS=1 ;;
+        esac
+    done <<<"${changes}"
+    HOST_DIRS="$(sort -u <<<"${HOST_DIRS}" | sed '/^$/d')"
+}
+
+# touches <prefix>... — true when a changed path starts with any <prefix>.
+touches() {
+    local prefix path
+    [ "${RUN_ALL}" = 1 ] && return 0
+    for prefix in "$@"; do
+        while IFS= read -r path; do
+            case "${path}" in "${prefix}"*) return 0 ;; esac
+        done <<<"${CHANGED_PATHS}"
+    done
+    return 1
+}
 
 # list_attr_names <flake-attr> — one attribute name per line, non-zero when
 # the set cannot be evaluated. Callers must fail on that: treating it as an
@@ -28,13 +154,13 @@ list_attr_names() {
 }
 
 # changed_package_names — one package name per line for what differs from
-# FETCH_HEAD: the <name> of each changed pkgs/<name>/..., plus packages whose
-# source lives outside pkgs/. token-tools builds scripts/token-tools and runs
+# FETCH_HEAD (the base branch, see fetch_base): the <name> of each changed
+# pkgs/<name>/..., plus packages whose source lives outside pkgs/. token-tools builds scripts/token-tools and runs
 # its cargo tests (doCheck), so a change there alone must build it: a merge
 # that broke 3 of its tests stayed red on main for an hour without this.
 changed_package_names() {
     local path
-    git diff --name-only FETCH_HEAD HEAD -- pkgs scripts/token-tools docs/token-efficiency/questions.yaml |
+    git diff --name-only FETCH_HEAD -- pkgs scripts/token-tools docs/token-efficiency/questions.yaml |
         while read -r path; do
             case "${path}" in
                 pkgs/*) cut -d/ -f2 <<<"${path}" ;;
@@ -53,16 +179,9 @@ changed_package_names() {
 # #256/#360) before this existed.
 build_changed_packages() {
     local flake_attr="$1"
-    local base="${GITHUB_BASE_REF:-main}"
     local exposed changed name
-    # --depth rewrites .git/shallow, so only use it where the checkout already
-    # is shallow (CI); in a full clone it would break merge-base and rebases.
-    local depth=()
-    if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
-        depth=(--depth=1)
-    fi
-    if ! git fetch --no-tags "${depth[@]}" origin "${base}" >/dev/null 2>&1; then
-        echo "FAILED: could not fetch origin/${base} to find changed packages"
+    if [ "${BASE_FETCHED}" != 1 ]; then
+        echo "FAILED: could not fetch origin/${BASE_REF} to find changed packages"
         FAILED=1
         return
     fi
@@ -156,12 +275,28 @@ check_drv_set() {
 # here rather than silently needing binfmt.
 check_hosts_for_system() {
     local system="$1"
-    local names name
+    shift
+    local names name dir
+    # With host directories given, only hosts named after one (or after one
+    # plus "-suffix": home-vpn-gateway-1-vm builds on home-vpn-gateway-1) are
+    # candidates; the name test comes first so other hosts are never evaluated.
+    local only="true"
+    if [ "$#" -gt 0 ]; then
+        only="builtins.any (d: n == d || builtins.substring 0 (builtins.stringLength d + 1) n == d + \"-\") ["
+        for dir in "$@"; do
+            only+=" \"${dir}\""
+        done
+        only+=" ]"
+    fi
     if ! names="$(nix eval --json --no-warn-dirty .#nixosConfigurations \
-        --apply "cs: builtins.filter (n: cs.\${n}.pkgs.stdenv.hostPlatform.system == \"${system}\") (builtins.attrNames cs)" \
+        --apply "cs: builtins.filter (n: ${only} && cs.\${n}.pkgs.stdenv.hostPlatform.system == \"${system}\") (builtins.attrNames cs)" \
         | jq -r '.[]')"; then
         echo "FAILED: could not list ${system} nixosConfigurations"
         FAILED=1
+        return
+    fi
+    if [ -z "${names}" ]; then
+        echo "ok: no ${system} nixosConfiguration among the changed hosts ($*)"
         return
     fi
     local nix_list="["
@@ -237,8 +372,14 @@ section_modules() {
 }
 
 section_packages() {
-    check_drv_set ".#packages.${TARGET_SYSTEM}"
-    build_changed_packages ".#packages.${TARGET_SYSTEM}"
+    if [ "${RUN_ALL}" = 1 ] || [ "${EVAL_OUTSIDE_HOSTS}" = 1 ]; then
+        check_drv_set ".#packages.${TARGET_SYSTEM}"
+    else
+        echo "skipped eval: no change outside flake-modules/hosts/ can alter it"
+    fi
+    if [ "${BASE_FETCHED}" != 1 ] || [ -n "$(changed_package_names)" ]; then
+        build_changed_packages ".#packages.${TARGET_SYSTEM}"
+    fi
 }
 
 # build_check <name> — build checks.<system>.<name>, fail the section if it fails.
@@ -261,17 +402,49 @@ section_scripts() {
         --command .github/scripts/check-skill-frontmatter.sh || FAILED=1
 }
 
-section_aarch64_hosts() { check_hosts_for_system "aarch64-linux"; }
+section_aarch64_hosts() {
+    if [ "${RUN_ALL}" = 1 ] || [ "${EVAL_OUTSIDE_HOSTS}" = 1 ]; then
+        check_hosts_for_system "aarch64-linux"
+    else
+        # shellcheck disable=SC2086 # one directory name per word
+        check_hosts_for_system "aarch64-linux" ${HOST_DIRS}
+    fi
+}
 
-run_section "nixosModules, homeModules, overlays, devShells.${TARGET_SYSTEM}" section_modules
-run_section "packages.${TARGET_SYSTEM} (evaluated; changed ones built)" section_packages
-run_section "copilot-cli script tests (bats)" section_copilot_bats
-run_section "delegation script tests (bats)" section_delegation_bats
-run_section "hetzner-volume-verify script tests (bats)" section_hetzner_bats
-run_section "pr-check script tests (bats)" section_pr_check_bats
-run_section "REA with the pinned Ghidra and JDK" section_rea_ghidra
+# needs_eval — some change can alter an evaluation.
+needs_eval() { [ "${RUN_ALL}" = 1 ] || [ "${EVAL_CHANGED}" = 1 ]; }
+
+# needs_packages — the package set can evaluate differently, or a package's
+# own source changed and it has to be built.
+needs_packages() {
+    [ "${RUN_ALL}" = 1 ] || [ "${EVAL_OUTSIDE_HOSTS}" = 1 ] ||
+        [ -n "$(changed_package_names)" ]
+}
+
+# want <name> <function> <predicate>... — run the section when the
+# predicate command succeeds, otherwise report it skipped.
+want() {
+    local name="$1" fn="$2"
+    shift 2
+    if "$@"; then
+        run_section "${name}" "${fn}"
+    else
+        echo "== ${name}: skipped (the PR changes nothing it checks) =="
+    fi
+}
+
+fetch_base
+select_sections
+
+want "nixosModules, homeModules, overlays, devShells.${TARGET_SYSTEM}" section_modules needs_eval
+want "packages.${TARGET_SYSTEM} (evaluated; changed ones built)" section_packages needs_packages
+want "copilot-cli script tests (bats)" section_copilot_bats touches home/programs/copilot-cli/
+want "delegation script tests (bats)" section_delegation_bats touches home/skills/delegation/
+want "hetzner-volume-verify script tests (bats)" section_hetzner_bats touches scripts/hetzner-volume-verify/
+want "pr-check script tests (bats)" section_pr_check_bats touches .github/scripts/
+want "REA with the pinned Ghidra and JDK" section_rea_ghidra touches home/programs/rea/ pkgs/rea/
 run_section "CurseForge CDN paths, skill frontmatter" section_scripts
-run_section "aarch64-linux nixosConfigurations (evaluated)" section_aarch64_hosts
+want "aarch64-linux nixosConfigurations (evaluated)" section_aarch64_hosts needs_eval
 
 PENDING="${#SECTIONS[@]}"
 PRINTED=" "

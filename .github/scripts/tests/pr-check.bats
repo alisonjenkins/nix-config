@@ -48,11 +48,17 @@ if [ "\${1:-}" = diff ]; then
     if [ "\$seen" = 1 ]; then specs+=("\$a"); fi
     if [ "\$a" = -- ]; then seen=1; fi
   done
+  # STUB_DIFF lines are "<path>" (modified) or "<status><TAB><path>";
+  # --name-status prints the status, --name-only drops it.
+  status_wanted=0
+  case " \$* " in *" --name-status "*) status_wanted=1 ;; esac
   while IFS= read -r line; do
     [ -z "\$line" ] && continue
-    if [ "\${#specs[@]}" -eq 0 ]; then echo "\$line"; continue; fi
+    case "\$line" in *"\$(printf '\t')"*) st="\${line%%\$(printf '\t')*}"; p="\${line#*\$(printf '\t')}" ;; *) st=M; p="\$line" ;; esac
+    if [ "\$status_wanted" = 1 ]; then out="\$st\$(printf '\t')\$p"; else out="\$p"; fi
+    if [ "\${#specs[@]}" -eq 0 ]; then echo "\$out"; continue; fi
     for s in "\${specs[@]}"; do
-      case "\$line" in "\$s" | "\$s"/*) echo "\$line"; break ;; esac
+      case "\$p" in "\$s" | "\$s"/*) echo "\$out"; break ;; esac
     done
   done <<<"\${STUB_DIFF:-}"
 fi
@@ -65,6 +71,7 @@ write_nix_stub() {
   cat >"$WORK/bin/nix" <<EOF
 #!$BASH
 args="\$*"
+echo "\$args" >>"\$WORK/nix.log"
 case "\$args" in
   *"--apply builtins.attrNames"*)
     case "\$args" in
@@ -208,4 +215,74 @@ EOF
   run bash .github/scripts/pr-check-x86_64-linux.sh
   [ "$status" -eq 0 ]
   [ ! -e "$WORK/build.log" ]
+}
+
+@test "a docs-only change runs no nix eval or build" {
+  export STUB_DIFF=$'docs/other.md\nREADME.md\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"aarch64-linux nixosConfigurations (evaluated): skipped"* ]]
+  [[ "$output" == *"packages.x86_64-linux (evaluated; changed ones built): skipped"* ]]
+  [[ "$output" == *"REA with the pinned Ghidra and JDK: skipped"* ]]
+  [[ "$output" == *"CurseForge CDN paths, skill frontmatter: ok"* ]]
+  ! grep -q "^eval\|^build" "$WORK/nix.log"
+}
+
+@test "editing a skill's markdown runs only that skill's tests" {
+  export STUB_DIFF=$'home/skills/delegation/SKILL.md\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"delegation script tests (bats): ok"* ]]
+  [[ "$output" == *"copilot-cli script tests (bats): skipped"* ]]
+  [[ "$output" == *"aarch64-linux nixosConfigurations (evaluated): skipped"* ]]
+  ! grep -q "^eval" "$WORK/nix.log"
+}
+
+@test "adding a file counts as an eval change, whatever its type" {
+  export STUB_DIFF=$'A\thome/skills/new-skill/SKILL.md\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ok: aarch64-linux nixosConfigurations (1 hosts, batched)"* ]]
+  [[ "$output" == *"ok: .#packages.x86_64-linux (3 entries, batched)"* ]]
+}
+
+@test "a modified JSON file counts as an eval change" {
+  export STUB_DIFF=$'home/programs/linux-only/uhk-keymaps/base-user-config.json\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ok: aarch64-linux nixosConfigurations (1 hosts, batched)"* ]]
+}
+
+@test "a module change evaluates every aarch64 host" {
+  export STUB_DIFF=$'modules/base/default.nix\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ok: aarch64-linux nixosConfigurations (1 hosts, batched)"* ]]
+  grep "builtins.filter" "$WORK/nix.log" | grep -q "(n: true &&"
+  [[ "$output" == *"REA with the pinned Ghidra and JDK: skipped"* ]]
+}
+
+@test "a change inside one host's directory evaluates only that host" {
+  export STUB_DIFF=$'flake-modules/hosts/ali-mba-linux/default.nix\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  grep "builtins.filter" "$WORK/nix.log" | grep -q '"ali-mba-linux" ]'
+  [[ "$output" == *"packages.x86_64-linux (evaluated; changed ones built): skipped"* ]]
+  [[ "$output" == *"nixosModules, homeModules, overlays, devShells.x86_64-linux: ok"* ]]
+}
+
+@test "a flake.lock change runs every section" {
+  export STUB_DIFF=$'flake.lock\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"flake.lock changed: running every section"* ]]
+  [[ "$output" != *"skipped (the PR"* ]]
+}
+
+@test "PR_CHECK_FULL=1 runs every section whatever changed" {
+  export STUB_DIFF=$'docs/other.md\n'
+  PR_CHECK_FULL=1 run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"skipped (the PR"* ]]
+  [[ "$output" == *"ok: aarch64-linux nixosConfigurations (1 hosts, batched)"* ]]
 }
