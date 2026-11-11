@@ -80,6 +80,20 @@ only expire by age, so a guard checks the data directories every five minutes ag
 and reports through the `observability_guard_over_budget` metric, the stack-health
 dashboard, a session-start notice and a desktop notification (at most once per 24 h).
 
+## Liveness
+
+The same guard that checks disk probes `/-/ready` on Prometheus and `/ready` on Loki
+and Tempo every five minutes, in that order, and reports whichever answers first as the
+cause. It only matters if a *client* notices too: Claude Code's OTLP exporter has no
+local retry queue, so anything run while a store is unreachable (a stuck podman machine,
+a crashed container) is not recorded, and nothing surfaces that later — the 2026-11-02
+outage went unflagged for this reason. A check failing for 10 minutes or more (so a
+restart's own few-minute warm-up doesn't fire) sends one desktop notification naming the
+store and how long it's been down, through the same notifier as the disk guard, at most
+once per 24 h while it stays down, writing `~/.local/state/observability-stack/stack-health.json`
+(`ok` or `down`) and the `observability.guard.stack_down` metric. It clears silently on
+recovery.
+
 ## Health
 
 `cc-obs-query health` probes `/-/ready` on Prometheus, and `/ready` on Loki and Tempo.
