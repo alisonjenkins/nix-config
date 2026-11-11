@@ -5,7 +5,7 @@ date: 2026-11-11T09:30:20Z
 finding: 2026-11-03-Alisons-MacBook-Pro#1
 decision: build
 reason: "the 2026-11-02 outage was never flagged anywhere and telemetry during it was silently dropped (no local OTLP retry queue); added a sustained-threshold liveness check (10 min, 24h re-notify) to the existing disk guard so a future outage surfaces without being noisy"
-metric: { question: unused-signals, key: stack-outage-2026-11-02, baseline: null, unit: n/a }
+metric: { question: not-pack-tracked, key: stack-outage-2026-11-02-alerts-fired, baseline: 0, unit: count }
 acted_on: "nix-config#934"
 outcome: null
 outcome_review: null
@@ -17,5 +17,7 @@ retried. Added a stack-liveness check to the observability-stack guard script
 Prometheus/Loki/Tempo, a 10-minute sustained-down threshold to avoid flapping, causal-order
 reporting (names the first store that failed its readiness check), and a 24h re-notify cap
 so a prolonged outage doesn't repeat-notify. Shipped with 27 passing bats tests and
-documented in `docs/observability-stack.md`. This is the one finding from this review
+documented in `docs/observability-stack.md`. This finding is an alert-coverage gap, not
+one of the pack's measured questions, so `metric` records the count of alerts fired
+during the outage (0) rather than a pack figure. This is the one finding from this review
 already acted on, via `nix-config#934`.
