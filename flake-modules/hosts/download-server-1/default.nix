@@ -2008,15 +2008,20 @@ EOF
                 # File handling optimizations
                 "Session\\FilePoolSize" = 500;                     # Keep more files open for better performance
 
-                # Connection limits (prevent overwhelming the system)
-                "Session\\MaxConnections" = 500;                   # Global connection limit
-                "Session\\MaxConnectionsPerTorrent" = 50;          # Per-torrent connection limit (reduced from 100 to lower overhead)
+                # Connection limits. Kept low on purpose: a startup burst of
+                # thousands of new peer flows (conntrack 200 -> 16k in 30s)
+                # made the Proton WireGuard server stop answering handshakes
+                # for 30+ minutes. Enforced on every start by config-merger.sh.
+                "Session\\MaxConnections" = 200;                   # Global connection limit
+                "Session\\MaxConnectionsPerTorrent" = 40;          # Per-torrent connection limit
+                "Session\\ConnectionSpeed" = 5;                    # New outgoing connections per second (default 30)
+                "Session\\MaxConcurrentHTTPAnnounces" = 10;        # Parallel tracker announces (default 50)
                 "Session\\MaxUploads" = 50;                        # Global upload slots
                 "Session\\MaxUploadsPerTorrent" = 4;               # Per-torrent upload slots
 
                 # Performance settings
                 "Session\\AnnounceToAllTiers" = true;              # Better peer discovery
-                "Session\\AnnounceToAllTrackers" = true;           # Announce to all trackers
+                "Session\\AnnounceToAllTrackers" = false;          # One tracker per tier; all-trackers multiplied the startup announce burst
                 "Session\\AsyncIOThreadsCount" = 8;                # More async I/O threads for network storage
                 "Session\\SendBufferWatermark" = 5120;             # 5 MB send buffer
                 "Session\\SendBufferLowWatermark" = 512;           # 512 KB low watermark
