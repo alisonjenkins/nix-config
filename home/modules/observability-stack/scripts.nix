@@ -92,14 +92,53 @@ let
       cap=''${OBS_CAP_BYTES:-${toString capBytes}}
       state=''${OBS_STATE_DIR:-${lib.escapeShellArg stateDir}}
       metrics_url=''${OBS_METRICS_URL-http://127.0.0.1:${toString cfg.ports.prometheus}/api/v1/otlp/v1/metrics}
+      prometheus_ready_url=''${OBS_PROMETHEUS_READY_URL-http://127.0.0.1:${toString cfg.ports.prometheus}/-/ready}
+      loki_ready_url=''${OBS_LOKI_READY_URL-http://127.0.0.1:${toString cfg.ports.loki}/ready}
+      tempo_ready_url=''${OBS_TEMPO_READY_URL-http://127.0.0.1:${toString cfg.ports.tempo}/ready}
       # systemd user units have no notify-send on PATH; fall back to libnotify's. Unset
       # on macOS, where osascript is used.
       notify_fallback=''${OBS_NOTIFY_FALLBACK-${if isDarwin then "" else "${pkgs.libnotify}/bin/notify-send"}}
-      # Longest gap between repeat notifications while the budget stays exceeded.
+      # Longest gap between repeat notifications while a bad state persists (both checks below).
       renotify_seconds=86400
+      # A store readiness check must fail for this long before it notifies, so one slow
+      # poll around a restart (this runs every 5 minutes) doesn't fire.
+      stack_sustained_seconds=600
       file="$state/guard.json"
+      health_file="$state/stack-health.json"
+      now_epoch=$(date -u +%s)
+      now_iso=$(date -u -d "@$now_epoch" +%Y-%m-%dT%H:%M:%SZ)
+
+      notify_send=$(command -v notify-send || true)
+      if [ -z "$notify_send" ] && [ -n "$notify_fallback" ] && [ -x "$notify_fallback" ]; then
+        notify_send=$notify_fallback
+      fi
+
+      # Prints nothing; returns 0 once a notifier accepted the message, 1 otherwise (including
+      # "no notifier"), so the caller only records $notified on success and retries next run.
+      send_notification() {
+        local title=$1 message=$2
+        if [ -n "$notify_send" ]; then
+          if timeout 5 "$notify_send" "$title" "$message" >/dev/null 2>&1; then
+            return 0
+          fi
+          echo "event=guard_notify_failed notifier=notify-send; retrying on the next run" >&2
+          return 1
+        elif command -v osascript >/dev/null 2>&1; then
+          if timeout 5 osascript -e "display notification \"$message\" with title \"$title\"" >/dev/null 2>&1; then
+            return 0
+          fi
+          echo "event=guard_notify_failed notifier=osascript; retrying on the next run" >&2
+          return 1
+        else
+          echo "event=guard_notify_skipped reason=no_notifier" >&2
+          return 1
+        fi
+      }
 
       mkdir -p "$state"
+      tmp=""
+      htmp=""
+      trap 'rm -f "$tmp" "$htmp"' EXIT
       used=0
       for store in loki tempo prometheus; do
         if [ -d "$data/$store" ]; then
@@ -127,9 +166,6 @@ let
         current=ok
       fi
 
-      now_epoch=$(date -u +%s)
-      now_iso=$(date -u -d "@$now_epoch" +%Y-%m-%dT%H:%M:%SZ)
-
       if [ "$current" = over ]; then
         notify=0
         if [ "$previous" != over ] || [ -z "$notified" ]; then
@@ -141,24 +177,8 @@ let
         if [ "$notify" = 1 ]; then
           message="The observability stack uses $((used / 1048576)) MiB of its $((cap / 1048576)) MiB disk budget. Ingestion continues."
           echo "event=guard_over_budget used_bytes=$used cap_bytes=$cap previous=$previous" >&2
-          notify_send=$(command -v notify-send || true)
-          if [ -z "$notify_send" ] && [ -n "$notify_fallback" ] && [ -x "$notify_fallback" ]; then
-            notify_send=$notify_fallback
-          fi
-          if [ -n "$notify_send" ]; then
-            if timeout 5 "$notify_send" "Observability stack over disk budget" "$message" >/dev/null 2>&1; then
-              notified=$now_iso
-            else
-              echo "event=guard_notify_failed notifier=notify-send; retrying on the next run" >&2
-            fi
-          elif command -v osascript >/dev/null 2>&1; then
-            if timeout 5 osascript -e "display notification \"$message\" with title \"Observability stack over disk budget\"" >/dev/null 2>&1; then
-              notified=$now_iso
-            else
-              echo "event=guard_notify_failed notifier=osascript; retrying on the next run" >&2
-            fi
-          else
-            echo "event=guard_notify_skipped reason=no_notifier" >&2
+          if send_notification "Observability stack over disk budget" "$message"; then
+            notified=$now_iso
           fi
         fi
       else
@@ -169,19 +189,79 @@ let
       fi
 
       tmp=$(mktemp "$state/guard.json.XXXXXX")
-      trap 'rm -f "$tmp"' EXIT
       jq -n --arg state "$current" --argjson used "$used" --argjson cap "$cap" --arg updated "$now_iso" --arg notified "$notified" \
         '{state: $state, usedBytes: $used, capBytes: $cap, updated: $updated} + (if $notified == "" then {} else {notified: $notified} end)' > "$tmp"
       mv "$tmp" "$file"
 
+      # Causal order: whichever store answers /ready first names the one responsible.
+      cause=""
+      if ! curl -fsS --max-time 3 "$prometheus_ready_url" >/dev/null 2>&1; then
+        cause="prometheus readiness check failed"
+      elif ! curl -fsS --max-time 3 "$loki_ready_url" >/dev/null 2>&1; then
+        cause="loki readiness check failed"
+      elif ! curl -fsS --max-time 3 "$tempo_ready_url" >/dev/null 2>&1; then
+        cause="tempo readiness check failed"
+      fi
+
+      h_previous=ok
+      h_bad_since=""
+      h_notified=""
+      if [ -f "$health_file" ]; then
+        if ! read -r h_previous h_bad_since h_notified < <(jq -r '[.state, (.badSince // ""), (.notified // "")] | join(" ")' "$health_file" 2>/dev/null); then
+          echo "event=guard_health_state_unreadable file=$health_file; treating the previous state as ok" >&2
+          h_previous=ok
+          h_bad_since=""
+          h_notified=""
+        fi
+      fi
+      if [ "$h_previous" != down ]; then h_previous=ok; fi
+
+      if [ -n "$cause" ]; then
+        h_current=down
+        if [ -z "$h_bad_since" ]; then h_bad_since=$now_iso; fi
+        bad_since_epoch=$(date -u -d "$h_bad_since" +%s 2>/dev/null) || bad_since_epoch=$now_epoch
+        sustained=$((now_epoch - bad_since_epoch))
+        notify=0
+        if [ "$sustained" -ge "$stack_sustained_seconds" ]; then
+          if [ "$h_previous" != down ] || [ -z "$h_notified" ]; then
+            notify=1
+          else
+            last=$(date -u -d "$h_notified" +%s 2>/dev/null) || last=0
+            if [ $((now_epoch - last)) -ge "$renotify_seconds" ]; then notify=1; fi
+          fi
+        fi
+        if [ "$notify" = 1 ]; then
+          message="$cause, since $h_bad_since. Claude Code token metrics are not being recorded until this is fixed; check with cc-obs-query health."
+          printf 'event=guard_stack_down cause=%q bad_since=%q\n' "$cause" "$h_bad_since" >&2
+          if send_notification "Observability stack telemetry is down" "$message"; then
+            h_notified=$now_iso
+          fi
+        fi
+      else
+        if [ "$h_previous" = down ]; then
+          echo "event=guard_stack_recovered bad_since=$h_bad_since" >&2
+        fi
+        h_current=ok
+        h_bad_since=""
+        h_notified=""
+      fi
+
+      htmp=$(mktemp "$state/stack-health.json.XXXXXX")
+      jq -n --arg state "$h_current" --arg badSince "$h_bad_since" --arg notified "$h_notified" \
+        '{state: $state} + (if $badSince == "" then {} else {badSince: $badSince} end) + (if $notified == "" then {} else {notified: $notified} end)' > "$htmp"
+      mv "$htmp" "$health_file"
+
       if [ -n "$metrics_url" ]; then
         over=0
         if [ "$current" = over ]; then over=1; fi
+        down=0
+        if [ "$h_current" = down ]; then down=1; fi
         now="''${now_epoch}000000000"
         curl -fsS --max-time 3 -X POST -H 'Content-Type: application/json' "$metrics_url" --data "{\"resourceMetrics\":[{\"resource\":{\"attributes\":[{\"key\":\"service.name\",\"value\":{\"stringValue\":\"observability-stack-guard\"}}]},\"scopeMetrics\":[{\"metrics\":[
           {\"name\":\"observability.guard.used_bytes\",\"gauge\":{\"dataPoints\":[{\"asInt\":\"$used\",\"timeUnixNano\":\"$now\"}]}},
           {\"name\":\"observability.guard.cap_bytes\",\"gauge\":{\"dataPoints\":[{\"asInt\":\"$cap\",\"timeUnixNano\":\"$now\"}]}},
-          {\"name\":\"observability.guard.over_budget\",\"gauge\":{\"dataPoints\":[{\"asInt\":\"$over\",\"timeUnixNano\":\"$now\"}]}}
+          {\"name\":\"observability.guard.over_budget\",\"gauge\":{\"dataPoints\":[{\"asInt\":\"$over\",\"timeUnixNano\":\"$now\"}]}},
+          {\"name\":\"observability.guard.stack_down\",\"gauge\":{\"dataPoints\":[{\"asInt\":\"$down\",\"timeUnixNano\":\"$now\"}]}}
         ]}]}]}" >/dev/null || echo "observability-stack-guard: could not push guard metrics to $metrics_url (is Prometheus up?)" >&2
       fi
     '';
