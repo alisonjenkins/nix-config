@@ -295,11 +295,11 @@ s.serve_forever()
 " > "$work/ready-server.out" 2>/dev/null &
   ready_server=$!
   for _ in $(seq 50); do [ -s "$work/ready-server.out" ] && break; sleep 0.1; done
-  cat "$work/ready-server.out"
 }
 
 stub_stores_up() {
-  port=$(start_ready_server)
+  start_ready_server
+  port="$(cat "$work/ready-server.out")"
   export OBS_PROMETHEUS_READY_URL="http://127.0.0.1:$port/-/ready"
   export OBS_LOKI_READY_URL="http://127.0.0.1:$port/ready"
   export OBS_TEMPO_READY_URL="http://127.0.0.1:$port/ready"
