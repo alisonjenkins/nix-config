@@ -238,8 +238,7 @@ iso_hours_ago() {
 stack-health.json" ]
 }
 
-@test "the pushed metrics carry over_budget, used_bytes and cap_bytes" {
-  fill 1200000
+push_metrics() {
   python3 -c "
 import http.server
 class H(http.server.BaseHTTPRequestHandler):
@@ -256,9 +255,29 @@ s.handle_request()
   for _ in $(seq 50); do [ -s "$work/server.out" ] && break; sleep 0.1; done
   OBS_METRICS_URL="http://127.0.0.1:$(cat "$work/server.out")/" run "$GUARD"
   wait "$server"
+}
+
+metric() {
+  jq -r ".resourceMetrics[0].scopeMetrics[0].metrics[] | select(.name == \"observability.guard.$1\") | .gauge.dataPoints[0].asInt" "$work/pushed"
+}
+
+@test "the pushed metrics carry over_budget, used_bytes, cap_bytes and stack_down ok" {
+  fill 1200000
+  stub_stores_up
+  push_metrics
+  kill "$ready_server" 2>/dev/null || true
   [ "$status" -eq 0 ]
   [ "$(jq -r '.resourceMetrics[0].scopeMetrics[0].metrics | map(.name) | sort | join(",")' "$work/pushed")" = "observability.guard.cap_bytes,observability.guard.over_budget,observability.guard.stack_down,observability.guard.used_bytes" ]
-  [ "$(jq -r '.resourceMetrics[0].scopeMetrics[0].metrics[] | select(.name == "observability.guard.over_budget") | .gauge.dataPoints[0].asInt' "$work/pushed")" = 1 ]
+  [ "$(metric over_budget)" = 1 ]
+  [ "$(metric stack_down)" = 0 ]
+}
+
+@test "the pushed stack_down metric is 1 when the stores are unreachable" {
+  fill 4096
+  stub_stores_down
+  push_metrics
+  [ "$status" -eq 0 ]
+  [ "$(metric stack_down)" = 1 ]
 }
 
 # A tiny HTTP server that answers 200 to any path, for simulating the stores being up.
