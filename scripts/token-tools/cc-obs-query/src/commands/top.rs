@@ -344,7 +344,7 @@ fn rank_compactions(ctx: &Ctx) -> Result<Ranked, Error> {
         sized: u64,
     }
     let mut sums: BTreeMap<String, Sums> = BTreeMap::new();
-    for record in ctx.logs(&ctx.logql("claude-code", "compaction"))? {
+    for record in ctx.logs(&ctx.logql_client_variant("claude-code", "compaction"))? {
         let Some(session) = record.fields.get("session_id").filter(|s| !s.is_empty()) else {
             continue;
         };
