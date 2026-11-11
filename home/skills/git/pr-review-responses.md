@@ -18,6 +18,15 @@ close out the backlog first.
 
 ## Watching for a review
 
+**If `ccd_pr` tools are available in this session, skip to "Reading the
+threads" below.** That means the host app already watches the PR itself
+(`bind_pr`/`get_status`/`set_monitor`, surfaced as "Auto-fix"), and the
+session's own environment instructions already forbid self-polling
+(`ScheduleWakeup`, Monitor, `gh` polling) for this — so the manual
+watch-script mechanism described in the rest of this section does not apply
+and does not need reading. It's for environments without `ccd_pr` tools: the
+plain Claude Code CLI, a sub-agent, or an SSH session.
+
 There is no push notification for a review; poll. Start the watch
 automatically as soon as a PR is opened (see [pr-workflow.md](pr-workflow.md)
 step 5) — no need to ask — and say what interval you chose.
