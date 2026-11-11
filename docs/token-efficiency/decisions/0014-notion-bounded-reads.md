@@ -6,7 +6,7 @@ finding: 2026-11-11-Alisons-MacBook-Pro#3
 decision: configure
 reason: "claude_ai_Notion was the single largest MCP token consumer in the 2026-11-11 digest (97,494 tokens / 45 calls, ~2.2k/call, 42% of mcp-idle-servers), ahead of Browser and Slack; extend 0006's bounded-read mandate with Notion-specific guidance"
 metric: { question: mcp-idle-servers, key: claude_ai_Notion, baseline: 97494, unit: tokens/week }
-acted_on: null
+acted_on: "nix-config#937"
 outcome: null
 outcome_review: null
 ---
