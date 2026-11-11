@@ -129,7 +129,7 @@ reviews_json="$(gh api "repos/$owner/$repo/pulls/$pr_number/reviews" --paginate)
 
 # --- Suppressed / "previously missed" findings: body-only prose, no thread ---
 echo "-- Suppressed/previously-missed findings across all reviews (dedup) --"
-jq -r '.[] | select(.body != "") | .body' <<<"$reviews_json" | print_suppressed_findings
+jq -r '.[] | select(.body != "") | .body + "\n"' <<<"$reviews_json" | print_suppressed_findings
 echo
 
 # --- Latest review verdict (chronological, not array order) ---

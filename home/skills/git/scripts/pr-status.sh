@@ -134,7 +134,7 @@ echo
 
 # --- Suppressed / "previously missed" findings ---
 echo "-- Suppressed/previously-missed findings across all reviews (dedup) --"
-jq -r '.data.repository.pullRequest.reviews.nodes[] | select(.body != "") | .body' <<<"$scalar_json" \
+jq -r '.data.repository.pullRequest.reviews.nodes[] | select(.body != "") | .body + "\n"' <<<"$scalar_json" \
   | print_suppressed_findings
 echo
 
