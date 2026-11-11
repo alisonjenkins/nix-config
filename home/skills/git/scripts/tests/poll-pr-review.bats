@@ -112,6 +112,18 @@ EOF
   [[ "$output" == *"the actual finding text that wraps onto a second line and a third"* ]]
 }
 
+@test "a top-level markdown bullet with no preceding blank line still ends the finding" {
+  cat >"$FAKE_GH_FIXTURES/review-bodies.txt" <<'EOF'
+**src/foo.sh:12**
+* the actual finding text
+- Files reviewed: 1/1
+EOF
+  run bash "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  [[ "$(suppressed_section)" == *"the actual finding text"* ]]
+  [[ "$(suppressed_section)" != *"Files reviewed"* ]]
+}
+
 @test "deduplicates the same finding repeated across multiple review bodies" {
   # no separator between bodies: gh --jq concatenates them directly, just
   # like the real `.[] | select(.body != "") | .body` output would
