@@ -92,9 +92,18 @@ now have work to do), **24 hours pass with no new activity** (report that and
 hand back to the user rather than polling indefinitely), or when the user
 says so.
 
-`scripts/poll-pr-review.sh <pr-number> [owner/repo]` is the preferred wakeup
-check. In one pass it lists unresolved review threads (via GraphQL, paginated
-up to 2000 threads, then errors loudly instead of looping forever), every
+## Reading the threads
+
+Finding review content is not just the threaded comments below — some bot
+reviewers (e.g. CodeRabbit) post findings only in a review's raw body under a
+"Suppressed comments" heading, which never appear via `gh api .../comments`
+however the query is filtered, and are not covered by the GraphQL thread
+query either. This applies regardless of how you learned a review exists
+(the app's own watching, or the manual poll below), so don't skip it.
+
+`scripts/poll-pr-review.sh <pr-number> [owner/repo]` is the preferred check.
+In one pass it lists unresolved review threads (via GraphQL, paginated up to
+2000 threads, then errors loudly instead of looping forever), every
 suppressed/"previously missed" finding across *all* reviews' body text,
 deduplicated (these never get a thread or comment id — see
 [copilot-reviews.md](copilot-reviews.md)), and the chronologically-latest
@@ -129,14 +138,12 @@ manual equivalent is
 `gh pr view <number> --json reviews -q '.reviews | sort_by(.submittedAt) | .[-1].body'`
 for the verdict — **always `sort_by(.submittedAt)` first**, per the above —
 plus reading every review's raw body for `**file:line**` / `* ...` bullets
-under a "Suppressed comments" heading, since those never appear via
-`gh api .../comments` however the query is filtered. Neither the script's
-suppressed-findings list nor a manual body read replaces the thread list
-below: the summary body carries no `isResolved`, thread ids, or comment ids
-for the *threaded* comments, so triaging from it alone without the GraphQL
-query is how a fix gets made without its thread ever being replied to.
-
-## Reading the threads
+under a "Suppressed comments" heading as described above. Neither the
+script's suppressed-findings list nor a manual body read replaces the thread
+list below: the summary body carries no `isResolved`, thread ids, or comment
+ids for the *threaded* comments, so triaging from it alone without the
+GraphQL query is how a fix gets made without its thread ever being replied
+to.
 
 REST comments carry no resolution state, so use GraphQL:
 
