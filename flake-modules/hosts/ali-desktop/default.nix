@@ -317,7 +317,24 @@ in {
           dockerCompat = false;
           dockerSocket = false;
         };
-        modules.virtual-cameras.enable = true;
+        # Feed the loopbacks from the bridge's 720p YUY2 node, not the camera:
+        # the camera node has one fixed format the bridges already claim, so
+        # reading it would either fail to link or cost another MJPEG decode.
+        modules.virtual-cameras = {
+          enable = true;
+          target = config.home-manager.users.${username}.custom.obsbotRawCamera.nodeName720p;
+        };
+        # Zoom reads V4L2 directly and the bridges hold the camera, so it gets
+        # "Virtual Camera 2" instead. The bridges keep the camera on anyway,
+        # so running this feeder all the time costs no extra LED time.
+        systemd.user.services."virtual-camera@2" = {
+          overrideStrategy = "asDropin";
+          wantedBy = [ "graphical-session.target" ];
+          wants = [ "obsbot-raw-camera-720p.service" ];
+          after = [ "obsbot-raw-camera-720p.service" ];
+          # The bridge may come up after the feeder, so keep retrying it.
+          startLimitIntervalSec = 0;
+        };
         modules.opentrack = {
           enable = true;
           virtualCameraIndex = 4;
