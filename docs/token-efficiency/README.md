@@ -14,18 +14,11 @@ commits; the owner promotes findings and records decisions. Timestamps are ISO 8
 
 ## Active mandates
 
-Operational guidance a review turned into a standing rule for future sessions, kept here
-rather than in the user's global `~/.claude/CLAUDE.md` because it is scoped to this repo's
-MCP connectors (Notion, Slack, claude-in-chrome) rather than written there directly by a
-worktree session (see [0014](decisions/0014-notion-bounded-reads.md)).
-
-- **Bounded MCP reads** ([0006](decisions/0006-mcp-result-volume.md),
-  [0014](decisions/0014-notion-bounded-reads.md)): bound Notion and Slack reads with
-  `limit`/narrower filters rather than whole-page or whole-channel pulls — e.g. Notion
-  `query-data-sources`/`search` with a tight filter and small `page_size` instead of
-  fetching a whole database or page tree, and Slack `slack_read_channel` with a bounded
-  `limit` instead of an unbounded channel history pull. Reduce claude-in-chrome screenshot
-  scale/resolution where full fidelity isn't needed.
+Bounded MCP reads (Notion, Slack, claude-in-chrome screenshot scale) are a standing
+mandate in the user's global `~/.claude/CLAUDE.md` ("Model Routing"), not here — these
+connectors are available in every session regardless of repo, not scoped to nix-config.
+See [0006](decisions/0006-mcp-result-volume.md) and
+[0014](decisions/0014-notion-bounded-reads.md) for the findings that drove it.
 
 ## Not yet answerable
 
