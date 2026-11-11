@@ -234,7 +234,8 @@ iso_hours_ago() {
 @test "no temporary file is left behind" {
   fill 1200000
   run "$GUARD"
-  [ "$(ls "$OBS_STATE_DIR")" = guard.json ]
+  [ "$(ls "$OBS_STATE_DIR")" = "guard.json
+stack-health.json" ]
 }
 
 @test "the pushed metrics carry over_budget, used_bytes and cap_bytes" {
@@ -256,8 +257,147 @@ s.handle_request()
   OBS_METRICS_URL="http://127.0.0.1:$(cat "$work/server.out")/" run "$GUARD"
   wait "$server"
   [ "$status" -eq 0 ]
-  [ "$(jq -r '.resourceMetrics[0].scopeMetrics[0].metrics | map(.name) | sort | join(",")' "$work/pushed")" = "observability.guard.cap_bytes,observability.guard.over_budget,observability.guard.used_bytes" ]
+  [ "$(jq -r '.resourceMetrics[0].scopeMetrics[0].metrics | map(.name) | sort | join(",")' "$work/pushed")" = "observability.guard.cap_bytes,observability.guard.over_budget,observability.guard.stack_down,observability.guard.used_bytes" ]
   [ "$(jq -r '.resourceMetrics[0].scopeMetrics[0].metrics[] | select(.name == "observability.guard.over_budget") | .gauge.dataPoints[0].asInt' "$work/pushed")" = 1 ]
+}
+
+# A tiny HTTP server that answers 200 to any path, for simulating the stores being up.
+# Prints its port on stdout once listening.
+start_ready_server() {
+  python3 -c "
+import http.server
+class H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200); self.end_headers()
+    def log_message(self, *a): pass
+s = http.server.HTTPServer(('127.0.0.1', 0), H)
+print(s.server_port, flush=True)
+s.serve_forever()
+" > "$work/ready-server.out" 2>/dev/null &
+  ready_server=$!
+  for _ in $(seq 50); do [ -s "$work/ready-server.out" ] && break; sleep 0.1; done
+  cat "$work/ready-server.out"
+}
+
+stub_stores_up() {
+  port=$(start_ready_server)
+  export OBS_PROMETHEUS_READY_URL="http://127.0.0.1:$port/-/ready"
+  export OBS_LOKI_READY_URL="http://127.0.0.1:$port/ready"
+  export OBS_TEMPO_READY_URL="http://127.0.0.1:$port/ready"
+}
+
+stub_stores_down() {
+  # Port 1 is privileged: nothing listens, so the connection is refused at once.
+  export OBS_PROMETHEUS_READY_URL="http://127.0.0.1:1/-/ready"
+  export OBS_LOKI_READY_URL="http://127.0.0.1:1/ready"
+  export OBS_TEMPO_READY_URL="http://127.0.0.1:1/ready"
+}
+
+iso_seconds_ago() {
+  date -u -d "$1 seconds ago" +%Y-%m-%dT%H:%M:%SZ
+}
+
+health_field() {
+  jq -r ".$1" "$OBS_STATE_DIR/stack-health.json"
+}
+
+write_health_state() {
+  # write_health_state <state> [badSince] [notified]
+  jq -n --arg state "$1" --arg badSince "${2:-}" --arg notified "${3:-}" \
+    '{state: $state} + (if $badSince == "" then {} else {badSince: $badSince} end) + (if $notified == "" then {} else {notified: $notified} end)' \
+    > "$OBS_STATE_DIR/stack-health.json"
+}
+
+@test "stores up writes stack-health.json ok and notifies nobody" {
+  fake_notifier notify-send
+  stub_stores_up
+  fill 4096
+  run "$GUARD"
+  kill "$ready_server" 2>/dev/null || true
+  [ "$status" -eq 0 ]
+  [ "$(health_field state)" = ok ]
+  [ ! -s "$notified" ]
+}
+
+@test "stores down for the first time records badSince but does not notify yet" {
+  fake_notifier notify-send
+  stub_stores_down
+  fill 4096
+  run "$GUARD"
+  [ "$status" -eq 0 ]
+  [ "$(health_field state)" = down ]
+  [[ "$(health_field badSince)" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z$ ]]
+  [ "$(jq 'has("notified")' "$OBS_STATE_DIR/stack-health.json")" = false ]
+  [ ! -s "$notified" ]
+}
+
+@test "stores down for 10 minutes or more notifies once" {
+  fake_notifier notify-send
+  stub_stores_down
+  write_health_state down "$(iso_seconds_ago 601)"
+  fill 4096
+  run "$GUARD"
+  [ "$status" -eq 0 ]
+  [[ "$(health_field notified)" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]{8}Z$ ]]
+  [ "$(wc -l < "$notified")" -eq 1 ]
+  [[ "$(cat "$notified")" == "notify-send Observability stack telemetry is down"* ]]
+}
+
+@test "stores down for under 10 minutes does not notify" {
+  fake_notifier notify-send
+  stub_stores_down
+  write_health_state down "$(iso_seconds_ago 300)"
+  fill 4096
+  run "$GUARD"
+  [ "$status" -eq 0 ]
+  [ ! -s "$notified" ]
+}
+
+@test "still down after 24 hours notifies again" {
+  fake_notifier notify-send
+  stub_stores_down
+  write_health_state down "$(iso_hours_ago 30)" "$(iso_hours_ago 25)"
+  fill 4096
+  run "$GUARD"
+  [ "$status" -eq 0 ]
+  [ "$(wc -l < "$notified")" -eq 1 ]
+  [ "$(health_field notified)" != "$(iso_hours_ago 25)" ]
+}
+
+@test "down for 23 hours since the last notification does not notify again" {
+  fake_notifier notify-send
+  stub_stores_down
+  write_health_state down "$(iso_hours_ago 30)" "$(iso_hours_ago 23)"
+  fill 4096
+  run "$GUARD"
+  [ "$status" -eq 0 ]
+  [ ! -s "$notified" ]
+}
+
+@test "recovering clears badSince and notified without a notification" {
+  fake_notifier notify-send
+  stub_stores_up
+  write_health_state down "$(iso_hours_ago 2)" "$(iso_hours_ago 1)"
+  fill 4096
+  run "$GUARD"
+  kill "$ready_server" 2>/dev/null || true
+  [ "$status" -eq 0 ]
+  [ "$(health_field state)" = ok ]
+  [ "$(jq 'has("badSince")' "$OBS_STATE_DIR/stack-health.json")" = false ]
+  [ "$(jq 'has("notified")' "$OBS_STATE_DIR/stack-health.json")" = false ]
+  [ ! -s "$notified" ]
+}
+
+@test "whichever store fails first names the cause, in causal order" {
+  stub_stores_up
+  export OBS_PROMETHEUS_READY_URL="http://127.0.0.1:1/-/ready"
+  write_health_state down "$(iso_seconds_ago 601)"
+  fill 4096
+  run "$GUARD"
+  kill "$ready_server" 2>/dev/null || true
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"event=guard_stack_down"* ]]
+  [[ "$output" == *"prometheus"* ]]
 }
 
 # RUN is observability-stack-run built with ports.grafana = $RUN_PORT.
