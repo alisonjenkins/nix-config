@@ -176,6 +176,23 @@ impl<'a> Ctx<'a> {
         )
     }
 
+    /// LogQL for one event name, matching any `service_name` under the given
+    /// Claude Code client variant prefix (the binary's `service.name` differs
+    /// by client: the CLI sends `claude-code`, the desktop app sends
+    /// `claude-code-desktop`), with the review exclusion.
+    pub fn logql_client_variant(&self, service_prefix: &str, event: &str) -> String {
+        let filter = if self.include_review {
+            String::new()
+        } else {
+            format!(" | {EXCLUDE}")
+        };
+        format!(
+            "{{service_name=~\"{}(-.+)?\"}} | event_name=\"{}\"{filter}",
+            escape_label(service_prefix),
+            escape_label(event)
+        )
+    }
+
     /// Every record of the window, paged; a cap stopping the fetch early is
     /// recorded as a gap that the report carries.
     pub fn logs(&self, logql: &str) -> Result<Vec<LogRecord>, Error> {

@@ -20,7 +20,7 @@ pub struct ToolStat {
 
 pub fn stats(ctx: &Ctx) -> Result<BTreeMap<String, ToolStat>, Error> {
     let mut stats: BTreeMap<String, ToolStat> = BTreeMap::new();
-    for record in ctx.logs(&ctx.logql("claude-code", "tool_result"))? {
+    for record in ctx.logs(&ctx.logql_client_variant("claude-code", "tool_result"))? {
         let Some(name) = record.fields.get("tool_name") else {
             continue;
         };
