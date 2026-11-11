@@ -124,6 +124,23 @@ EOF
   [[ "$(suppressed_section)" != *"Files reviewed"* ]]
 }
 
+@test "a finding at the end of one review body doesn't swallow the next body's first line" {
+  cat >"$FAKE_GH_FIXTURES/reviews.json" <<'EOF'
+[
+  {"body": "**src/foo.sh:12**\n* finding from the first review",
+   "submitted_at": "2026-01-01T00:00:00Z", "user": {"login": "someone"},
+   "commit_id": "abcdef1234567890"},
+  {"body": "unrelated prose starting the second review",
+   "submitted_at": "2026-01-02T00:00:00Z", "user": {"login": "someone"},
+   "commit_id": "abcdef1234567890"}
+]
+EOF
+  run bash "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  [[ "$(suppressed_section)" == *"finding from the first review"* ]]
+  [[ "$(suppressed_section)" != *"unrelated prose"* ]]
+}
+
 @test "deduplicates the same finding repeated across multiple review bodies" {
   # no separator between bodies: gh --jq concatenates them directly, just
   # like the real `.[] | select(.body != "") | .body` output would
