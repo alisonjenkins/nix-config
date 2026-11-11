@@ -37,8 +37,10 @@ with lib; let
 
   gstLaunch = "${pkgs.gst_all_1.gstreamer}/bin/gst-launch-1.0";
 
+  # A plain string: an indented string drops the leading space and glues
+  # this onto `pipewiresrc`.
   targetProp = optionalString (cfg.target != null)
-    '' target-object="${cfg.target}"'';
+    " target-object=\"${cfg.target}\"";
 
   # WirePlumber routes a stream by its media.class, and pipewiresrc does not
   # set one -- so the server has no candidate target and refuses the connect
