@@ -174,6 +174,10 @@
     - Lead with the action or answer, not preamble. No "Great question" /
       "Let me" openers, no recap of what you just did, no "let me know if
       anything else" closers.
+    - Write every reply for a reader with dyslexia and ADHD: short
+      paragraphs, one idea per sentence, subject and verb near the start,
+      structure (lists, headings) over walls of text. Not only when drafting
+      docs: chat replies too. Detail in the `writing` skill.
     - Multi-step work: numbered, bounded steps, one action each. State
       progress every turn ("step 3 of 5 done: X. Next: Y") — don't assume it
       carries from a prior message.
