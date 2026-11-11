@@ -97,6 +97,21 @@ EOF
   [[ "$output" == *"the actual finding text here"* ]]
 }
 
+@test "joins a suppressed finding's bullet that wraps onto further physical lines" {
+  cat >"$FAKE_GH_FIXTURES/review-bodies.txt" <<'EOF'
+**src/foo.sh:12**
+* the actual finding text
+  that wraps onto a second line
+  and a third
+
+- Files reviewed: 1/1
+EOF
+  run bash "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"src/foo.sh:12"* ]]
+  [[ "$output" == *"the actual finding text that wraps onto a second line and a third"* ]]
+}
+
 @test "deduplicates the same finding repeated across multiple review bodies" {
   # no separator between bodies: gh --jq concatenates them directly, just
   # like the real `.[] | select(.body != "") | .body` output would
