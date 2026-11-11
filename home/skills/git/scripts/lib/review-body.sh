@@ -44,7 +44,7 @@ print_suppressed_findings() {
       pending = 0
       next
     }
-    have && /^$/ {
+    have && /^[ \t]*$/ {
       flush()
       next
     }
