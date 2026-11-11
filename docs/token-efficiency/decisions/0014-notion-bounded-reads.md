@@ -16,8 +16,10 @@ scale/resolution, but none of it had been written down as a mandate yet. The 202
 digest shows `claude_ai_Notion` has since become the largest single MCP token consumer,
 making it the most urgent of the three.
 
-Guidance added: [Active mandates](../README.md#active-mandates) in this directory's
-`README.md`. Left the user's global `~/.claude/CLAUDE.md` unchanged — this mandate is
-scoped to this repo's own MCP connectors (Notion, Slack, claude-in-chrome), not a
-general Claude Code convention like 0004's ranged-reads mandate, and a worktree session
-should not be editing files outside its own working directory anyway.
+Guidance added to the user's global `~/.claude/CLAUDE.md` ("Model Routing"), via
+`home/programs/shared-mandates.nix` in this repo, not to a project-level doc: these MCP
+connectors (Notion, Slack, claude-in-chrome) are available in every session regardless
+of repo, the same category as the `0004` ranged-reads mandate, so the rule belongs
+wherever every session reads it rather than only sessions working in nix-config.
+[Active mandates](../README.md#active-mandates) in this directory's `README.md` cross-
+references it without duplicating the text.

@@ -124,6 +124,13 @@
         Explore vs general-purpose, and how to write a self-contained prompt.
       - Never delegate: user-facing judgement, irreversible actions, or work
         whose context cannot be compressed into a prompt.
+      - Bound MCP reads the same way: pass `limit`/narrower filters on Notion
+        and Slack reads instead of whole-page or whole-channel pulls, and
+        reduce claude-in-chrome screenshot scale/resolution where full
+        fidelity isn't needed. claude-in-chrome and Slack tool results were
+        99% of a review week's token volume, and Notion alone was 42% of
+        MCP token volume the next week (nix-config
+        `docs/token-efficiency/decisions/0006`, `0014`).
     '';
 
   workStyle = ''
