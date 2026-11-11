@@ -9,6 +9,8 @@
   nodeName = config.custom.obsbotRawCamera.nodeName;
   nodeName720p = config.custom.obsbotRawCamera.nodeName720p;
   virtualCameraNode = "obs-virtual-camera";
+  # How soon the OBS bridge notices OBS starting its virtual camera.
+  obsPollSeconds = 2;
   # The first v4l2loopback device, numbered by modules.virtual-cameras.
   loopbackDevice = "/dev/video${toString osConfig.modules.virtual-cameras.firstVideoNr}";
 
@@ -71,7 +73,17 @@
   # OBS writes 1080p60 (~250 MB/s) and the call consumer needs far less, so drop frames and
   # shrink before converting. The leaky queue keeps v4l2src draining when the consumer stalls,
   # and the sink follows the consumer's clock: as its own driver it stopped cycling and froze.
+  # exclusive_caps hides the capture side until OBS writes, and v4l2src fails on an
+  # output-only device; waiting here beats systemd restarting it thousands of times a day.
   obsVirtual = bridge "obs-virtual-camera" ''
+    has_capture() {
+      local info
+      info=$(${pkgs.v4l-utils}/bin/v4l2-ctl -d ${loopbackDevice} --info) || return 1
+      [[ ''${info#*Device Caps} == *"Video Capture"* ]]
+    }
+    until has_capture; do
+      sleep ${toString obsPollSeconds}
+    done
     exec gst-launch-1.0 v4l2src device=${loopbackDevice} ! videorate drop-only=true ! video/x-raw,framerate=30/1 ! videoscale ! videoconvert ! video/x-raw,format=YUY2,width=1280,height=720 ! queue leaky=downstream max-size-buffers=2 ! pipewiresink mode=provide stream-properties="props,media.class=Video/Source,media.role=Camera,node.name=${virtualCameraNode},node.description=OBS-Virtual-Camera"
   '';
 in {
@@ -114,7 +126,6 @@ in {
       restartSec = 5;
     };
 
-    # v4l2src fails until OBS starts its virtual camera, so retry quietly.
     obs-virtual-camera = bridgeUnit {
       description = "Publish OBS's virtual camera as a PipeWire video source";
       exe = obsVirtual;
