@@ -17,12 +17,12 @@ in {
       self.nixosModules.base
       self.nixosModules.nohang
       self.nixosModules.servers
-      self.nixosModules.k8s-master
       self.nixosModules.home-k8s-server-1-hardware
       self.nixosModules.home-k8s-server-1-disko-config
 
       # External flake modules
       inputs.disko.nixosModules.disko
+      inputs.sops-nix.nixosModules.sops
 
       # Host-specific configuration
       ({ lib, pkgs, outputs, ... }: {
@@ -33,7 +33,6 @@ in {
         modules.base = {
           enable = true;
         };
-        modules.k8s-master.enable = true;
         # Server profile; see ADR 0057.
         modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
@@ -42,9 +41,55 @@ in {
         console.keyMap = "us";
         networking.hostName = "home-k8s-server-1";
         networking.networkmanager.enable = true;
-        networking.firewall.allowedTCPPorts = [
-          22 # SSH over LAN and tailnet
-        ];
+        # Same as home-k8s-master-1: Cilium (host firewall, kube-proxy
+        # replacement) owns packet filtering on cluster nodes, and the NixOS
+        # firewall would drop VXLAN, health checks and NodePorts.
+        networking.firewall.enable = false;
+
+        # Worker node for home-cluster-1. An agent, not a second server: a
+        # two-member embedded etcd loses quorum when either node goes down,
+        # which is worse than the single control plane on master-1.
+        # serverAddr is an IP so joining never depends on LAN DNS, which this
+        # node will itself be serving.
+        services.openssh.enable = true;
+        services.k3s = {
+          enable = true;
+          role = "agent";
+          serverAddr = "https://192.168.1.129:6443";
+          # Must match the server's version (see home-k8s-master-1).
+          package = pkgs.unstable.k3s_1_34;
+          tokenFile = "/run/secrets/k8s-token";
+          extraFlags = toString [
+            # CloudNativePG image volumes; matches the server's gate.
+            "--kubelet-arg=feature-gates=ImageVolume=true"
+          ];
+        };
+
+        # NFS client so kubelet can mount NFS PersistentVolumes.
+        boot.supportedFilesystems = [ "nfs" ];
+
+        # Cilium L7LB (Gateway API / Ingress) needs these to deliver
+        # TPROXY-redirected packets to envoy (see home-k8s-master-1). Both
+        # are OR'd with the per-interface value, so `all` covers the NIC
+        # whatever its name.
+        boot.kernel.sysctl = {
+          "net.ipv4.conf.all.accept_local" = 1;
+          "net.ipv4.conf.all.route_localnet" = 1;
+        };
+
+        # Cluster join token: the same value as home-k8s-master-1's k8s-token.
+        sops = {
+          defaultSopsFile = self + "/secrets/home-k8s-server-1/secrets.yaml";
+          defaultSopsFormat = "yaml";
+          age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
+          secrets.k8s-token = {
+            group = "root";
+            mode = "0400";
+            owner = "root";
+            path = "/run/secrets/k8s-token";
+            restartUnits = [ "k3s.service" ];
+          };
+        };
         programs.zsh.enable = true;
         services.logrotate.checkConfig = false;
         time.timeZone = "Europe/London";
