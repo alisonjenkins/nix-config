@@ -2,6 +2,11 @@
 let
   system = "x86_64-linux";
   lib = inputs.nixpkgs.lib;
+  # The k3s join token lives here. Until the file is added (it needs this
+  # host's age key in .sops.yaml), k3s and sops stay off so the host still
+  # evaluates and builds.
+  secretsFile = self + "/secrets/home-k8s-server-1/secrets.yaml";
+  hasSecrets = builtins.pathExists secretsFile;
 in {
   flake.nixosConfigurations.home-k8s-server-1 = lib.nixosSystem {
     specialArgs = {
@@ -53,7 +58,7 @@ in {
         # node will itself be serving.
         services.openssh.enable = true;
         services.k3s = {
-          enable = true;
+          enable = hasSecrets;
           role = "agent";
           serverAddr = "https://192.168.1.129:6443";
           # Must match the server's version (see home-k8s-master-1).
@@ -78,8 +83,8 @@ in {
         };
 
         # Cluster join token: the same value as home-k8s-master-1's k8s-token.
-        sops = {
-          defaultSopsFile = self + "/secrets/home-k8s-server-1/secrets.yaml";
+        sops = lib.mkIf hasSecrets {
+          defaultSopsFile = secretsFile;
           defaultSopsFormat = "yaml";
           age.sshKeyPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
           secrets.k8s-token = {
