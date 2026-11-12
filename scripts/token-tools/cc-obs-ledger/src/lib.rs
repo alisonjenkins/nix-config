@@ -5,6 +5,7 @@
 pub mod census;
 pub mod config;
 pub mod error;
+pub mod image;
 pub mod notice;
 pub mod otlp;
 pub mod shape;

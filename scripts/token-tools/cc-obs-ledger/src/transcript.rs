@@ -94,6 +94,9 @@ pub struct ToolCall {
     pub input_hash: String,
     pub input_prefix_hash: String,
     pub result_bytes: Option<u64>,
+    pub result_image_count: u64,
+    pub result_image_bytes: u64,
+    pub result_image_tokens: u64,
     pub prompt_id: Option<String>,
     /// Set by the `subagent` hook; `None` for the main agent.
     pub agent_id: Option<String>,
@@ -397,7 +400,12 @@ fn read_user(
                 else {
                     continue;
                 };
-                call.result_bytes = Some(result_size(item.get("content")));
+                let content = item.get("content");
+                call.result_bytes = Some(result_size(content));
+                let (img_count, img_bytes, img_tokens) = result_images(content);
+                call.result_image_count = img_count;
+                call.result_image_bytes = img_bytes;
+                call.result_image_tokens = img_tokens;
                 call.prompt_id = prompt_id.map(str::to_owned);
             }
             Some("text") => {
@@ -454,6 +462,31 @@ fn result_size(content: Option<&Value>) -> u64 {
         Some(other) => other.to_string().len() as u64,
         None => 0,
     }
+}
+
+fn result_images(content: Option<&Value>) -> (u64, u64, u64) {
+    let Some(Value::Array(items)) = content else {
+        return (0, 0, 0);
+    };
+    let mut count = 0u64;
+    let mut bytes = 0u64;
+    let mut tokens = 0u64;
+    for item in items {
+        if item.get("type").and_then(Value::as_str) != Some("image") {
+            continue;
+        }
+        count = count.saturating_add(1);
+        bytes = bytes.saturating_add(item.to_string().len() as u64);
+        let est = item
+            .pointer("/source/data")
+            .and_then(Value::as_str)
+            .and_then(crate::image::image_dimensions)
+            .map_or(crate::image::FALLBACK_IMAGE_TOKENS, |(w, h)| {
+                crate::image::image_tokens(w, h)
+            });
+        tokens = tokens.saturating_add(est);
+    }
+    (count, bytes, tokens)
 }
 
 fn read_assistant(
@@ -554,6 +587,9 @@ fn read_assistant(
             input_hash: hasher.hash(bytes),
             input_prefix_hash: hasher.hash(prefix),
             result_bytes: None,
+            result_image_count: 0,
+            result_image_bytes: 0,
+            result_image_tokens: 0,
             prompt_id: None,
             agent_id: None,
             command_shape: crate::shape::tool_shape(
