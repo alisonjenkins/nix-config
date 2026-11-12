@@ -656,6 +656,12 @@ in
       # the physical interface, even when the VPN is down. Privacy leak
       # is bounded to a known set of public resolvers used only by the
       # host's bootstrap stub (Unbound's recursion still goes via VPN).
+      #
+      # Only plain DNS (udp/53) takes the bypass, matching the nftables
+      # exception. A whole-address rule also pulled Unbound's DoT (tcp/853)
+      # to the same IPs (Quad9 9.9.9.9 / 149.112.112.112) out the physical
+      # interface, where nftables dropped it, so those upstreams were dead.
+      # With the port match, DoT to them goes through the tunnel again.
       systemd.services.proxy-vpn-dns-bootstrap-routes = {
         description = "Pin DNS exception IPs to main routing table (bypass VPN)";
         wantedBy = [ "multi-user.target" "network-pre.target" ];
@@ -669,13 +675,14 @@ in
             set +e
             ${lib.concatMapStringsSep "\n" (ip: ''
               ${pkgs.iproute2}/bin/ip rule del to ${ip}/32 lookup main priority 5000 2>/dev/null
-              ${pkgs.iproute2}/bin/ip rule add to ${ip}/32 lookup main priority 5000
+              ${pkgs.iproute2}/bin/ip rule del to ${ip}/32 ipproto udp dport 53 lookup main priority 5000 2>/dev/null
+              ${pkgs.iproute2}/bin/ip rule add to ${ip}/32 ipproto udp dport 53 lookup main priority 5000
             '') cfg.exceptions.dnsServers}
             exit 0
           '';
           ExecStop = pkgs.writeShellScript "proxy-vpn-dns-bootstrap-routes-down" ''
             ${lib.concatMapStringsSep "\n" (ip: ''
-              ${pkgs.iproute2}/bin/ip rule del to ${ip}/32 lookup main priority 5000 2>/dev/null
+              ${pkgs.iproute2}/bin/ip rule del to ${ip}/32 ipproto udp dport 53 lookup main priority 5000 2>/dev/null
             '') cfg.exceptions.dnsServers}
             exit 0
           '';
