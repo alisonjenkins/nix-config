@@ -48,8 +48,9 @@ in {
         networking.networkmanager.enable = true;
         # Same as home-k8s-master-1: Cilium (host firewall, kube-proxy
         # replacement) owns packet filtering on cluster nodes, and the NixOS
-        # firewall would drop VXLAN, health checks and NodePorts.
-        networking.firewall.enable = false;
+        # firewall would drop VXLAN, health checks and NodePorts. While k3s is
+        # off (no secrets yet) nothing else filters, so keep the firewall on.
+        networking.firewall.enable = !hasSecrets;
 
         # Worker node for home-cluster-1. An agent, not a second server: a
         # two-member embedded etcd loses quorum when either node goes down,
@@ -77,7 +78,7 @@ in {
         # TPROXY-redirected packets to envoy (see home-k8s-master-1). Both
         # are OR'd with the per-interface value, so `all` covers the NIC
         # whatever its name.
-        boot.kernel.sysctl = {
+        boot.kernel.sysctl = lib.mkIf hasSecrets {
           "net.ipv4.conf.all.accept_local" = 1;
           "net.ipv4.conf.all.route_localnet" = 1;
         };
