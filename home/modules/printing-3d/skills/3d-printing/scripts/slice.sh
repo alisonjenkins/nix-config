@@ -47,13 +47,18 @@ rm -f "$outdir/result.json" "$outdir/plate_1.gcode"
 unzip -p "$outdir/$name.sliced.3mf" Metadata/plate_1.gcode >"$outdir/$name.gcode"
 
 # The CLI can only slice for the first filament. The gcode names the box slot in
-# exactly two places; point both at the wanted slot.
+# three places; point all at the wanted slot. A missed UNLOAD_FILAMENT makes the
+# end of the print unload the wrong slot, fail, and pause the printer at 99%.
 if [[ "$slot" != 0 ]]; then
   sed -i -e "s/^BOX_PRINT_START EXTRUDER=0 /BOX_PRINT_START EXTRUDER=$slot /" \
-         -e "s/^T0\$/T$slot/" "$outdir/$name.gcode"
+         -e "s/^T0\$/T$slot/" \
+         -e "s/^UNLOAD_FILAMENT T=0\$/UNLOAD_FILAMENT T=$slot/" "$outdir/$name.gcode"
 fi
-grep -q "^BOX_PRINT_START EXTRUDER=$slot " "$outdir/$name.gcode" ||
-  { echo "gcode does not use box slot $slot" >&2; exit 1; }
+if ! grep -q "^BOX_PRINT_START EXTRUDER=$slot " "$outdir/$name.gcode" ||
+  ! grep -q "^UNLOAD_FILAMENT T=$slot\$" "$outdir/$name.gcode"; then
+  echo "gcode does not use box slot $slot for start and unload" >&2
+  exit 1
+fi
 
 echo "wrote $outdir/$name.sliced.3mf (slot unpatched) and $outdir/$name.gcode (slot $slot)"
 unzip -p "$outdir/$name.sliced.3mf" Metadata/project_settings.config >"$work/ps.json"

@@ -48,8 +48,8 @@ wrong; fix it before printing. Do not trust the setting names alone.
 Slots 1A to 1D are box slots 0 to 3, gcode `T0` to `T3`. The CLI only slices
 reliably for the first filament (a part assigned to filament 2 or 3 fails with
 "Levitating objects cannot be printed without supports"), so `slice.sh`
-slices for slot 0 and then rewrites the two slot references in the gcode
-(`BOX_PRINT_START EXTRUDER=n` and `Tn`) when `QIDI_SLOT=n`. This matches how the
+slices for slot 0 and then rewrites the three slot references in the gcode
+(`BOX_PRINT_START EXTRUDER=n`, `Tn` and the end-of-print `UNLOAD_FILAMENT T=n`) when `QIDI_SLOT=n`. This matches how the
 user's own multi-colour gcode numbers tools. Confirm the colour and slot with
 the user (a screenshot of the box panel works); the filament profile is the same
 for any slot of the same material.
