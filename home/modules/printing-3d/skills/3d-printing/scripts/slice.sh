@@ -1,47 +1,81 @@
 #!/usr/bin/env bash
-# Slice MODEL.stl with the qidi-studio CLI for a Qidi X-Max 4 (0.4 nozzle,
-# Generic PLA unless QIDI_FILAMENT names another profile) using a process override JSON. Writes MODEL.3mf and MODEL.gcode
-# into OUTDIR (default: the model's directory) and prints a summary.
+# Slice MODEL.3mf|MODEL.stl with the qidi-studio CLI for a Qidi X-Max 4 (0.4 nozzle) from
+# flattened system presets plus a small overrides JSON. Writes MODEL.sliced.3mf and
+# MODEL.gcode into OUTDIR (default: the model's directory) and prints a summary.
+#   slice.sh MODEL.3mf|MODEL.stl OVERRIDES.json [OUTDIR]
+# env: QIDI_PROCESS (default "0.20mm Standard @X-Max 4")
+#      QIDI_FILAMENT_NAME (default "Generic PLA @Qidi X-Max 4 0.4 nozzle")
+#      QIDI_SLOT (box slot 0-3 to print from; default 0)
+#      QIDI_REFERENCE (a known-good project_settings.config JSON to diff against)
 set -euo pipefail
 
-usage() { echo "usage: slice.sh MODEL.stl PROCESS.json [OUTDIR]" >&2; exit 2; }
+usage() { echo "usage: slice.sh MODEL.3mf|MODEL.stl OVERRIDES.json [OUTDIR]" >&2; exit 2; }
 [[ $# -ge 2 && $# -le 3 ]] || usage
 
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 model="$(realpath "$1")"
-process="$(realpath "$2")"
-outdir="$(realpath "${3:-$(dirname "$model")}")"
+overrides="$(realpath "$2")"
+outdir="$(realpath -m "${3:-$(dirname "$model")}")"
 name="$(basename "${model%.*}")"
+slot="${QIDI_SLOT:-0}"
+[[ "$slot" =~ ^[0-3]$ ]] || { echo "QIDI_SLOT must be 0-3, got '$slot'" >&2; exit 2; }
 
 for tool in qidi-studio unzip python3; do
   command -v "$tool" >/dev/null || { echo "$tool not found on PATH" >&2; exit 1; }
 done
-
-sys="${QIDI_SYSTEM_DIR:-$HOME/.config/QIDIStudio/system/X 4 Series}"
-machine="${QIDI_MACHINE:-$sys/machine/Qidi X-Max 4 0.4 nozzle.json}"
-filament="${QIDI_FILAMENT:-$sys/filament/Generic PLA @Qidi X-Max 4 0.4 nozzle.json}"
-for f in "$model" "$process" "$machine" "$filament"; do
+for f in "$model" "$overrides"; do
   [[ -f "$f" ]] || { echo "missing file: $f" >&2; exit 1; }
 done
 
 mkdir -p "$outdir"
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+python3 -I "$here/flatten.py" "$work" \
+  "${QIDI_PROCESS:-0.20mm Standard @X-Max 4}" \
+  "${QIDI_FILAMENT_NAME:-Generic PLA @Qidi X-Max 4 0.4 nozzle}" "$overrides"
+
 qidi-studio --slice 1 --arrange 1 \
-  --load-settings "$machine;$process" \
-  --load-filaments "$filament" \
-  --export-3mf "$name.3mf" --outputdir "$outdir" "$model" >/dev/null
+  --load-settings "$work/machine.json;$work/process.json" \
+  --load-filaments "$work/filament.json" \
+  --export-3mf "$name.sliced.3mf" --outputdir "$outdir" "$model" >"$work/log" 2>&1 || true
+rc="$(python3 -I -c 'import json,sys;print(json.load(open(sys.argv[1]))["return_code"])' "$outdir/result.json" 2>/dev/null || echo "?")"
+[[ "$rc" == 0 && -f "$outdir/$name.sliced.3mf" ]] || {
+  echo "slice failed, return_code=$rc: $(grep -vE '\[(debug|info)\]' "$work/log" | tail -3)" >&2
+  exit 1
+}
+rm -f "$outdir/result.json" "$outdir/plate_1.gcode"
+unzip -p "$outdir/$name.sliced.3mf" Metadata/plate_1.gcode >"$outdir/$name.gcode"
 
-[[ -f "$outdir/$name.3mf" ]] || { echo "slice produced no 3mf in $outdir" >&2; exit 1; }
-unzip -p "$outdir/$name.3mf" Metadata/plate_1.gcode >"$outdir/$name.gcode"
+# The CLI can only slice for the first filament. The gcode names the box slot in
+# exactly two places; point both at the wanted slot.
+if [[ "$slot" != 0 ]]; then
+  sed -i -e "s/^BOX_PRINT_START EXTRUDER=0 /BOX_PRINT_START EXTRUDER=$slot /" \
+         -e "s/^T0\$/T$slot/" "$outdir/$name.gcode"
+fi
+grep -q "^BOX_PRINT_START EXTRUDER=$slot " "$outdir/$name.gcode" ||
+  { echo "gcode does not use box slot $slot" >&2; exit 1; }
 
-echo "wrote $outdir/$name.3mf and $outdir/$name.gcode"
-echo "settings in the 3mf:"
-unzip -p "$outdir/$name.3mf" Metadata/project_settings.config |
-  python3 -I -c '
+echo "wrote $outdir/$name.sliced.3mf (slot unpatched) and $outdir/$name.gcode (slot $slot)"
+unzip -p "$outdir/$name.sliced.3mf" Metadata/project_settings.config >"$work/ps.json"
+python3 -I - "$work/ps.json" "${QIDI_REFERENCE:-}" <<'PY'
 import json, sys
-d = json.load(sys.stdin)
+new = json.load(open(sys.argv[1]))
+first = lambda v: v[0] if isinstance(v, list) and v else v
+print("key settings in the 3mf:")
 for k in ("print_settings_id", "filament_settings_id", "layer_height", "wall_loops",
           "sparse_infill_density", "enable_support", "curr_bed_type",
           "nozzle_temperature_initial_layer", "textured_plate_temp_initial_layer"):
-    print(f"  {k}: {d.get(k)}")
-'
+    print("  %s: %s" % (k, first(new.get(k))))
+if sys.argv[2]:
+    ref = json.load(open(sys.argv[2]))
+    skip = ("gcode", "colour", "filament_ids", "flush", "wipe_tower", "filament_map", "settings_id",
+            "nozzle_map", "volume_map", "notes", "inherits", "host", "printhost", "thumbnails", "compatible")
+    print("differences from the reference project (REF | NEW):")
+    for k in sorted(set(ref) | set(new)):
+        if any(s in k for s in skip):
+            continue
+        if first(ref.get(k)) != first(new.get(k)):
+            print("  %s | %s | %s" % (k, str(first(ref.get(k)))[:40], str(first(new.get(k)))[:40]))
+PY
 echo "gcode summary:"
 grep -m5 -E '^; (estimated printing time|total layer number|max_z_height|filament used \[cm3\])' "$outdir/$name.gcode" | sed 's/^/  /'

@@ -2,7 +2,7 @@
 name: 3d-printing
 description: >-
   Use when designing, slicing or printing a 3D-printed part on this PC: writing
-  or fixing an OpenSCAD model or STL, checking a printed part is strong enough for its material,
+  or fixing an OpenSCAD model, 3mf or STL, checking a printed part is strong enough for its material,
   slicing for the Qidi X-Max 4 with the qidi-studio CLI (a 3mf or gcode that
   opens in Qidi Studio), and starting, watching or cancelling a print over
   Moonraker. Not for non-printed CAD or for other printers.
@@ -38,6 +38,7 @@ of them. Do them in order and state progress each turn
 
 | Rule | Why |
 |---|---|
+| Prefer 3mf over STL for model files, in and out | 3mf keeps units and is what Qidi Studio uses; STL is the legacy format |
 | Never start a print unless the user asked for it in this conversation | It moves hardware, heats it, and uses filament. Asking to slice is not asking to print. |
 | `scripts/printer.sh status` first; the printer must report an idle state | A second job on a busy printer ruins both. |
 | Idle is not permission: get the user's confirmation that the bed is clear and ready for this print, then pass `--bed-clear` | The printer cannot see the bed. The user may not have removed the last part, or may be partway through doing it. A "print it" request does not confirm this. |
@@ -47,8 +48,11 @@ of them. Do them in order and state progress each turn
 
 ## Scripts
 
-- `scripts/slice.sh MODEL.stl PROCESS.json [OUTDIR]`: slices, checks the settings
-  that landed in the 3mf, writes `MODEL.3mf` and `MODEL.gcode`.
+- `scripts/slice.sh MODEL.3mf|MODEL.stl OVERRIDES.json [OUTDIR]`: flattens the
+  presets, slices, prints the settings that landed (and the diff against a
+  known-good project with `QIDI_REFERENCE`), writes `MODEL.sliced.3mf` and
+  `MODEL.gcode`. `QIDI_SLOT=0-3` picks the filament box slot.
+- `scripts/flatten.py`: resolves preset `inherits` chains; used by `slice.sh`.
 - `scripts/printer.sh status | start FILE.gcode --bed-clear | cancel`: Moonraker
   control. `start` refuses without `--bed-clear`, which you pass only after the
   user confirms the bed.

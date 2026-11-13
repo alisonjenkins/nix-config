@@ -3,67 +3,69 @@
 `qidi-studio` (Qidi Studio, a Bambu Studio fork) slices headless. Check it is
 there with `command -v qidi-studio` and the profiles with
 `ls ~/.config/QIDIStudio/system`. `scripts/slice.sh` wraps everything below.
+Give it a 3mf where possible (`openscad -o part.3mf part.scad`); STL also works.
 
-## Profiles
+## Base the slice on the user's own settings
 
-Read-only system profiles are under
-`~/.config/QIDIStudio/system/X 4 Series/` (override with `QIDI_SYSTEM_DIR`):
+The user already prints successfully from Qidi Studio. Match that, do not
+invent settings. Ask which process, filament and plate they normally use, or
+read them from a project they point at: its `Metadata/project_settings.config`
+(inside the 3mf zip) lists `print_settings_id`, `filament_settings_id` and
+`curr_bed_type`. Saved user presets live in
+`~/.config/QIDIStudio/user/default/{process,filament}`.
 
-| Kind | File |
-|---|---|
-| Machine | `machine/Qidi X-Max 4 0.4 nozzle.json` |
-| Filament | `filament/<material> @Qidi X-Max 4 0.4 nozzle.json`, chosen to match the material in design.md. Find the options with `ls "$QIDI_SYSTEM_DIR/filament"`. |
-| Process (base) | `process/0.20mm Balanced Strength @X-Max 4.json` |
+`slice.sh` defaults to `0.20mm Standard @X-Max 4` and
+`Generic PLA @Qidi X-Max 4 0.4 nozzle`; set `QIDI_PROCESS` and
+`QIDI_FILAMENT_NAME` for anything else. List the choices with
+`ls "$HOME/.config/QIDIStudio/system/X 4 Series/"{process,filament}`.
 
-Never edit these. Write a small process override that inherits one:
+## Presets must be flattened
+
+The CLI does not follow `inherits` for file-path presets. An override JSON that
+inherits a system preset silently loses temperatures, fan, flow, speeds and
+brim, and the print fails (a real failed print: shifting part, spider webbing).
+`scripts/flatten.py` resolves the chain into self-contained JSONs and sets
+`from: system` and `instantiation: true`; without those the CLI stops with
+`return_code -17` (printer not compatible with process preset).
+
+Overrides are a flat JSON of only the settings that differ, for example:
 
 ```json
-{ "type": "process", "name": "My part @X-Max 4", "from": "User",
-  "inherits": "0.20mm Balanced Strength @X-Max 4",
-  "wall_loops": "5", "sparse_infill_density": "40%",
-  "curr_bed_type": "Textured PEI Plate", "enable_support": "0",
-  "compatible_printers": ["X-Max 4 0.4 nozzle"] }
+{ "wall_loops": "5", "sparse_infill_density": "40%", "sparse_infill_pattern": "gyroid",
+  "enable_support": "0", "curr_bed_type": "Textured PEI Plate" }
 ```
 
-Strong-part defaults: 5 wall loops, 40 percent gyroid, 0.2 mm layers, no
-supports for a part drawn as in design.md. For PLA, raise
-`nozzle_temperature` a little for layer bonding only if the user wants more strength.
+## Verify against a known-good project
 
-## Choosing the filament
+Always run with `QIDI_REFERENCE` pointing at a `project_settings.config` from a
+print that worked (extract it with `unzip -p proj.3mf Metadata/project_settings.config`).
+The script prints every setting that differs. Only the overrides you meant
+should show. Anything else (temperatures, fan, flow, brim) means the slice is
+wrong; fix it before printing. Do not trust the setting names alone.
 
-`slice.sh` defaults to the Generic PLA profile. For any other material set
-`QIDI_FILAMENT` to that material's profile file, and check the
-`filament_settings_id` line the script prints. Several materials in one part use
-the filament box: pass one profile per slot to `--load-filaments` separated by
-`;`, and map objects to slots with `--load-filament-ids`. The multi-material
-path has not been tested here; confirm the 3mf in Qidi Studio before printing.
+## Filament slots (Qidi box)
 
-## The command
+Slots 1A to 1D are box slots 0 to 3, gcode `T0` to `T3`. The CLI only slices
+reliably for the first filament (a part assigned to filament 2 or 3 fails with
+"Levitating objects cannot be printed without supports"), so `slice.sh`
+slices for slot 0 and then rewrites the two slot references in the gcode
+(`BOX_PRINT_START EXTRUDER=n` and `Tn`) when `QIDI_SLOT=n`. This matches how the
+user's own multi-colour gcode numbers tools. Confirm the colour and slot with
+the user (a screenshot of the box panel works); the filament profile is the same
+for any slot of the same material.
 
-```bash
-qidi-studio --slice 1 --arrange 1 \
-  --load-settings "MACHINE.json;PROCESS.json" \
-  --load-filaments "FILAMENT.json" \
-  --export-3mf part.3mf --outputdir OUTDIR part.stl
-```
-
-Gotchas:
+## Gotchas
 
 - `--outputdir` is where the 3mf goes. A temporary directory there loses it.
-- Settings in `--load-settings` apply to the 3mf; always confirm they landed by
-  reading `Metadata/project_settings.config` from the 3mf (it is a zip):
-  `unzip -p part.3mf Metadata/project_settings.config`. Check `wall_loops`,
-  `sparse_infill_density`, `curr_bed_type` and the bed and nozzle temperatures.
+  `slice.sh` names its output `MODEL.sliced.3mf` so a 3mf input is never overwritten.
 - The sliced gcode is inside the 3mf as `Metadata/plate_1.gcode`.
 - The filament weight can read 0 g for generic profiles. Use the volume (cm3)
   times the material's density (PLA about 1.24 g/cm3) for an estimate, and say
   it is an estimate.
-- The `max_z_height` in the gcode header should equal the model width when the
-  part lies on its side. If it equals the height, the part is standing up.
-- The bed type must match the plate the user has. Their Qidi Studio setting
-  `curr_bed_type` is in `~/.config/QIDIStudio/QIDIStudio.conf`. The value 4 is
-  textured PEI in Bambu Studio's enum; that mapping is assumed to hold for Qidi
-  Studio, so confirm the plate with the user.
-- Slicing is quiet and fast (under a second). Report time, layers and volume
-  from the gcode header lines `; estimated printing time`, `; total layer number`
-  and `; filament used [cm3]`.
+- `max_z_height` in the gcode header should equal the model width when the part
+  lies on its side. If it equals the height, the part is standing up.
+- The bed type must match the plate fitted. The user's
+  `curr_bed_type` is in `~/.config/QIDIStudio/QIDIStudio.conf`; confirm the
+  plate with them.
+- Report time, layers and volume from the gcode header lines
+  `; estimated printing time`, `; total layer number` and `; filament used [cm3]`.
