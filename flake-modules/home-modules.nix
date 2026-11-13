@@ -22,6 +22,7 @@
     antigravity-cli = import ../home/modules/antigravity-cli;
     overseer = import ../home/modules/overseer;
     rootly = import ../home/modules/rootly;
+    printing-3d = import ../home/modules/printing-3d;
     wm-river = import ../home/wms/river;
 
     # Host-specific home-manager configs
