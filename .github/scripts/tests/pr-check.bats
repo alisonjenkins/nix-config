@@ -286,3 +286,22 @@ EOF
   [[ "$output" != *"skipped (the PR"* ]]
   [[ "$output" == *"ok: aarch64-linux nixosConfigurations (1 hosts, batched)"* ]]
 }
+
+@test "a flake-module registry change evaluates everything but skips unrelated checks" {
+  export STUB_DIFF=$'flake-modules/home-modules.nix\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"running every section"* ]]
+  grep "builtins.filter" "$WORK/nix.log" | grep -q "(n: true &&"
+  [[ "$output" == *"packages.x86_64-linux (evaluated; changed ones built): ok"* ]]
+  [[ "$output" == *"delegation script tests (bats): skipped"* ]]
+  [[ "$output" == *"REA with the pinned Ghidra and JDK: skipped"* ]]
+}
+
+@test "a change to the flake-module defining a check runs that check" {
+  export STUB_DIFF=$'flake-modules/delegation-tests.nix\n'
+  run bash .github/scripts/pr-check-x86_64-linux.sh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"delegation script tests (bats): ok"* ]]
+  [[ "$output" == *"copilot-cli script tests (bats): skipped"* ]]
+}

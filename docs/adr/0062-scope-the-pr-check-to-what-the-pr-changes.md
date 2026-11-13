@@ -23,7 +23,7 @@ affect:
 | modules, overlays, devShells | any change that can alter an eval |
 | packages | such a change outside `flake-modules/hosts/`, or a package's own source changed (that one is built, as before) |
 | aarch64 host evals | any change that can alter an eval; if all of them sit in `flake-modules/hosts/<dir>/`, only hosts named `<dir>` or `<dir>-*` |
-| each bats check, `rea-ghidra` | a path its derivation copies in changes |
+| each bats check, `rea-ghidra` | a path its derivation copies in, or the flake-module defining it, changes |
 | CurseForge paths, skill frontmatter | always (seconds) |
 
 A change "can alter an eval" unless one of these holds:
@@ -42,8 +42,12 @@ auto-discovers `home/skills/` and other directories, and a deleted file can
 leave a dangling path.
 
 Every section runs when any of these changes: `flake.nix`, `flake.lock`,
-`overlays/`, `lib/`, `flake-modules/` outside `hosts/`, the gate's own
-script, workflow or setup action. Every section also runs when the base
+`overlays/`, `lib/`, `flake-modules/lib.nix`, the gate's own script,
+workflow or setup action. Other `flake-modules/` files (the module and
+package registries, the check definitions) only define outputs: a change to
+one evaluates everything but does not run the unrelated bats and REA checks.
+Adding a home module edits `home-modules.nix`, and the first post-merge runs
+showed that change paying for every bats check and the REA build. Every section also runs when the base
 cannot be fetched or the diff is empty. `PR_CHECK_FULL=1` forces it. The
 nightly lock PR always changes `flake.lock`, so it always gets the full
 run.

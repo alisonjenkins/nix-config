@@ -13,8 +13,8 @@
 #
 # Scoped to the PR (select_sections): each section runs only when the diff
 # against the base branch touches something it depends on, and a change to
-# the flake's wiring (flake.nix, flake.lock, overlays/, lib/, flake-modules/
-# outside hosts/, this gate) runs everything. A docs- or prose-only PR skips
+# the flake's wiring (flake.nix, flake.lock, overlays/, lib/,
+# flake-modules/lib.nix, this gate) runs everything. A docs- or prose-only PR skips
 # every nix eval. PR_CHECK_FULL=1 forces the full run.
 #
 # Usage: [PR_CHECK_FULL=1] pr-check-x86_64-linux.sh
@@ -45,12 +45,12 @@ fetch_base() {
 
 # forces_full_run <path> — a change here can reach every section: the
 # flake's wiring and inputs, the overlays and lib every output imports, and
-# this gate itself. flake-modules/hosts/ is the exception: a host directory
-# only defines that host (and its -hardware/-disko-config modules).
+# this gate itself. Other flake-modules/ files only define outputs: such a
+# change evaluates everything (affects_eval), but a bats or REA check runs
+# only when the flake-module that defines it changes (see the want lines).
 forces_full_run() {
     case "$1" in
-        flake-modules/hosts/*) return 1 ;;
-        flake.nix | flake.lock | overlays/* | lib/* | flake-modules/* | \
+        flake.nix | flake.lock | overlays/* | lib/* | flake-modules/lib.nix | \
             .github/actions/* | .github/workflows/pr-check.yaml | \
             .github/scripts/pr-check-x86_64-linux.sh)
             return 0
@@ -438,11 +438,11 @@ select_sections
 
 want "nixosModules, homeModules, overlays, devShells.${TARGET_SYSTEM}" section_modules needs_eval
 want "packages.${TARGET_SYSTEM} (evaluated; changed ones built)" section_packages needs_packages
-want "copilot-cli script tests (bats)" section_copilot_bats touches home/programs/copilot-cli/
-want "delegation script tests (bats)" section_delegation_bats touches home/skills/delegation/
-want "hetzner-volume-verify script tests (bats)" section_hetzner_bats touches scripts/hetzner-volume-verify/
-want "pr-check script tests (bats)" section_pr_check_bats touches .github/scripts/
-want "REA with the pinned Ghidra and JDK" section_rea_ghidra touches home/programs/rea/ pkgs/rea/
+want "copilot-cli script tests (bats)" section_copilot_bats touches home/programs/copilot-cli/ flake-modules/copilot-cli-tests.nix
+want "delegation script tests (bats)" section_delegation_bats touches home/skills/delegation/ flake-modules/delegation-tests.nix
+want "hetzner-volume-verify script tests (bats)" section_hetzner_bats touches scripts/hetzner-volume-verify/ flake-modules/hetzner-volume-verify-tests.nix
+want "pr-check script tests (bats)" section_pr_check_bats touches .github/scripts/ flake-modules/pr-check-tests.nix
+want "REA with the pinned Ghidra and JDK" section_rea_ghidra touches home/programs/rea/ pkgs/rea/ flake-modules/packages.nix
 run_section "CurseForge CDN paths, skill frontmatter" section_scripts
 want "aarch64-linux nixosConfigurations (evaluated)" section_aarch64_hosts needs_eval
 
