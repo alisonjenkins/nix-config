@@ -55,9 +55,13 @@ convex corners with a small radius is fine; check a 2 mm wall survives the offse
   (rotation `55,0,25` is a three-quarter view). Read the PNG.
 - Exact 2D profile: `openscad -o p.svg p.scad` on a file that ends in the 2D
   module, then `magick p.svg p.png` (or `convert`). Read the PNG.
-- Check the STL bounding box against the intended size.
-- Re-export the STL after every edit and compare with `cmp` against a fresh
-  export before saying it is current.
+- Export 3mf, not STL: `openscad -o x.3mf x.scad`. 3mf is the current format; it
+  carries units (mm) and a proper mesh, and Qidi Studio opens it directly. Use STL
+  only when a tool needs it. Prefer a 3mf the user supplies over an STL too.
+- Check the exported bounding box against the intended size.
+- Re-export after every edit and compare against a fresh export before saying
+  it is current (3mf is a zip with no timestamps from openscad; compare the
+  extracted `3D/3dmodel.model`).
 
 ## Strength check
 
