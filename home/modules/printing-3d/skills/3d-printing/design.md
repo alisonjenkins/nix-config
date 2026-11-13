@@ -1,5 +1,29 @@
 # Design and strength check
 
+## Choose the material
+
+Ask the user which materials they have, and which are loaded in the filament
+box slots, before designing. Their stock changes as they buy filament, so
+treat anything remembered from an earlier session as stale until they confirm.
+The last stock the user gave was PLA and TPU (2026-11-13); the printer can
+also print other materials.
+
+Match the material to the need, then design for it:
+
+- Check what the part must survive: sustained load, temperature (sun, heaters,
+  a hot car), flex or impact, outdoor use, contact with chemicals or food.
+- Name a material that fits. If it is one they own, use it. If it is one they
+  lack, say what it buys (for example more heat resistance or toughness) and
+  ask whether to design for what they have or buy the better one.
+- Everything below, including the numbers, is for PLA. For any other material
+  look up its printed strength, stiffness, glass transition and creep
+  behaviour, state them as assumptions, and redo the strength check with them.
+  Do not reuse the PLA allowables.
+- TPU is flexible: a stiffness-based design (stiff legs, short cantilevers)
+  does not apply. Design for deflection and grip instead.
+- Several materials in one part use the box: one filament per slot, mapped by
+  object or colour in the slicer. Say which slot holds which material.
+
 ## Pin down the unknowns first
 
 A part fitted to a real object needs measurements the user may not have given.
@@ -56,6 +80,6 @@ door hook rated about 0.5 kg until the calc exposed a flaw; fixing it gave 5 kg.
 6. Turn the worst section into a rating in kg, sustained and peak, and tell the
    user. Say it is a 2D hand calc, not a simulation.
 
-Always add the PLA warnings: creep under steady load, and softening near the
+For PLA, always add the warnings: creep under steady load, and softening near the
 glass transition (about 55-65 C), so no sun, heaters or hot cars. Recommend a
 loaded test (about twice the rated load for a day or two) before real use.

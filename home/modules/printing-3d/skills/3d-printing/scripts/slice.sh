@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Slice MODEL.stl with the qidi-studio CLI for a Qidi X-Max 4 (0.4 nozzle,
-# Generic PLA) using a process override JSON. Writes MODEL.3mf and MODEL.gcode
+# Generic PLA unless QIDI_FILAMENT names another profile) using a process override JSON. Writes MODEL.3mf and MODEL.gcode
 # into OUTDIR (default: the model's directory) and prints a summary.
 set -euo pipefail
 

@@ -12,7 +12,7 @@ Read-only system profiles are under
 | Kind | File |
 |---|---|
 | Machine | `machine/Qidi X-Max 4 0.4 nozzle.json` |
-| Filament | `filament/Generic PLA @Qidi X-Max 4 0.4 nozzle.json` |
+| Filament | `filament/<material> @Qidi X-Max 4 0.4 nozzle.json`, chosen to match the material in design.md. Find the options with `ls "$QIDI_SYSTEM_DIR/filament"`. |
 | Process (base) | `process/0.20mm Balanced Strength @X-Max 4.json` |
 
 Never edit these. Write a small process override that inherits one:
@@ -26,8 +26,17 @@ Never edit these. Write a small process override that inherits one:
 ```
 
 Strong-part defaults: 5 wall loops, 40 percent gyroid, 0.2 mm layers, no
-supports for a part drawn as in design.md. Plain PLA: raise `nozzle_temperature`
-a little for layer bonding only if the user wants more strength.
+supports for a part drawn as in design.md. For PLA, raise
+`nozzle_temperature` a little for layer bonding only if the user wants more strength.
+
+## Choosing the filament
+
+`slice.sh` defaults to the Generic PLA profile. For any other material set
+`QIDI_FILAMENT` to that material's profile file, and check the
+`filament_settings_id` line the script prints. Several materials in one part use
+the filament box: pass one profile per slot to `--load-filaments` separated by
+`;`, and map objects to slots with `--load-filament-ids`. The multi-material
+path has not been tested here; confirm the 3mf in Qidi Studio before printing.
 
 ## The command
 
@@ -46,8 +55,9 @@ Gotchas:
   `unzip -p part.3mf Metadata/project_settings.config`. Check `wall_loops`,
   `sparse_infill_density`, `curr_bed_type` and the bed and nozzle temperatures.
 - The sliced gcode is inside the 3mf as `Metadata/plate_1.gcode`.
-- The filament weight reads 0 g for Generic PLA. Use the volume (cm3) and the
-  PLA density of about 1.24 g/cm3 for an estimate, and say it is an estimate.
+- The filament weight can read 0 g for generic profiles. Use the volume (cm3)
+  times the material's density (PLA about 1.24 g/cm3) for an estimate, and say
+  it is an estimate.
 - The `max_z_height` in the gcode header should equal the model width when the
   part lies on its side. If it equals the height, the part is standing up.
 - The bed type must match the plate the user has. Their Qidi Studio setting

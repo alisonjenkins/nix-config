@@ -11,8 +11,8 @@ Only when the user asked to print in this conversation.
 
 1. `scripts/printer.sh status` and confirm the state is `standby`, `complete`,
    `cancelled` or `error`-cleared, not `printing` or `paused`.
-2. Tell the user the things you cannot see and they must check: PLA is loaded in
-   filament slot 1 (the start code uses the filament box), and the plate matches
+2. Tell the user the things you cannot see and they must check: the sliced material is
+   loaded in the filament box slot the slice used (slot 1 unless mapped otherwise), and the plate matches
    the bed type sliced for.
 3. `scripts/printer.sh start FILE.gcode` uploads and starts in one call.
 
