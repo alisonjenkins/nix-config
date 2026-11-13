@@ -35,6 +35,18 @@ Only when the user asked to print in this conversation.
 - Say plainly what was checked ("heating, no plastic laid yet") and not more.
 - `scripts/printer.sh cancel` stops a running job. Use it only when the user asks.
 
+## Switching off when idle
+
+`scripts/printer.sh off` turns the case light and the filament box, nozzle, bed
+and chamber heaters off. It refuses unless the printer is idle (`standby`, `complete`, `cancelled`).
+It leaves the motors alone.
+
+The case light is not a plain switch. The firmware's `smart_output_pin caselight`
+turns it on while the screen is awake or a print is running, and off when the
+screen sleeps and the printer is in `standby`. A paused or just-cancelled job
+keeps the screen awake, so the light stays on. `off` forces it off now; the
+firmware can relight it the next time the screen wakes or a print starts.
+
 ## Failure
 
 - State `shutdown` or `error` after a failed print: read the cause from the

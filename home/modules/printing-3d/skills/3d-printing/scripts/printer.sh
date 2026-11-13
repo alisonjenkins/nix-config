@@ -5,6 +5,8 @@
 #       refuses unless the printer is idle and --bed-clear says the user has
 #       confirmed the bed is clear and ready (the printer cannot see the bed)
 #   printer.sh cancel
+#   printer.sh off
+#       idle printer only: case light off; box, nozzle, bed and chamber heaters off
 # The host comes from the Qidi Studio physical-printer config (print_host only;
 # the key and password fields are never read).
 set -euo pipefail
@@ -59,7 +61,32 @@ case "${1:-}" in
     curl -fsS -m 10 -X POST "$base/printer/print/cancel"
     echo
     state ;;
+  off)
+    current="$(state)"
+    echo "$current"
+    case "$current" in
+      state=standby*|state=complete*|state=cancelled*) ;;
+      *) echo "refusing to switch off: printer is not idle" >&2; exit 1 ;;
+    esac
+    # LED_OFF is the printer's own macro; the firmware may relight the case
+    # while the screen is awake (see printing.md).
+    failed=0
+    for script in LED_OFF DISABLE_BOX_HEATER M104%20S0 M140%20S0 M141%20S0; do
+      echo "sending $script"
+      curl -fsS -m 10 -X POST "$base/printer/gcode/script?script=$script" >/dev/null || {
+        echo "failed: $script" >&2
+        failed=1
+      }
+    done
+    [[ "$failed" == 0 ]] || { echo "the printer is only partly switched off" >&2; exit 1; }
+    curl -fsS -m 10 "$base/printer/objects/query?output_pin%20caselight" |
+      python3 -I -c '
+import json, sys
+v = json.load(sys.stdin)["result"]["status"]["output_pin caselight"]["value"]
+print("caselight=%s" % ("on" if v else "off"))
+'
+    state ;;
   *)
-    echo "usage: printer.sh status | start FILE.gcode --bed-clear | cancel" >&2
+    echo "usage: printer.sh status | start FILE.gcode --bed-clear | cancel | off" >&2
     exit 2 ;;
 esac
