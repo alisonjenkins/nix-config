@@ -25,6 +25,11 @@ Only when the user asked to print in this conversation.
 
 ## After starting
 
+- First layers decide the print. Within a few minutes of plastic touching the
+  bed, fetch the webcam snapshot `http://HOST/webcam/?action=snapshot` and look
+  for good adhesion, no lifted corners and no stringing. If the part shifts or
+  strings (spider webbing), cancel and re-check the slice against a known-good
+  project (slicing.md) before retrying.
 - Check `status` once heating begins. It reports state, file, temperatures and
   progress. Do not poll in a loop; report and let the user ask.
 - Say plainly what was checked ("heating, no plastic laid yet") and not more.
@@ -32,6 +37,12 @@ Only when the user asked to print in this conversation.
 
 ## Failure
 
+- State `shutdown` or `error` after a failed print: read the cause from the
+  Moonraker `logs` root (`klippy.log`), then `POST /printer/firmware_restart`
+  (the user can also restart it) and confirm `printer.sh status` reports
+  `standby` before sending anything.
+- A failed print is not proof the printer is faulty. Check the slice settings
+  first; temperatures held and no MCU errors point at the slice.
 - Connection refused or timeout: the printer is off or asleep. Say so; do not
   retry for long.
 - HTTP 401 or 403: Moonraker wants a key. Stop and tell the user. Do not look up
