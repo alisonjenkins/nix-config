@@ -158,6 +158,7 @@ let
 
   # modules.rootly, read by path because this module is imported where it may not be.
   rootly = lib.attrByPath [ "modules" "rootly" ] { enable = false; skills = null; } config;
+  printing3d = lib.attrByPath [ "modules" "printing3d" ] { enable = false; skills = null; } config;
 
   # The remaining paths are *parents* of many skills, so merging contents is right.
   fullSkills = pkgs.symlinkJoin {
@@ -169,7 +170,8 @@ let
       "${claudeStatusbarPkg}/share/claude-statusbar/skills"
       speckitInitSkill
     ] ++ lib.optional config.programs.rea.enable config.programs.rea.skills
-      ++ lib.optional rootly.enable rootly.skills;
+      ++ lib.optional rootly.enable rootly.skills
+      ++ lib.optional printing3d.enable printing3d.skills;
   };
 
   lspmuxPkg = inputs.ali-neovim.packages.${pkgs.stdenv.hostPlatform.system}.lspmux;
