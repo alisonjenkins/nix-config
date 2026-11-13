@@ -107,9 +107,10 @@ in {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
-          imports = [ self.homeModules.home-linux self.homeModules.vr self.homeModules.subnautica-vr self.homeModules.beatsaber self.homeModules.helldivers2-mods self.homeModules.delegate-to-local self.homeModules.memory-recall self.homeModules.observability-stack self.homeModules.overseer ];
+          imports = [ self.homeModules.home-linux self.homeModules.vr self.homeModules.subnautica-vr self.homeModules.beatsaber self.homeModules.helldivers2-mods self.homeModules.delegate-to-local self.homeModules.memory-recall self.homeModules.observability-stack self.homeModules.overseer self.homeModules.printing-3d ];
 
           programs.rea.enable = true;
+          modules.printing3d.enable = true;
 
           # Local Loki, Tempo, Prometheus and Grafana for Claude Code token spend.
           # Design: specs/007-local-observability-stack.
