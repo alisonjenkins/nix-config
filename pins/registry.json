@@ -164,17 +164,17 @@
         "file": "overlays/default.nix",
         "match": "pkgs/claude-code/manifest.zst.json"
       },
-      "pinned": "claude-code 2.1.322 manifest vendored from downloads.claude.ai",
+      "pinned": "claude-code 2.1.323 manifest vendored from downloads.claude.ai",
       "since": "2026-11-07",
-      "reviewed": "2026-11-10",
+      "reviewed": "2026-11-13",
       "review_by": "2026-12-10",
-      "reason": "nixpkgs master carried claude-code 2.1.319 or older while Anthropic had published 2.1.322 (downloads.claude.ai, 2026-11-10); the overlay feeds the upstream package Anthropic's own manifest.zst.json to run ahead of master.",
+      "reason": "nixpkgs master carried claude-code 2.1.319 or older while Anthropic had published 2.1.323 (downloads.claude.ai, 2026-11-13); the overlay feeds the upstream package Anthropic's own manifest.zst.json to run ahead of master.",
       "removal": "Delete pkgs/claude-code, restore `inherit (final.master) claude-code;` in overlays/default.nix, then run nix flake update nixpkgs_master.",
       "probe": {
         "type": "version-at-least",
         "input": "nixpkgs_master",
         "attr": "claude-code",
-        "version": "2.1.322"
+        "version": "2.1.323"
       }
     }
   ]
