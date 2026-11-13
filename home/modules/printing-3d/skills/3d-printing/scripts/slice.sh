@@ -7,6 +7,7 @@
 #      QIDI_FILAMENT_NAME (default "Generic PLA @Qidi X-Max 4 0.4 nozzle")
 #      QIDI_SLOT (box slot 0-3 to print from; default 0)
 #      QIDI_REFERENCE (a known-good project_settings.config JSON to diff against)
+#      QIDI_PARTS (separate pieces the model should have; default 1; 0 skips the check)
 set -euo pipefail
 
 usage() { echo "usage: slice.sh MODEL.3mf|MODEL.stl OVERRIDES.json [OUTDIR]" >&2; exit 2; }
@@ -26,6 +27,19 @@ done
 for f in "$model" "$overrides"; do
   [[ -f "$f" ]] || { echo "missing file: $f" >&2; exit 1; }
 done
+
+# Refuse a model whose parts do not touch: it would print as loose pieces.
+# QIDI_PARTS=0 skips the check (a model the checker cannot read).
+parts="${QIDI_PARTS:-1}"
+if [[ "$parts" != 0 ]]; then
+  rc=0
+  python3 -I "$here/check-model.py" "$model" --parts "$parts" || rc=$?
+  case "$rc" in
+    0) ;;
+    1) exit 1 ;;
+    *) echo "could not check $model (see above); fix the file, or set QIDI_PARTS=0 to skip the check" >&2; exit 1 ;;
+  esac
+fi
 
 mkdir -p "$outdir"
 work="$(mktemp -d)"
