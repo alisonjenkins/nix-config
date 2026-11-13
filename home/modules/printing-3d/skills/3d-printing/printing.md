@@ -9,12 +9,19 @@ key or password fields.
 
 Only when the user asked to print in this conversation.
 
-1. `scripts/printer.sh status` and confirm the state is `standby`, `complete`,
-   `cancelled` or `error`-cleared, not `printing` or `paused`.
-2. Tell the user the things you cannot see and they must check: the sliced material is
-   loaded in the filament box slot the slice used (slot 1 unless mapped otherwise), and the plate matches
-   the bed type sliced for.
-3. `scripts/printer.sh start FILE.gcode` uploads and starts in one call.
+1. `scripts/printer.sh status` and confirm the state is `standby`, `complete`
+   or `cancelled`, not `printing`, `paused` or `error`.
+2. An idle printer is not a ready one. Ask the user to confirm, and wait for
+   the answer, that:
+   - the bed is clear: the last part is off, nothing is left on the plate, and
+     they are not partway through clearing it;
+   - the right plate is fitted, matching the bed type sliced for;
+   - the sliced material is loaded in the filament box slot the slice used
+     (`QIDI_SLOT`, 0 = slot 1A), in the colour they want.
+   Ask even when they just said to print. Ask again for every start attempt,
+   including a retry after a cancel or failure: the bed may no longer be clear.
+3. `scripts/printer.sh start FILE.gcode --bed-clear` uploads and starts in one
+   call. Pass the flag only after step 2.
 
 ## After starting
 

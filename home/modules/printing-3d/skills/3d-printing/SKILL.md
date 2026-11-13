@@ -39,7 +39,8 @@ of them. Do them in order and state progress each turn
 | Rule | Why |
 |---|---|
 | Never start a print unless the user asked for it in this conversation | It moves hardware, heats it, and uses filament. Asking to slice is not asking to print. |
-| `scripts/printer.sh status` first; start only when it reports an idle state | A second job on a busy printer ruins both. |
+| `scripts/printer.sh status` first; the printer must report an idle state | A second job on a busy printer ruins both. |
+| Idle is not permission: get the user's confirmation that the bed is clear and ready for this print, then pass `--bed-clear` | The printer cannot see the bed. The user may not have removed the last part, or may be partway through doing it. A "print it" request does not confirm this. |
 | Never read, print or log the printer's API key or password from the Qidi Studio config | Only the host field is needed. |
 | Never commit or push model or slicing files unless asked | Same as every repo. |
 | Report an unchecked claim as unchecked | "Sliced" is not "printed well". Say what was and was not verified. |
@@ -48,4 +49,6 @@ of them. Do them in order and state progress each turn
 
 - `scripts/slice.sh MODEL.stl PROCESS.json [OUTDIR]`: slices, checks the settings
   that landed in the 3mf, writes `MODEL.3mf` and `MODEL.gcode`.
-- `scripts/printer.sh status | start FILE.gcode | cancel`: Moonraker control.
+- `scripts/printer.sh status | start FILE.gcode --bed-clear | cancel`: Moonraker
+  control. `start` refuses without `--bed-clear`, which you pass only after the
+  user confirms the bed.

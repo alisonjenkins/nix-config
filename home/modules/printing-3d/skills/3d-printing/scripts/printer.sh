@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Control the Qidi printer over Moonraker (port 7125).
 #   printer.sh status
-#   printer.sh start FILE.gcode   (refuses unless the printer is idle)
+#   printer.sh start FILE.gcode --bed-clear
+#       refuses unless the printer is idle and --bed-clear says the user has
+#       confirmed the bed is clear and ready (the printer cannot see the bed)
 #   printer.sh cancel
 # The host comes from the Qidi Studio physical-printer config (print_host only;
 # the key and password fields are never read).
@@ -38,8 +40,12 @@ case "${1:-}" in
   status)
     state ;;
   start)
-    file="${2:?usage: printer.sh start FILE.gcode}"
+    file="${2:?usage: printer.sh start FILE.gcode --bed-clear}"
     [[ -f "$file" ]] || { echo "no such file: $file" >&2; exit 1; }
+    [[ "${3:-}" == "--bed-clear" ]] || {
+      echo "refusing to start: confirm with the user that the bed is clear and ready, then pass --bed-clear" >&2
+      exit 1
+    }
     current="$(state)"
     echo "$current"
     case "$current" in
@@ -54,6 +60,6 @@ case "${1:-}" in
     echo
     state ;;
   *)
-    echo "usage: printer.sh status | start FILE.gcode | cancel" >&2
+    echo "usage: printer.sh status | start FILE.gcode --bed-clear | cancel" >&2
     exit 2 ;;
 esac
