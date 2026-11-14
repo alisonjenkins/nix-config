@@ -47,15 +47,15 @@
       "class": "tracked",
       "kind": "flake-input",
       "site": { "input": "nix-cachyos-kernel" },
-      "pinned": "53532f14 (upstream master)",
+      "pinned": "f5e1fb8f (upstream master, kernel 7.3.4)",
       "since": "2026-10-23",
-      "reviewed": "2026-11-06",
-      "review_by": "2026-11-20",
-      "reason": "Kept as a rev pin, not branch-following, so a kernel bump is a reviewed change and the CI builder builds and caches the LTO kernel before it reaches a host. Upstream's `release` branch was frozen from 2026-09-28 and caught up with `master` by 2026-11-06 (both at 53532f14, kernel 7.3.1, narinfo present on cache.lantian.pub), so the pin still tracks `master`.",
+      "reviewed": "2026-11-14",
+      "review_by": "2026-11-28",
+      "reason": "Kept as a rev pin, not branch-following, so a kernel bump is a reviewed change. Moved from 53532f14 (7.3.1) to f5e1fb8f (7.3.4; equals 3084b743 plus an auto flake update). Upstream disables DEBUG_INFO_BTF for LTO when pahole < 1.33 (nix-cachyos-kernel#115, Rust). modules/base overlays cachyos-lto-btf turns BTF back on for the LTO zen4 kernel with CachyOS's pahole patches (patches/pahole), Rust on. That build is not on cache.lantian.pub; hosts build it from source until it is pushed to our niks3 cache.",
       "removal": "Bump to the current upstream master rev when the probe says one exists.",
       "probe": {
         "type": "command",
-        "cmd": ["sh", "-c", "test \"$(nix flake metadata --json github:xddxdd/nix-cachyos-kernel/master | jq -r .locked.rev)\" != 53532f14476a597abeaa67bca19f2c009a043fb6"],
+        "cmd": ["sh", "-c", "test \"$(nix flake metadata --json github:xddxdd/nix-cachyos-kernel/master | jq -r .locked.rev)\" != f5e1fb8f1185cb51ef6d433e27ab7b60f54cd0e0"],
         "meaning": "update-available"
       }
     },

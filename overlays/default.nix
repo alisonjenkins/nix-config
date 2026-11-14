@@ -722,6 +722,41 @@ in
     });
   };
 
+  # nix-cachyos-kernel turns DEBUG_INFO_BTF off for the LTO kernels when the
+  # pahole in scope is older than 1.33 (nixpkgs has 1.32; upstream
+  # nix-cachyos-kernel#115). Turn it back on for the LTO zen4 kernel. Rust
+  # .ko files need CachyOS's two dwarf_loader patches to get BTF, so the
+  # patched pahole goes first on the kernel build PATH. Rust stays on.
+  # Applied by modules/base with enableCachyOSKernel; drop it once upstream
+  # ships pahole >= 1.33 or re-enables BTF for LTO.
+  cachyos-lto-btf = _final: prev:
+    let
+      # 1.31 (26.05) rejects the patches, which are written against 1.32, so
+      # take pahole 1.32's source from unstable and build it with this stdenv.
+      pahole = prev.pahole.overrideAttrs (old: {
+        inherit (prev.unstable.pahole) version src;
+        patches = (old.patches or [ ]) ++ [
+          "${patchesDir}/pahole/0002-dwarf_loader-Take-the-merged-CU-language-from-a-CU-t.patch"
+          "${patchesDir}/pahole/0003-dwarf_loader-Load-types-that-kept-CUs-use-from-exclu.patch"
+        ];
+      });
+    in
+    {
+      cachyosKernels = prev.cachyosKernels // {
+        linuxPackages-cachyos-latest-lto-zen4 =
+          prev.cachyosKernels.linuxPackages-cachyos-latest-lto-zen4.extend
+            (_: kernelPrev: {
+              kernel = (kernelPrev.kernel.override {
+                structuredExtraConfig = {
+                  DEBUG_INFO_BTF = prev.lib.kernel.yes;
+                };
+              }).overrideAttrs (old: {
+                nativeBuildInputs = [ pahole ] ++ (old.nativeBuildInputs or [ ]);
+              });
+            });
+      };
+    };
+
   snapper = final: _prev: {
     snapper = _prev.snapper.overrideAttrs (oldAttrs: {
       buildInputs = oldAttrs.buildInputs ++ [ _prev.zlib ];
