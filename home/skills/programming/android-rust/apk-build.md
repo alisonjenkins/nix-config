@@ -3,24 +3,30 @@
 Pharos: `spikes/044-android-auto/build-apk.sh`. Use this path when there is
 no Java source and no dx project. For dx, see [dx-dioxus.md](dx-dioxus.md).
 
-Needs build-tools (`aapt2`, `d8`, `zipalign`, `apksigner`), an
-`android.jar`, and the Rust Android target. Pharos used build-tools 35.0.0
-and `platforms/android-34`.
+Needs:
+
+- build-tools (`aapt2`, `d8`, `zipalign`, `apksigner`) and an `android.jar`.
+  Pharos used build-tools 35.0.0 and `platforms/android-34`.
+- The Android NDK, for the linker. Point cargo at its clang, e.g.
+  `CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/<host>/bin/aarch64-linux-android26-clang`,
+  or use `cargo ndk`. A Nix Android dev shell can export both.
+- The Rust target: `rustup target add aarch64-linux-android`.
 
 ## Steps
 
 ```bash
 bt=$ANDROID_HOME/build-tools/35.0.0
 platform=$ANDROID_HOME/platforms/android-34/android.jar
+mkdir -p out/dex out/res stage/lib/arm64-v8a   # d8 needs an existing output dir
 
 # 1. classes -> dex  (see classgen.md)
 "$bt/d8" --release --min-api 26 --lib "$platform" --output out/dex $(find out/classes -name '*.class')
 
 # 2. native library for arm64
 cargo build --release --target aarch64-linux-android
-mkdir -p stage/lib/arm64-v8a
-cp target/aarch64-linux-android/release/libapp.so stage/lib/arm64-v8a/
-cp out/dex/classes.dex stage/
+# the file name must match the classes' System.loadLibrary("main") (classgen --lib)
+cp target/aarch64-linux-android/release/lib<crate>.so stage/lib/arm64-v8a/libmain.so
+cp out/dex/classes*.dex stage/   # d8 may write classes2.dex and up
 
 # 3. manifest + resources
 "$bt/aapt2" compile --dir apk/res -o out/res/compiled.zip
@@ -28,8 +34,8 @@ cp out/dex/classes.dex stage/
   --manifest apk/AndroidManifest.xml \
   --min-sdk-version 26 --target-sdk-version 34 out/res/compiled.zip
 
-# 4. add dex and lib to the zip (Pharos used a small python zipfile script;
-#    `cd stage && zip -r ../out/base.apk .` also works)
+# 4. add dex and lib to the APK aapt2 wrote (Pharos used a python zipfile script)
+(cd stage && zip -q -r ../out/base.apk .)
 
 # 5. align, then sign (order matters: zipalign before apksigner)
 "$bt/zipalign" -p -f 4 out/base.apk out/aligned.apk
