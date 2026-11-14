@@ -4,6 +4,8 @@
     "refactor this python function",
     "this shell script breaks on macOS",
     "why does this nix expression fail to evaluate",
-    "rename this function and update its callers"
+    "rename this function and update its callers",
+    "UnsatisfiedLinkError in the android service",
+    "build and sign the rust android apk"
   ]
 }
