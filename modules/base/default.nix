@@ -299,7 +299,10 @@ in
           outputs.overlays.tmux-sessionizer
           outputs.overlays.systemd
           outputs.overlays.unstable-packages
-        ] ++ lib.optional cfg.enableCachyOSKernel inputs.nix-cachyos-kernel.overlays.pinned;
+        ] ++ lib.optionals cfg.enableCachyOSKernel [
+          inputs.nix-cachyos-kernel.overlays.pinned
+          outputs.overlays.cachyos-lto-btf
+        ];
       };
 
       nix = {
