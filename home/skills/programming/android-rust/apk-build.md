@@ -40,7 +40,7 @@ cp out/dex/classes*.dex stage/   # d8 may write classes2.dex and up
 (cd stage && zip -q -r -0 ../out/base.apk .)   # -0: stored, so zipalign can page-align the .so
 
 # 5. align, then sign (order matters: zipalign before apksigner)
-"$bt/zipalign" -p -f 4 out/base.apk out/aligned.apk
+"$bt/zipalign" -P 16 -f 4 out/base.apk out/aligned.apk   # -P 16: 16 KiB pages
 "$bt/apksigner" sign --ks "$KEYSTORE" --ks-pass "file:$PASS_FILE" \
   --ks-key-alias "$ALIAS" --out out/app.apk out/aligned.apk
 "$bt/apksigner" verify out/app.apk
@@ -48,7 +48,11 @@ cp out/dex/classes*.dex stage/   # d8 may write classes2.dex and up
 
 Notes:
 
-- `zipalign -p 4` page-aligns stored `.so` files only, hence `zip -0`. With
+- `zipalign -P 16` aligns stored `.so` files to 16 KiB (`-p` is deprecated
+  and gives 4 KiB). It only moves zip offsets: the `.so` itself also needs
+  16 KiB load segments (NDK r28+ links that by default; older NDKs need
+  `-C link-arg=-Wl,-z,max-page-size=16384`). Only stored entries align,
+  hence `zip -0`. With
   `android:extractNativeLibs="false"` a compressed `.so` fails install with
   `INSTALL_FAILED_INVALID_APK`. Pharos manifests set it to `"true"`.
 - Signing after aligning is required: aligning invalidates a signature.
