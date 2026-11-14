@@ -107,7 +107,7 @@ in {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
         home-manager.users.${specialArgs.username} = {
-          imports = [ self.homeModules.home-linux self.homeModules.vr self.homeModules.subnautica-vr self.homeModules.beatsaber self.homeModules.helldivers2-mods self.homeModules.delegate-to-local self.homeModules.memory-recall self.homeModules.observability-stack self.homeModules.overseer self.homeModules.printing-3d ];
+          imports = [ self.homeModules.home-linux self.homeModules.vr self.homeModules.subnautica-vr self.homeModules.beatsaber self.homeModules.helldivers2-mods self.homeModules.delegate-to-local self.homeModules.memory-recall self.homeModules.observability-stack self.homeModules.overseer self.homeModules.printing-3d self.homeModules.kobo-sync ];
 
           programs.rea.enable = true;
           modules.printing3d.enable = true;
@@ -116,6 +116,10 @@ in {
           # Design: specs/007-local-observability-stack.
           modules.observabilityStack.enable = true;
           modules.overseer.enable = true;
+
+          # Kobo Libra Colour annotations into the vault over Wi-Fi.
+          # Kobo side: Cobalt setup (SSH key ~/.ssh/kobo_cobalt).
+          modules.koboSync.enable = true;
 
           # Trial: injects matching memories and skill sections and logs scores
           # (never prompts) to ~/.local/state/memory-recall/recall.jsonl; read it with
