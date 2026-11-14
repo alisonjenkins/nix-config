@@ -55,7 +55,9 @@ pub struct ClassSpec {
   Overloaded natives (same name twice in a class) need the long form: `__`
   then the escaped argument descriptor, so `f(I)V` exports `..._f__I` and
   `f(Ljava/lang/String;)V` exports `..._f__Ljava_lang_String_2`
-  (`;` becomes `_2`, `[` becomes `_3`). Hook natives use the hook name,
+  (`;` becomes `_2`, `[` becomes `_3`). Remove the short `..._f` export
+  then: the JVM tries the short name first and would bind it to both
+  overloads. Hook natives use the hook name,
   e.g. `..._PharosMediaService_nativeOnCreate`.
 
 ## Classes Pharos generates
