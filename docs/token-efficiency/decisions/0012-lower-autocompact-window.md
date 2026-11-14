@@ -6,7 +6,7 @@ finding: 2026-11-11-Alisons-MacBook-Pro#1
 decision: configure
 reason: "three separate reviews in a row (2026-11-02, -03, -11) each found a costly session sitting in the 240k-300k token band, under the autoCompactWindow=350000 trigger set by decision 0002, so it never compacted and drove 30-70% of weekly spend each time"
 metric: { question: costly-sessions, key: "6ae60262-687b-4895-a8cb-281469593658", baseline: 30.4047, unit: usd/week }
-acted_on: null
+acted_on: "b42e0cf6"
 outcome: null
 outcome_review: null
 ---

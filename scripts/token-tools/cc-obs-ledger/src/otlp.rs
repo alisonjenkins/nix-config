@@ -290,6 +290,14 @@ fn tool_call_record(call: &ToolCall, time: &str) -> Value {
     if let Some(bytes) = call.result_bytes {
         attrs.push(int_attribute("result_bytes", bytes));
     }
+    if call.result_image_count > 0 {
+        attrs.push(int_attribute("result_image_count", call.result_image_count));
+        attrs.push(int_attribute("result_image_bytes", call.result_image_bytes));
+        attrs.push(int_attribute(
+            "result_image_tokens",
+            call.result_image_tokens,
+        ));
+    }
     log_record("cc_obs_ledger.tool_call", time, attrs)
 }
 

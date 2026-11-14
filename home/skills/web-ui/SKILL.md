@@ -31,3 +31,17 @@ before relying on one, and say so rather than improvising.
   skill's rules on what makes an assertion worth having.
 - Charts and dashboards: the bundled `/dataviz` skill owns the palette and
   chart-form rules; use it before writing chart code.
+
+## Screenshots
+
+A screenshot stays in context and is re-read on every later request, so take
+the smallest one that answers the question:
+
+- Only you will look at it: `deviceScaleFactor: 1`, clipped to the element
+  under test (`locator.screenshot()` or `clip`), not the full page.
+- A person will see it: `deviceScaleFactor: 2` is fine.
+- Prefer a text check (`textContent`, an accessibility snapshot, a computed
+  style) when the question is about content rather than looks.
+
+Measured over 2026-11-05/12 on `ali-desktop`: 338 PNG Reads held 88% of all
+Read result bytes (decision 0020).
