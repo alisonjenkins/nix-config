@@ -50,8 +50,9 @@ Notes:
 
 - `zipalign -P 16` aligns stored `.so` files to 16 KiB (`-p` is deprecated
   and gives 4 KiB). It only moves zip offsets: the `.so` itself also needs
-  16 KiB load segments (NDK r28+ links that by default; older NDKs need
-  `-C link-arg=-Wl,-z,max-page-size=16384`). Only stored entries align,
+  16 KiB load segments (NDK r28+ links that by default; NDK r27 and lower
+  need `-C link-arg=-Wl,-z,max-page-size=16384` and
+  `-C link-arg=-Wl,-z,common-page-size=16384`). Only stored entries align,
   hence `zip -0`. With
   `android:extractNativeLibs="false"` a compressed `.so` fails install with
   `INSTALL_FAILED_INVALID_APK`. Pharos manifests set it to `"true"`.
