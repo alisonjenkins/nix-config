@@ -30,7 +30,6 @@ in {
       self.nixosModules.hardware-fingerprint
       self.nixosModules.hardware-touchpad
       self.nixosModules.audio-context-suspend
-      self.nixosModules.wifi-sleep-reload
       self.nixosModules.tpm-resume-rebind
       self.nixosModules.base
       self.nixosModules.desktop
@@ -298,7 +297,6 @@ in {
           user = "ali";
         };
 
-        services.wifi-sleep-reload.enable = true;
         services.tpm-resume-rebind.enable = true;
 
         # Nullify the disko-generated keyFile so systemd-cryptsetup uses the TPM2 token
