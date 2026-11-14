@@ -199,7 +199,7 @@ in {
           onBattery = {
             ppdProfile = "power-saver";
             scxArgs = [ ];
-            wifiPowerSave = false;  # mt7921e power save: 13 ms avg / 150 ms max to gateway vs 2 ms / 6 ms off
+            wifiPowerSave = true;  # AX210 to gateway, power save on vs off: 2.3 ms avg / 13.5 ms max vs 1.6 ms / 2.6 ms. (The old mt7921e was 13 ms / 150 ms on.)
             pciRuntimePM = true;
             usbAutosuspend = true;
             dirtyWritebackCentisecs = 6000;
