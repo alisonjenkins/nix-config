@@ -21,7 +21,7 @@ let
 
   koboSync = pkgs.writeShellApplication {
     name = "kobo-sync";
-    runtimeInputs = with pkgs; [ coreutils openssh gnutar rsync sqlite kollate-cli ];
+    runtimeInputs = with pkgs; [ coreutils gnugrep openssh gnutar rsync sqlite kollate-cli ];
     text = ''
       host=${lib.escapeShellArg cfg.host}
       ssh_key=${lib.escapeShellArg cfg.sshKey}

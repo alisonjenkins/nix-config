@@ -17,8 +17,30 @@ ssh_opts=(
   -o "UserKnownHostsFile=$state/known_hosts"
 )
 # shellcheck disable=SC2029 # remote commands are built here on purpose
-on_kobo() { ssh "${ssh_opts[@]}" "root@$host" "$@"; }
+on_kobo() { ssh "${ssh_opts[@]}" "root@$host" "$@" 2>"$ssh_err"; }
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
+ssh_err=$state/ssh.err
+
+# ssh exits 255 for its own failures. A Kobo that is asleep or off Wi-Fi
+# is normal and exits 0; a host key or login problem will not fix itself,
+# so it fails the unit straight away.
+on_kobo_failed() {
+  local rc=$1 away_event=$2
+  if ((rc != 255)); then
+    printf 'event=remote_failed host=%q rc=%d stderr=%q\n' "$host" "$rc" "$(<"$ssh_err")" >&2
+    exit 1
+  fi
+  if grep -q 'Host key verification failed' "$ssh_err"; then
+    printf 'event=host_key_changed host=%q fix=%q\n' "$host" "check the Kobo, then delete its line in $state/known_hosts" >&2
+    exit 1
+  fi
+  if grep -q 'Permission denied' "$ssh_err"; then
+    printf 'event=auth_failed host=%q key=%q fix=%q\n' "$host" "$ssh_key" "re-run Cobalt setup on the Kobo" >&2
+    exit 1
+  fi
+  printf 'event=%s host=%q\n' "$away_event" "$host" >&2
+  exit 0
+}
 
 # Remote side is BusyBox sh. Missing paths are dropped so tar and
 # stat do not fail on a Kobo with no notebooks or markups yet.
@@ -29,14 +51,7 @@ set +e
 listing=$(on_kobo "cd /mnt/onboard && set -- $stamp_paths && $existing && find \"\$@\" -type f -exec stat -c '%n %s %Y' {} +")
 rc=$?
 set -e
-if ((rc == 255)); then
-  printf 'event=kobo_unreachable host=%q\n' "$host" >&2
-  exit 0
-fi
-if ((rc != 0)); then
-  printf 'event=list_failed host=%q rc=%d\n' "$host" "$rc" >&2
-  exit 1
-fi
+((rc == 0)) || on_kobo_failed "$rc" kobo_unreachable
 
 stamp=$(printf '%s' "$listing" | sha256sum | cut -d' ' -f1)
 if [[ -z ${KOBO_SYNC_FORCE:-} && -f $state/last-stamp && $(<"$state/last-stamp") == "$stamp" ]]; then
@@ -47,8 +62,17 @@ fi
 
 staging=$(mktemp -d "$state/staging.XXXXXX")
 trap 'rm -rf -- "$staging"' EXIT
+set +e
 on_kobo "cd /mnt/onboard && set -- $sync_paths && $existing && tar -cf - \"\$@\"" \
   | tar -xf - -C "$staging"
+copy_rc=("${PIPESTATUS[@]}")
+set -e
+# The Kobo going to sleep mid-copy also breaks the local tar; ssh's code says why.
+((copy_rc[0] == 0)) || on_kobo_failed "${copy_rc[0]}" kobo_lost_mid_copy
+if ((copy_rc[1] != 0)); then
+  printf 'event=unpack_failed rc=%d\n' "${copy_rc[1]}" >&2
+  exit 1
+fi
 
 db=$staging/.kobo/KoboReader.sqlite
 if [[ ! -f $db ]]; then
