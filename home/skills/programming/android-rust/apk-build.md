@@ -91,8 +91,10 @@ llvm-nm -D --defined-only libmain.so | awk '$3 ~ /^Java_com_example_auto_/ {prin
 - Use `llvm-nm` from the NDK (`$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/*/bin/llvm-nm`)
   because the file is an Android ELF. Plain `nm -D` worked for a host `.so`
   in jvm-check.
-- Assert at least one export per generated class, and name a specific one
-  (Pharos checks `PharosMediaService_nativeOnCreate`).
+- Compare the exports with every native method the generated classes
+  declare, not one per class: a class with two natives can keep one export
+  and still throw on the other. Pharos's check names a specific one
+  (`PharosMediaService_nativeOnCreate`); jvm-check compares the full set.
 - An APK whose library lost its exports installs, loads, then throws
   `UnsatisfiedLinkError` in the car. This check catches it before the device.
 
