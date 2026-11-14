@@ -30,7 +30,11 @@ cargo build --release --target aarch64-linux-android
 #   CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384" \
 #     cargo build --release --target aarch64-linux-android
 #   A set RUSTFLAGS or CARGO_ENCODED_RUSTFLAGS makes cargo ignore that variable:
-#   append the two -C link-arg flags to whichever is set instead.
+#   append the two -C link-arg flags to whichever is set instead. RUSTFLAGS takes
+#   them space-separated; CARGO_ENCODED_RUSTFLAGS separates each argument with
+#   the 0x1f byte, not a space:
+#     sep=$(printf '\037')
+#     CARGO_ENCODED_RUSTFLAGS="$CARGO_ENCODED_RUSTFLAGS${sep}-C${sep}link-arg=-Wl,-z,max-page-size=16384${sep}-C${sep}link-arg=-Wl,-z,common-page-size=16384"
 # the file name must match the classes' System.loadLibrary("main") (classgen --lib)
 cp target/aarch64-linux-android/release/lib<crate>.so stage/lib/arm64-v8a/libmain.so
 cp out/dex/classes*.dex stage/   # d8 may write classes2.dex and up
