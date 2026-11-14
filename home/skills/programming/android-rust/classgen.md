@@ -49,7 +49,9 @@ pub struct ClassSpec {
 - **Descriptors.** Parsed for argument kinds (int, long, float, double,
   reference, arrays). Bad descriptors return `GenError::BadDescriptor`.
 - **Native name.** `Java_<pkg_with_underscores>_<Class>_<method>` in Rust,
-  `#[no_mangle] pub extern "system"`. Hook natives use the hook name,
+  `#[no_mangle] pub extern "system"`. Apply JNI escaping inside each part:
+  `_` becomes `_1`, `$` (nested class) becomes `_00024`. So `a/b/C.on_event`
+  exports `Java_a_b_C_on_1event`. Name natives in camelCase to avoid it. Hook natives use the hook name,
   e.g. `..._PharosMediaService_nativeOnCreate`.
 
 ## Classes Pharos generates
