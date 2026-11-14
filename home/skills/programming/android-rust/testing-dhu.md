@@ -12,18 +12,25 @@ screen on the desktop and talks to Android Auto on a real phone.
 - Never kill or restart an adb server other work shares.
 - Probe: `command -v adb`; use that one for every call.
 
-## Wireless debugging port
+## Wireless debugging
 
-When mDNS discovery is unsupported, find the port by scanning:
+Android 11+ needs a one-time pairing first. On the phone open Developer
+options → Wireless debugging → "Pair device with pairing code":
 
 ```bash
-nmap -Pn -p 30000-49999 --open <phone-ip>
-# not installed:  nix run nixpkgs#nmap -- -Pn -p 30000-49999 --open <phone-ip>
-adb connect <phone-ip>:<port>
-adb devices            # copy the serial for -s
+adb pair <phone-ip>:<pairing-port>      # enter the six-digit code
+adb connect <phone-ip>:<connect-port>   # the port on the Wireless debugging screen
+adb devices                             # copy the serial for -s
 ```
 
-The port is random; rescan if `adb connect` is refused.
+The pairing and connect ports differ, and the connect port changes. Read it
+from the Wireless debugging screen. Without the screen to hand, and with
+mDNS discovery unsupported, scan the ephemeral range:
+
+```bash
+nmap -Pn -p 30000-60999 --open <phone-ip>
+# not installed:  nix run nixpkgs#nmap -- -Pn -p 30000-60999 --open <phone-ip>
+```
 
 ## Phone setup (Android Auto developer settings)
 
