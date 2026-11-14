@@ -829,6 +829,28 @@ in {
             fi
             ${pkgs.gnused}/bin/sed -i "s|^WebUI\\\\AuthSubnetWhitelistEnabled=.*|WebUI\\\\AuthSubnetWhitelistEnabled=true|" "$CONFIG_FILE"
 
+            # Enforce the connection-churn limits and TCP-only, no-DHT mode on
+            # every start. The merger keeps the persisted conf, so serverConfig
+            # alone never changes a value qBittorrent already saved. Each entry is Key=Value under
+            # [BitTorrent]; backslash escaping matches the sed calls above.
+            for KV in \
+              "MaxConnections=200" \
+              "MaxConnectionsPerTorrent=40" \
+              "ConnectionSpeed=5" \
+              "MaxConcurrentHTTPAnnounces=10" \
+              "AnnounceToAllTrackers=false" \
+              "DHTEnabled=false" \
+              "BTProtocol=TCP"; do
+              KEY="''${KV%%=*}"
+              if grep -q "^Session\\\\$KEY=" "$CONFIG_FILE"; then
+                ${pkgs.gnused}/bin/sed -i "s|^Session\\\\$KEY=.*|Session\\\\$KV|" "$CONFIG_FILE"
+              elif grep -q "^\[BitTorrent\]" "$CONFIG_FILE"; then
+                ${pkgs.gnused}/bin/sed -i "/^\[BitTorrent\]/a Session\\\\$KV" "$CONFIG_FILE"
+              else
+                printf '\n[BitTorrent]\nSession\\%s\n' "$KV" >> "$CONFIG_FILE"
+              fi
+            done
+
             # Set proper permissions
             ${pkgs.coreutils}/bin/chmod 0640 "$CONFIG_FILE"
             ${pkgs.coreutils}/bin/chown qbittorrent:qbittorrent "$CONFIG_FILE"
@@ -2008,15 +2030,20 @@ EOF
                 # File handling optimizations
                 "Session\\FilePoolSize" = 500;                     # Keep more files open for better performance
 
-                # Connection limits (prevent overwhelming the system)
-                "Session\\MaxConnections" = 500;                   # Global connection limit
-                "Session\\MaxConnectionsPerTorrent" = 50;          # Per-torrent connection limit (reduced from 100 to lower overhead)
+                # Connection limits. Kept low on purpose: a startup burst of
+                # thousands of new peer flows (conntrack 200 -> 16k in 30s)
+                # made the Proton WireGuard server stop answering handshakes
+                # for 30+ minutes. Enforced on every start by config-merger.sh.
+                "Session\\MaxConnections" = 200;                   # Global connection limit
+                "Session\\MaxConnectionsPerTorrent" = 40;          # Per-torrent connection limit
+                "Session\\ConnectionSpeed" = 5;                    # New outgoing connections per second (default 30)
+                "Session\\MaxConcurrentHTTPAnnounces" = 10;        # Parallel tracker announces (default 50)
                 "Session\\MaxUploads" = 50;                        # Global upload slots
                 "Session\\MaxUploadsPerTorrent" = 4;               # Per-torrent upload slots
 
                 # Performance settings
                 "Session\\AnnounceToAllTiers" = true;              # Better peer discovery
-                "Session\\AnnounceToAllTrackers" = true;           # Announce to all trackers
+                "Session\\AnnounceToAllTrackers" = false;          # One tracker per tier; all-trackers multiplied the startup announce burst
                 "Session\\AsyncIOThreadsCount" = 8;                # More async I/O threads for network storage
                 "Session\\SendBufferWatermark" = 5120;             # 5 MB send buffer
                 "Session\\SendBufferLowWatermark" = 512;           # 512 KB low watermark
@@ -2025,7 +2052,11 @@ EOF
                 # Protocol settings
                 "Session\\uTPRateLimited" = true;                  # Rate limit uTP protocol
                 "Session\\uTP_mix_mode" = 0;                       # Prefer TCP over uTP (better for VPN)
-                "Session\\DHTEnabled" = true;                      # Enable DHT for peer discovery
+                # DHT and uTP are UDP: they pushed conntrack to 12k-16k and got
+                # the Proton server to drop us even with the caps above. TCP
+                # only + no DHT held ~600 flows. Enforced by config-merger.sh.
+                "Session\\BTProtocol" = "TCP";                     # TCP only, no uTP
+                "Session\\DHTEnabled" = false;                     # No DHT; trackers + PeX find peers
                 "Session\\PeXEnabled" = true;                      # Enable Peer Exchange
                 "Session\\LSDEnabled" = false;                     # Disable LSD (doesn't work over VPN)
 
