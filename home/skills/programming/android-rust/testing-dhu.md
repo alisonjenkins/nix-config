@@ -46,7 +46,7 @@ nmap -Pn -p 30000-60999 --open <phone-ip>
 
 ```bash
 adb -s <serial> forward tcp:5277 tcp:5277
-dhu            # the launcher script below, or ./desktop-head-unit
+bash "$HOME/.local/share/android-dhu/dhu"   # the launcher below; off NixOS ./desktop-head-unit
 ```
 
 The DHU connects to `localhost:5277` by default, so forward that port.
@@ -68,7 +68,8 @@ that maps the plugin to the FHS copy.
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-d=$HOME/.local/share/android-dhu/extras/google/auto
+# DHU_DIR: the extras/google/auto directory of your SDK install
+d=${DHU_DIR:-$HOME/.local/share/android-dhu/extras/google/auto}
 cxx=$(nix build --no-link --print-out-paths nixpkgs#llvmPackages.libcxx)
 cd "$d"
 export ALSA_CONFIG_PATH="/usr/share/alsa/alsa.conf:$HOME/.local/share/android-dhu/alsa-pipewire.conf"
