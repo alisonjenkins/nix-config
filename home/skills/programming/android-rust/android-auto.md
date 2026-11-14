@@ -31,7 +31,9 @@ Framework classes only: `MediaBrowserService` and `MediaSession`
 - Root extras **must** carry `android.media.browse.SEARCH_SUPPORTED=true`.
   Without it the car hides the search button (confirmed in the DHU).
 - `onLoadChildren` gets a `Result`. Library calls block on the network, so
-  call `detach()` and send from a worker thread attached to the JVM. Search
+  call `detach()`, take a global ref to the `Result` before the callback
+  returns (a local ref dies with it), send from a worker thread attached to
+  the JVM, then drop the global ref. Search
   does not come through here: see the Messenger section below.
 - Session flags 3 (media buttons and transport controls). Advertise
   `PREPARE` actions. State is BUFFERING until `onPrepared`.
