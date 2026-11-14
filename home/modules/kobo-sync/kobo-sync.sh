@@ -80,7 +80,8 @@ if [[ ! -f $db ]]; then
   exit 1
 fi
 # Copied while Nickel may be writing; a torn copy is retried next run.
-integrity=$(sqlite3 "$db" 'PRAGMA integrity_check')
+# A torn header makes sqlite3 itself fail; that is the same verdict.
+integrity=$(sqlite3 "$db" 'PRAGMA integrity_check' 2>&1) || true
 if [[ $integrity != ok ]]; then
   printf 'event=integrity_failed result=%q\n' "$integrity" >&2
   exit 1
