@@ -44,6 +44,12 @@ repos:
         language: system
         pass_filenames: false
         files: ^modules/disk-evacuation/
+      - id: kobo-sync-tests
+        name: kobo-sync tests
+        entry: nix shell --option warn-dirty false --inputs-from . nixpkgs#python3Packages.pytest nixpkgs#sqlite nixpkgs#rsync nixpkgs#gnutar --command pytest -q -p no:cacheprovider home/modules/kobo-sync/tests
+        language: system
+        pass_filenames: false
+        files: ^home/modules/kobo-sync/
       # Copilot CLI and other strict parsers drop a skill whose frontmatter
       # Claude Code happily loads (an unquoted ": " in a description).
       - id: skill-frontmatter
