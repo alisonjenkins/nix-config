@@ -93,4 +93,7 @@ classes (including generated ones).
 ## Related
 
 - Notification permission: ask from an Activity ([android-auto.md](android-auto.md)).
-- Phones are arm64: build `--target aarch64-linux-android` only.
+- Pharos targets arm64 phones only (`--target aarch64-linux-android`). An
+  x86_64 emulator or a 32-bit device needs its own target
+  (`x86_64-linux-android`, `armv7-linux-androideabi`) and its own
+  `lib/<abi>/` directory in the APK.
