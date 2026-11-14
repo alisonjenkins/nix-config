@@ -30,9 +30,9 @@ Framework classes only: `MediaBrowserService` and `MediaSession`
   (`com.google.android.googlequicksearchbox`) and browses unprompted.
 - Root extras **must** carry `android.media.browse.SEARCH_SUPPORTED=true`.
   Without it the car hides the search button (confirmed in the DHU).
-- `onLoadChildren` and `onSearch` get a `Result`. Library calls block on the
-  network, so call `detach()` and send from a worker thread attached to the
-  JVM.
+- `onLoadChildren` gets a `Result`. Library calls block on the network, so
+  call `detach()` and send from a worker thread attached to the JVM. Search
+  does not come through here: see the Messenger section below.
 - Session flags 3 (media buttons and transport controls). Advertise
   `PREPARE` actions. State is BUFFERING until `onPrepared`.
 - Seek: advertised; the DHU console cannot drag, so it is not exercisable
