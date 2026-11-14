@@ -19,6 +19,15 @@ read them from a project they point at: its `Metadata/project_settings.config`
 `QIDI_FILAMENT_NAME` for anything else. List the choices with
 `ls "$HOME/.config/QIDIStudio/system/X 4 Series/"{process,filament}`.
 
+## Model must be one piece
+
+`slice.sh` runs `check-model.py` first and stops if the model has more separate
+pieces than `QIDI_PARTS` (default 1). Disjoint parts print as loose pieces. Each build item counts on its own, because
+`--arrange` moves items apart even when they touch in the file.
+It reads OpenSCAD 3mf, Qidi Studio 3mf (meshes in `3D/Objects`, placed by the build
+transforms, converted to mm) and STL. If it cannot read a file it says so and stops; `QIDI_PARTS=0`
+skips the check for that file. Run it by hand while designing (design.md).
+
 ## Presets must be flattened
 
 The CLI does not follow `inherits` for file-path presets. An override JSON that
