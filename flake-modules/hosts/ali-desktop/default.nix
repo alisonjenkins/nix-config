@@ -295,7 +295,45 @@ in {
           };
       })
 
-      ({ config, pkgs, lib, outputs, username, ... }: {
+      ({ config, pkgs, lib, outputs, username, ... }:
+      let
+        systemctl = "${pkgs.systemd}/bin/systemctl";
+        nixDaemonCfg = config.systemd.services.nix-daemon.serviceConfig;
+
+        nixBuilderGate = pkgs.writeShellApplication {
+          name = "nix-builder-gate";
+          runtimeInputs = [ config.nix.package pkgs.systemd ];
+          text = ''
+            if systemctl is-active --quiet nix-gaming-throttle.service; then
+              echo "ali-desktop is in use for gaming, not accepting remote builds" >&2
+              exit 1
+            fi
+            case "''${SSH_ORIGINAL_COMMAND:-}" in
+              "nix-daemon --stdio") exec nix-daemon --stdio ;;
+              "nix daemon --stdio") exec nix daemon --stdio ;;
+              "nix-store --serve --write") exec nix-store --serve --write ;;
+              *)
+                echo "nix-builder only runs nix daemon/store sessions" >&2
+                exit 1
+                ;;
+            esac
+          '';
+        };
+
+        # Steam launches every game under `reaper SteamLaunch AppId=N`, which
+        # covers games that never register with gamemode.
+        nixGamingPoll = pkgs.writeShellApplication {
+          name = "nix-gaming-poll";
+          runtimeInputs = [ pkgs.procps pkgs.systemd ];
+          text = ''
+            if pgrep -f 'SteamLaunch AppId=' >/dev/null || pgrep -x gamescope >/dev/null; then
+              systemctl start nix-gaming-throttle.service
+            elif ! systemctl is-active --quiet nix-gaming-gamemode.service; then
+              systemctl stop nix-gaming-throttle.service
+            fi
+          '';
+        };
+      in {
         modules.niks3CachePush = {
           enable = true;
           authTokenFile = config.sops.secrets.niks3-token.path;
@@ -962,6 +1000,91 @@ in {
         # a hard kernel-enforced ceiling that guarantees headroom for PipeWire and games.
         systemd.services.lactd.serviceConfig.ExecStartPre = "${pkgs.coreutils}/bin/rm -f /run/lactd.sock";
         systemd.services.nix-daemon.serviceConfig.CPUQuota = "2880%";
+
+        # Remote builder for home-k8s-master-1 CI. The CI node's root SSHes in
+        # as the restricted nix-builder user; the forced command below refuses
+        # every connection while nix-gaming-throttle is active, so the client
+        # sees an unavailable builder and builds locally instead of queueing
+        # work onto a machine that is being played on.
+        nix.settings.trusted-users = [ "nix-builder" ];
+        nix.daemonIOSchedPriority = 7;
+
+        users.groups.nix-builder = { };
+        users.users.nix-builder = {
+          isSystemUser = true;
+          group = "nix-builder";
+          description = "Restricted remote nix builder for CI";
+          home = "/var/empty";
+          shell = pkgs.bashInteractive;
+          openssh.authorizedKeys.keys = [
+            ''restrict,command="${nixBuilderGate}/bin/nix-builder-gate" ${outputs.lib.sshKeys.nixBuilderCi}''
+          ];
+        };
+
+        # Gaming state = nix-gaming-throttle.service is active. Started by
+        # gamemode (via nix-gaming-gamemode.service) or by the poller when a
+        # Steam game or gamescope is running; stopped by the poller once
+        # neither signal is present. Active: new remote builds are refused and
+        # the running nix-daemon is cut to 80% of one thread at minimum weight,
+        # matching the shared gamemode hook this replaces.
+        systemd.services.nix-gaming-throttle = {
+          description = "Throttle nix-daemon and refuse remote builds while gaming";
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${systemctl} set-property --runtime nix-daemon.service CPUQuota=80% CPUWeight=1 IOWeight=1";
+            ExecStop = "${systemctl} set-property --runtime nix-daemon.service CPUQuota=${nixDaemonCfg.CPUQuota} CPUWeight=${toString nixDaemonCfg.CPUWeight} IOWeight=${toString nixDaemonCfg.IOWeight}";
+          };
+        };
+
+        systemd.services.nix-gaming-gamemode = {
+          description = "GameMode is active";
+          requires = [ "nix-gaming-throttle.service" ];
+          after = [ "nix-gaming-throttle.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${pkgs.coreutils}/bin/true";
+          };
+        };
+
+        systemd.services.nix-gaming-poll = {
+          description = "Detect Steam/gamescope games and update the nix gaming throttle";
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = "${nixGamingPoll}/bin/nix-gaming-poll";
+          };
+        };
+
+        systemd.timers.nix-gaming-poll = {
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnBootSec = "1min";
+            OnUnitActiveSec = "15s";
+            AccuracySec = "1s";
+          };
+        };
+
+        # Lets the gamemode hooks (running as the logged-in user) toggle the
+        # marker unit without an interactive prompt.
+        security.polkit.extraConfig = ''
+          polkit.addRule(function(action, subject) {
+            if (
+              subject.isInGroup("wheel") &&
+              action.id == "org.freedesktop.systemd1.manage-units" &&
+              ["nix-gaming-gamemode.service", "nix-gaming-poll.service"].indexOf(action.lookup("unit")) >= 0
+            ) {
+              return polkit.Result.YES;
+            }
+          });
+        '';
+
+        # Replaces the shared module's hooks, whose persistent
+        # `set-property CPUQuota=` on end also wiped the CPUQuota above.
+        programs.gamemode.settings.custom = {
+          start = lib.mkForce "${pkgs.libnotify}/bin/notify-send 'GameMode started'; ${systemctl} start nix-gaming-gamemode.service";
+          end = lib.mkForce "${pkgs.libnotify}/bin/notify-send 'GameMode ended'; ${systemctl} stop nix-gaming-gamemode.service; ${systemctl} start nix-gaming-poll.service";
+        };
 
         powerManagement = {
           cpuFreqGovernor = "performance";

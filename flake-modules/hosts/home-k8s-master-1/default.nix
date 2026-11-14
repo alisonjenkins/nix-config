@@ -24,7 +24,11 @@ in {
       inputs.sops-nix.nixosModules.sops
 
       # Host-specific configuration
-      ({ modulesPath, lib, outputs, pkgs, ... }: {
+      ({ config, modulesPath, lib, outputs, pkgs, ... }:
+      let
+        # LAN name (DHCP-assigned address, so never pin the IP).
+        builderHost = "ali-desktop.lan";
+      in {
         imports = [
           (modulesPath + "/installer/scan/not-detected.nix")
           (modulesPath + "/profiles/qemu-guest.nix")
@@ -230,8 +234,44 @@ in {
             # Was 2 x 4 = 8 under the old 16-vCPU ceiling.
             max-jobs = 2;
             cores = 16;
+
+            # Let the builder fetch inputs from the caches itself instead of
+            # having this node upload them.
+            builders-use-substitutes = true;
           };
         };
+
+        # Offload CI derivations to ali-desktop's spare cores. The desktop
+        # refuses connections while Alison is gaming (see its nix-builder
+        # gate), and nix then builds on this node as before. max-jobs above
+        # stays >0 so local builds are always possible.
+        nix.distributedBuilds = true;
+        nix.buildMachines = [
+          {
+            hostName = builderHost;
+            sshUser = "nix-builder";
+            sshKey = config.sops.secrets.nix-builder-ssh-key.path;
+            protocol = "ssh-ng";
+            systems = [ "x86_64-linux" ];
+            # Desktop's own nix.settings.max-jobs is 4 and it throttles
+            # itself while gaming; keep headroom for its owner.
+            maxJobs = 4;
+            speedFactor = 2;
+            supportedFeatures = [ "big-parallel" "nixos-test" ];
+          }
+        ];
+
+        # A sleeping or unreachable desktop must fail fast so the build falls
+        # back to this node instead of stalling the CI job on a TCP timeout.
+        programs.ssh.extraConfig = ''
+          Host ${builderHost}
+            ConnectTimeout 5
+            ServerAliveInterval 10
+            ServerAliveCountMax 3
+            BatchMode yes
+        '';
+        programs.ssh.knownHosts.${builderHost}.publicKey =
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBHrvu44pLrT+P5uAD27syxuqJ/bWSvqydW+OwKluqlY";
 
         sops = {
           defaultSopsFile = self + "/secrets/home-k8s-master-1/secrets.yaml";
@@ -251,6 +291,12 @@ in {
               path = "/run/secrets/k8s-token";
               restartUnits = [ "k3s.service" ];
               sopsFile = self + "/secrets/home-k8s-master-1/secrets.yaml";
+            };
+
+            nix-builder-ssh-key = {
+              mode = "0400";
+              owner = "root";
+              sopsFile = self + "/secrets/home-k8s-master-1/nix-builder-key.enc.yaml";
             };
           };
         };
