@@ -1,6 +1,7 @@
 # Building an APK without gradle
 
-Pharos: `spikes/044-android-auto/build-apk.sh`. Use this path when there is
+Pharos's Android Auto spike built this way (`spikes/044-android-auto/build-apk.sh`,
+now in git history only; the phone app uses dx). Use this path when there is
 no Java source and no dx project. For dx, see [dx-dioxus.md](dx-dioxus.md).
 
 Needs:
