@@ -36,7 +36,7 @@ cp out/dex/classes*.dex stage/   # d8 may write classes2.dex and up
   --min-sdk-version 26 --target-sdk-version 34 out/res/compiled.zip
 
 # 4. add dex and lib to the APK aapt2 wrote (Pharos used a python zipfile script)
-(cd stage && zip -q -r ../out/base.apk .)
+(cd stage && zip -q -r -0 ../out/base.apk .)   # -0: stored, so zipalign can page-align the .so
 
 # 5. align, then sign (order matters: zipalign before apksigner)
 "$bt/zipalign" -p -f 4 out/base.apk out/aligned.apk
@@ -47,8 +47,9 @@ cp out/dex/classes*.dex stage/   # d8 may write classes2.dex and up
 
 Notes:
 
-- `zipalign -p 4` page-aligns stored `.so` files. Pharos manifests also set
-  `android:extractNativeLibs="true"`.
+- `zipalign -p 4` page-aligns stored `.so` files only, hence `zip -0`. With
+  `android:extractNativeLibs="false"` a compressed `.so` fails install with
+  `INSTALL_FAILED_INVALID_APK`. Pharos manifests set it to `"true"`.
 - Signing after aligning is required: aligning invalidates a signature.
 - Keystore, password file and alias come from env vars you provide
   (Pharos: `PHAROS_ANDROID_KEYSTORE`, `..._KEYSTORE_PASS_FILE`,
