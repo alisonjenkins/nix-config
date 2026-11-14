@@ -51,7 +51,11 @@ pub struct ClassSpec {
 - **Native name.** `Java_<pkg_with_underscores>_<Class>_<method>` in Rust,
   `#[no_mangle] pub extern "system"`. Apply JNI escaping inside each part:
   `_` becomes `_1`, `$` (nested class) becomes `_00024`. So `a/b/C.on_event`
-  exports `Java_a_b_C_on_1event`. Name natives in camelCase to avoid it. Hook natives use the hook name,
+  exports `Java_a_b_C_on_1event`. Name natives in camelCase to avoid it.
+  Overloaded natives (same name twice in a class) need the long form: `__`
+  then the escaped argument descriptor, so `f(I)V` exports `..._f__I` and
+  `f(Ljava/lang/String;)V` exports `..._f__Ljava_lang_String_2`
+  (`;` becomes `_2`, `[` becomes `_3`). Hook natives use the hook name,
   e.g. `..._PharosMediaService_nativeOnCreate`.
 
 ## Classes Pharos generates
