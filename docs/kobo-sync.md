@@ -21,11 +21,15 @@ Kobo (Nickel + Cobalt's OpenSSH)          desktop (systemd user timer, 5 min)
 
 Each run of `kobo-sync`:
 
-1. Lists the synced files on the Kobo (`stat` over SSH). SSH exit 255 means
-   the Kobo is asleep or off Wi-Fi: log `event=kobo_unreachable`, exit 0.
+1. Lists the synced files on the Kobo (`stat` over SSH). A Kobo that is
+   asleep or off Wi-Fi logs `event=kobo_unreachable` and exits 0. A changed
+   host key (`event=host_key_changed`) or a rejected key
+   (`event=auth_failed`) exits 1, so the unit fails at once.
 2. Hashes that listing. Same as last run: log `event=unchanged`, stop.
 3. Streams the files with `tar` over SSH into a staging dir. The firmware
-   may not ship `rsync`, so `tar` is used on the Kobo side.
+   may not ship `rsync`, so `tar` is used on the Kobo side. A Kobo that
+   sleeps mid-copy logs `event=kobo_lost_mid_copy`, exits 0 and retries
+   next run.
 4. Runs `PRAGMA integrity_check` on the copied database. A torn copy
    (Nickel writing mid-copy) fails the run; the next run retries.
 5. `rsync --delete` from staging into the mirror.
@@ -38,6 +42,9 @@ Each run of `kobo-sync`:
 
 A second, daily timer (`kobo-sync-stale`) sends a desktop notification when
 the last good contact is more than `staleAfterDays` (3) days old.
+
+Tests: `home/modules/kobo-sync/tests` (pytest, fake `ssh` and
+`kollate-cli`), run by the `kobo-sync-tests` prek hook.
 
 Logs: `journalctl --user -u kobo-sync`. Force a full run:
 `KOBO_SYNC_FORCE=1 kobo-sync`.
@@ -73,7 +80,9 @@ Logs: `journalctl --user -u kobo-sync`. Force a full run:
 - **Only while awake.** Wi-Fi goes down on every suspend. Reading for a few
   minutes is enough for the next run to catch it.
 - **Firmware updates.** May undo Cobalt's SSH changes on the root
-  filesystem. The stale notification says when; re-run Cobalt setup.
+  filesystem. The unit then fails with `auth_failed` (re-run Cobalt setup)
+  or `host_key_changed` (check the Kobo, then delete its line in
+  `~/.local/state/kobo-sync/known_hosts`).
 - **Young dependencies.** Cobalt started 2026-07-29. Kollate has one
   developer (v0.7.1, 2026-10-05). Both are pinned by version.
 - **CLI only.** `pkgs/kollate` builds `kollate-cli` without the GTK app.
