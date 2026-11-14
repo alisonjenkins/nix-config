@@ -17,6 +17,7 @@ Needs:
 ```bash
 bt=$ANDROID_HOME/build-tools/35.0.0
 platform=$ANDROID_HOME/platforms/android-34/android.jar
+rm -rf out/dex stage    # a stale classes2.dex would ship in the new APK
 mkdir -p out/dex out/res stage/lib/arm64-v8a   # d8 needs an existing output dir
 
 # 1. classes -> dex  (see classgen.md)
