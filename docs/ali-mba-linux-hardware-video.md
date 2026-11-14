@@ -28,9 +28,10 @@ and the [7.2 progress report](https://asahilinux.org/2026/08/progress-report-7-2
 2. **Kernel driver.** The Asahi kernel exposes AVD as a V4L2 stateless
    (Request API) decoder. It is also posted to linux-media for upstream review.
 3. **VA-API layer.** Apps do not speak V4L2 stateless. They speak VA-API.
-   `libva-v4l2_request-sofus13` translates between the two.
+   `asahi-va-driver` translates between the two.
    `hardware.asahi.avd.vaapi-support = true` installs it and sets
-   `LIBVA_DRIVER_NAME=v4l2_request-sofus13` for the whole session.
+   `LIBVA_DRIVER_NAME=asahi` for the whole session. (Before nixos-apple-silicon
+   f49c9a1 this was `libva-v4l2_request-sofus13`, driver `v4l2_request-sofus13`.)
 4. **Apps.** mpv, Chromium and GStreamer use VA-API. Firefox cannot yet: its
    sandbox blocks this path.
 
@@ -39,11 +40,14 @@ and the [7.2 progress report](https://asahilinux.org/2026/08/progress-report-7-2
 Both lines are in `flake-modules/hosts/ali-mba-linux/default.nix`:
 
 - `hardware.asahi.avd.vaapi-support = true;` turns on the VA-API layer.
-- An overlay line, `avd-fw = final.master.avd-fw`, takes the firmware from
-  nixpkgs master. This repo builds from nixos-26.05, which does not have
-  `avd-fw`. Without the overlay the host fails to evaluate with
-  `error: attribute 'avd-fw' missing`. **Drop the overlay once 26.05 has
-  `avd-fw`.**
+- An overlay takes `avd-fw` and `asahi-va-driver` from nixpkgs master. This
+  repo builds from nixos-26.05, which has neither. Without it the host fails
+  to evaluate with `error: attribute 'avd-fw' missing` (or
+  `'asahi-va-driver' missing`). **Drop each line once 26.05 has the package.**
+- `hardware.asahi.avd.codecs` is left at upstream's default, `all_free`, which
+  builds the firmware with VP9 and AV1 decode only. The M1 has no AV1
+  decoder, so on this machine that means VP9 only. Set it to `[ "all" ]` to
+  get H.264 and HEVC too.
 
 The PR check evaluates every aarch64 host, so a nixpkgs or
 nixos-apple-silicon bump that breaks this fails the PR instead of landing
@@ -54,9 +58,10 @@ on main.
 Run these on the MacBook after `just switch` and a reboot. None of them have
 been run on this machine yet, so record what you see.
 
-1. **The driver loads.** `vainfo` should name the `v4l2_request-sofus13`
-   driver and list H.264, HEVC and VP9 decode profiles. An error about
-   `v4l2_request-sofus13_drv_video.so` means the VA-API layer is missing;
+1. **The driver loads.** `vainfo` should name the `asahi` driver and list
+   the decode profiles the firmware was built with and the M1 supports (VP9
+   only by default; see `codecs` above). An error about `asahi_drv_video.so` means the VA-API
+   layer is missing;
    check `echo $LIBVA_DRIVER_NAME` in the same shell first.
 2. **mpv decodes on the hardware.**
    ```bash
@@ -65,7 +70,8 @@ been run on this machine yet, so record what you see.
    Both flags are needed. mpv's default output (`gpu-next`) does not work
    with this path yet. Watch the terminal for the line saying hardware
    decoding is in use, and compare CPU use in `htop` against `--hwdec=no`.
-   Test one H.264, one HEVC and one VP9 file.
+   Test one VP9 file (plus H.264 and HEVC if `codecs` includes them). AV1
+   stays on the CPU on the M1.
 3. **Chromium.** Play something on YouTube. Known bug:
    [AsahiLinux/linux#628](https://github.com/AsahiLinux/linux/issues/628),
    green frames or stalled playback on H.264 from a memory allocation
