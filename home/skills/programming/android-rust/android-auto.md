@@ -74,8 +74,10 @@ The car draws icons and album art from `content://` URIs it opens through
 your `ContentProvider`, not from http URLs (`art.rs`).
 
 - Authority: `<applicationId>.art`, so two build variants can co-install.
-  Rust derives it from the package name; the manifest uses
-  `${applicationId}.art`. Verify both with `aapt2 dump xmltree`.
+  Rust derives it from the package name. Under gradle the manifest uses
+  `${applicationId}.art`. `aapt2 link` does not substitute placeholders, so
+  the gradle-free build must write the concrete name (the Pharos spike's
+  manifest has it literal). Verify with `aapt2 dump xmltree`.
 - `openFile` downloads the image into the cache dir on first use and
   returns a read-only file. Refuse write modes and path tricks.
 - Fetch only URLs registered through the URI builder in this process, so
