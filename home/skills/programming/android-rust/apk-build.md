@@ -26,6 +26,9 @@ mkdir -p out/dex out/res stage/lib/arm64-v8a   # d8 needs an existing output dir
 
 # 2. native library for arm64
 cargo build --release --target aarch64-linux-android
+# NDK r27 and lower only (r28+ links 16 KiB pages already), build with:
+#   CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384 -C link-arg=-Wl,-z,common-page-size=16384" \
+#     cargo build --release --target aarch64-linux-android
 # the file name must match the classes' System.loadLibrary("main") (classgen --lib)
 cp target/aarch64-linux-android/release/lib<crate>.so stage/lib/arm64-v8a/libmain.so
 cp out/dex/classes*.dex stage/   # d8 may write classes2.dex and up
@@ -52,7 +55,7 @@ Notes:
   and gives 4 KiB). It only moves zip offsets: the `.so` itself also needs
   16 KiB load segments (NDK r28+ links that by default; NDK r27 and lower
   need `-C link-arg=-Wl,-z,max-page-size=16384` and
-  `-C link-arg=-Wl,-z,common-page-size=16384`). Only stored entries align,
+  `-C link-arg=-Wl,-z,common-page-size=16384`, set as in step 2). Only stored entries align,
   hence `zip -0`. With
   `android:extractNativeLibs="false"` a compressed `.so` fails install with
   `INSTALL_FAILED_INVALID_APK`. Pharos manifests set it to `"true"`.
