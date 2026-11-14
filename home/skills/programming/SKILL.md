@@ -1,7 +1,7 @@
 ---
 name: programming
 description: >-
-  Use when writing, changing, fixing, debugging or refactoring code in any language, including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh, .go, .cs. Routes to per-language guidance (Rust, Python, Nix, TypeScript/JavaScript, shell, Go, C#/.NET), plus assertions, thread-safety, input validation/secrets, observability, performance/profiling, and navigating code with the LSP tool (definitions, references, callers, rename).
+  Use when writing, changing, fixing, debugging or refactoring code in any language, including a one-line fix, a config value, or a shell snippet embedded in another file. Covers .nix, .rs, .py, .ts, .tsx, .js, .sh, .go, .cs. Routes to per-language guidance (Rust, Python, Nix, TypeScript/JavaScript, shell, Go, C#/.NET; Android apps in Rust: APK, JNI, Android Auto), plus assertions, thread-safety, input validation/secrets, observability, performance/profiling, and navigating code with the LSP tool (definitions, references, callers, rename).
 metadata:
   summary: "Use when writing, changing, fixing or debugging code in any language: Rust, Python, Nix, TypeScript, shell, Go, C#; secrets, concurrency, performance; LSP navigation (definitions, references)."
 ---
@@ -79,6 +79,7 @@ Read the file matching what you are editing. If several apply, read each.
 | `*.sh`, `*.bash`, or a shell snippet embedded anywhere else, such as a hook, a CI step, a Nix string, a systemd unit | [languages/shell.md](languages/shell.md) |
 | `*.go`, `go.mod` | [languages/go.md](languages/go.md) |
 | `*.cs`, `*.csproj`, `*.sln`, .NET Framework or .NET Core/5+ | [languages/csharp.md](languages/csharp.md) |
+| An Android app in Rust: APK, dex, JNI `Java_` exports, dx/Dioxus Android, Android Auto, DHU | [android-rust.md](android-rust.md) |
 
 ## Related
 
