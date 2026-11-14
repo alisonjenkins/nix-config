@@ -93,10 +93,19 @@ your `ContentProvider`, not from http URLs (`art.rs`).
   session (`setPlaybackToLocal`-style attributes).
 - Request `AUDIOFOCUS_GAIN` (1) with an `AudioFocusRequest` carrying those
   attributes.
+- Targeting API 35 or later: a background app gets focus only while it is
+  the top app or runs a foreground service. Enter the foreground before the
+  request. Pharos targets 34 and requests first.
 - Handle changes through a generated `OnAudioFocusChangeListener`:
   - `AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK` (-3): lower volume, keep playing.
-  - `AUDIOFOCUS_LOSS_TRANSIENT` (-2): pause. Regain resumes.
-  - `AUDIOFOCUS_LOSS` (-1): give focus back.
+  - `AUDIOFOCUS_LOSS_TRANSIENT` (-2): pause, and set a resume flag only if
+    it was playing.
+  - `AUDIOFOCUS_GAIN` (1): restore the ducked volume; resume only if the
+    flag is set, then clear it.
+  - `AUDIOFOCUS_LOSS` (-1): pause, then abandon focus. Restart needs a user
+    action.
+  - Clear the flag on a user pause or stop, and on each new request
+    (Pharos: `RESUME_ON_GAIN` in `focus.rs`).
   - `AUDIOFOCUS_REQUEST_FAILED` (0) on request: do not start.
 
 ## Foreground service and notification (`foreground.rs`)
