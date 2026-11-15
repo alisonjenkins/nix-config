@@ -457,6 +457,11 @@
         # k3s dials first by default, so logs, exec and Velero exec hooks to a worker pod fail
         # with an x509 error. Dialing by node name works: the certificates carry it and the
         # tunnel server maps a node-name dial to that node (the master's own cert has it too).
+        # --disable=metrics-server: metrics-server comes from Flux (home-cluster
+        # metrics-server/) instead. The bundled copy dials the CCM-added private
+        # InternalIP first, but the kubelet certificate carries only the public
+        # node-ip and the node name, so every scrape failed with x509 and the
+        # metrics API was down. The Flux copy dials by Hostname.
         # SQLite single-node control plane — NO --cluster-init (that is etcd).
         exec ${pkgs.k3s}/bin/k3s server \
           --token "$K3S_TOKEN" \
@@ -470,6 +475,7 @@
           --disable=traefik \
           --disable=servicelb \
           --disable=local-storage \
+          --disable=metrics-server \
           --disable-cloud-controller \
           --kubelet-arg=cloud-provider=external \
           --kube-controller-manager-arg=terminated-pod-gc-threshold=10 \
