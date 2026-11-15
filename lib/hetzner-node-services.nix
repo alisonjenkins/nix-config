@@ -462,6 +462,10 @@
         # InternalIP first, but the kubelet certificate carries only the public
         # node-ip and the node name, so every scrape failed with x509 and the
         # metrics API was down. The Flux copy dials by Hostname.
+        # image-gc thresholds: containerd's image store shares the k3s state volume
+        # with the journal, audit log and datastore. The kubelet default (85%) only
+        # starts collecting at its own eviction line, so old images piled up to 75%
+        # and tripped K3sStateVolumeFilling. Collect from 70% down to 60%.
         # SQLite single-node control plane — NO --cluster-init (that is etcd).
         exec ${pkgs.k3s}/bin/k3s server \
           --token "$K3S_TOKEN" \
@@ -492,6 +496,8 @@
           --kube-apiserver-arg=service-account-signing-key-file=/etc/rancher/k3s/irsa-signing-key.pem \
           --kube-apiserver-arg=service-account-key-file=/etc/rancher/k3s/irsa-signing-key.pem \
           --kubelet-arg=streaming-connection-idle-timeout=5m \
+          --kubelet-arg=image-gc-high-threshold=70 \
+          --kubelet-arg=image-gc-low-threshold=60 \
           --kubelet-arg=tls-cipher-suites=TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305 \
           --write-kubeconfig-mode=0400
       '';
