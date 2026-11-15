@@ -35,11 +35,34 @@
     url = "https://raw.githubusercontent.com/cab404/framework-dsp/refs/heads/master/config/irs/IR_22ms_27dB_5t_15s_0c.irs";
     sha256 = "sha256-IxDXNhnTg/NrhPxA5+6u/meEnlX720eoQPyoJfbuge0=";
   };
+  # Keys are "<sink node.name>:<active route name>"; EasyEffects matches both.
+  autoloadRules = {
+    "alsa_output.pci-0000_c4_00.6.analog-stereo:Speakers" = {
+      device = "alsa_output.pci-0000_c4_00.6.analog-stereo";
+      device-description = "Ryzen HD Audio Controller Analog Stereo";
+      device-profile = "Speakers";
+      preset-name = "Gracefu's Edits";
+    };
+    "bluez_output.88_C9_E8_06_5E_9C.1:Headphones" = {
+      device = "bluez_output.88_C9_E8_06_5E_9C.1";
+      device-description = "WH-1000XM5";
+      device-profile = "Headphones";
+      preset-name = "WH-1000XM5";
+    };
+  };
+
+  autoloadFileAttrs = lib.mapAttrs' (
+    key: rule:
+      lib.nameValuePair
+      ".local/share/easyeffects/autoload/output/${key}.json"
+      {text = builtins.toJSON rule;}
+  ) autoloadRules;
 in {
   home.packages = [pkgs.easyeffects];
 
   home.file =
     profileFileAttrs
+    // autoloadFileAttrs
     // {
       ".local/share/easyeffects/output/.keep".text = "";
       ".local/share/easyeffects/output/Gracefu's Edits.json" = {
