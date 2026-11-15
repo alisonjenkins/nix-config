@@ -57,8 +57,28 @@
       ".local/share/easyeffects/autoload/output/${key}.json"
       {text = builtins.toJSON rule;}
   ) autoloadRules;
+
+  followDefaultSink = pkgs.writeShellApplication {
+    name = "easyeffects-follow-default-sink";
+    runtimeInputs = with pkgs; [pipewire wireplumber jq gawk gnused gnugrep coreutils];
+    text = builtins.readFile ./follow-default-sink.sh;
+  };
 in {
   home.packages = [pkgs.easyeffects];
+
+  systemd.user.services.easyeffects-follow-default-sink = {
+    Unit = {
+      Description = "Move EasyEffects output to the default sink when it misses a change";
+      After = ["pipewire.service" "wireplumber.service"];
+      PartOf = ["pipewire.service"];
+    };
+    Service = {
+      ExecStart = lib.getExe followDefaultSink;
+      Restart = "on-failure";
+      RestartSec = 5;
+    };
+    Install.WantedBy = ["pipewire.service"];
+  };
 
   home.file =
     profileFileAttrs
