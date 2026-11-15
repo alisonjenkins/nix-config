@@ -264,7 +264,7 @@ in {
 
           wifi = {
             optimizeForLowLatency = true;  # Enable low-latency WiFi for gaming/Discord/media
-            roamThreshold = -70;           # Aggressive roaming on 2.4GHz (-70 dBm)
+            roamThreshold = -20;           # Above any real RSSI: iwd keeps roam-scanning while on 2.4 GHz, so a 2.4 GHz join moves to the same SSID on 5 GHz
             roamThreshold5G = -78;         # Below iwd's -76 default: office sits at -74 on 5/6 GHz, and each roam scan stalls traffic ~7 s
             bandModifier5GHz = 1.3;        # Prefer 5GHz band (30% bonus)
             bandModifier6GHz = 1.5;        # Strongly prefer 6GHz if available (50% bonus)
