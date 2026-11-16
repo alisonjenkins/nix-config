@@ -43,6 +43,13 @@ to trust.**
 - **Fix the problem, not the blame.** Whether the fault is yours, a library's
   or the user's is irrelevant until it is fixed, and deciding early narrows the
   search to the wrong place. Note it afterwards if it matters.
+- **Run the diagnostic yourself.** Don't ask the user to paste output you can
+  get by running the command — only ask when the check needs access you don't
+  have (their browser session, a device only they hold, a UI you can't drive).
+- **Report the full current state, not the delta.** Rechecking something that
+  changes over time (certs, alerts, VMs, open issues) — give the complete list
+  of what needs attention now, not just what changed since the last check. A
+  delta hides anything that was already broken.
 
 ## The habit that catches the most
 
