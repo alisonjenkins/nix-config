@@ -164,6 +164,10 @@
       kubectl/aws edits) is sometimes acceptable for personal infra, but
       ALWAYS ask the user for permission first — never mutate live infra
       unprompted. Per-tool guidance: the `infra` skill.
+    - A requested output destination is part of the request, not a detail to
+      improvise past: "a Notion page" means create it in Notion directly, not
+      a Claude artifact; "a speckit spec" means run the `/speckit-*` commands
+      (spec.md/plan.md/tasks.md), not an informal design doc.
 
     # Communication (user mandate)
 
