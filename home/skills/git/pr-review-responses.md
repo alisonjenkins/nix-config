@@ -27,6 +27,12 @@ watch-script mechanism described in the rest of this section does not apply
 and does not need reading. It's for environments without `ccd_pr` tools: the
 plain Claude Code CLI, a sub-agent, or an SSH session.
 
+This exception is for *watching* only. For CodeRabbit specifically, always
+read its feedback with `scripts/poll-pr-review.sh` (below), never by trusting
+Auto-fix's own detection alone — CodeRabbit's suppressed/body-only findings
+are the exact case Auto-fix's generic review-watch can miss (see "Reading the
+threads").
+
 There is no push notification for a review; poll. Start the watch
 automatically as soon as a PR is opened (see [pr-workflow.md](pr-workflow.md)
 step 5) — no need to ask — and say what interval you chose.
