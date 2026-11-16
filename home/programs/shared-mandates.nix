@@ -23,6 +23,9 @@
     - Never add the Claude Projects PR attribution line (`_Requested by … ·
       [project thread](…)_`) or its `claude-projects-attribution` marker
       comment to a PR description; Claude Projects injects it by default.
+    - Sign every commit; never pass `--no-gpg-sign` or
+      `-c commit.gpgsign=false`, and never disable signing to work around a
+      failure — fix the signing setup instead.
     - Invoke the `git` skill before committing, opening a PR, or merging: it
       carries the message format, the splitting rules, and the PR workflow.
   '';
