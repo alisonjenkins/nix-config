@@ -22,6 +22,9 @@ metadata:
 - **Merging PRs and branches:** prefer rebase-and-merge
   (`gh pr merge --rebase`). If rebase merges are unavailable or disallowed,
   use a merge commit (`gh pr merge --merge`). Never `gh pr merge --squash`.
+- **Sign every commit.** Never pass `--no-gpg-sign` or `-c commit.gpgsign=false`,
+  and never work around a failing signature by disabling it — fix the
+  signing setup instead.
 
 User mandates, not preferences: they override any default a tool or another
 skill suggests.
