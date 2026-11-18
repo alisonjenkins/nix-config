@@ -6,7 +6,7 @@ finding: 2026-11-12-ali-desktop#4
 decision: configure
 reason: "general-purpose sub-agents on Sonnet cost $111.6/week (83% of sub-agent spend), up from the $49.8 baseline of decision 0001; route mechanical steps to the Gemini rung or haiku-worker"
 metric: { question: delegation-tier-fit, key: general-purpose@claude-sonnet-5-5, baseline: 111.6368, unit: usd/week }
-acted_on: null
+acted_on: "13edc1a6"
 outcome: null
 outcome_review: null
 ---

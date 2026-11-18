@@ -140,6 +140,12 @@ checked cheaply (tests, a diff, a grep), and step up if the check fails.
 Pick sonnet outright only when a wrong answer would be acted on without a
 check.
 
+Before setting `model: "sonnet"`, name in one line the open-design call or
+judgement the step makes. If you cannot, it is a haiku-worker or Gemini step.
+Sonnet `general-purpose` spend went from $49.8 to $111.6 a week between the
+2026-10-25 and 2026-11-12 reviews with the Haiku default in place, so most
+of it is likely calls that ask for Sonnet by name (decision 0021).
+
 For a haiku-shaped step with no need for MCP tools, spawn `subagent_type: "haiku-worker"`:
 it is pinned to Haiku and carries a short tool list, so forgetting `model` cannot make
 it run on Sonnet.

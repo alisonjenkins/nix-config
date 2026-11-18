@@ -6,7 +6,7 @@ finding: 2026-11-12-ali-desktop#2
 decision: build
 reason: "Read's token figure counts image results as base64 bytes; PNG screenshots were 88% of Read result bytes, so Read is overstated by roughly an order of magnitude"
 metric: { question: tool-result-size, key: Read, baseline: 10583912.5, unit: tokens/week }
-acted_on: null
+acted_on: "358805c0"
 outcome: null
 outcome_review: null
 ---
