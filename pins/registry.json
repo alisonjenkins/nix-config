@@ -89,19 +89,6 @@
                  "meaning": "update-available" }
     },
     {
-      "id": "pnpm-10.29.2",
-      "class": "exception",
-      "kind": "insecure-package",
-      "site": { "file": "modules/base/default.nix", "match": "pnpm-10.29.2" },
-      "pinned": "pnpm-10.29.2 permitted as insecure (also in ali-mba and ali-work-laptop-macos)",
-      "since": "2026-06-29",
-      "reviewed": "2026-10-23",
-      "review_by": "2026-11-20",
-      "reason": "signal-desktop's build needs pnpm 10.29.2, which nixpkgs flags knownVulnerabilities. It is a build-time tool and the only pnpm consumer in the closures (vesktop was dropped for the same reason). Scoping the permit per consumer is not expressible here.",
-      "removal": "Remove the permit once nixpkgs ships a non-flagged pnpm for signal. Check: nix-store -q --requisites <toplevel.drv> | grep pnpm. Remove it from all three files.",
-      "manual_test": "Delete the permit from modules/base/default.nix and evaluate a desktop host's toplevel; if it evaluates, repeat for the two darwin hosts and delete the entry."
-    },
-    {
       "id": "pnpm-9.15.9",
       "class": "exception",
       "kind": "insecure-package",
