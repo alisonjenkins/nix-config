@@ -103,20 +103,6 @@
                  "meaning": "update-available" }
     },
     {
-      "id": "tmux-sessionizer",
-      "class": "workaround",
-      "kind": "flake-input",
-      "site": { "input": "tmux-sessionizer" },
-      "pinned": "b9965259 (own repo)",
-      "since": "2025-10-25",
-      "reviewed": "2026-10-23",
-      "review_by": "2026-11-06",
-      "reason": "UNDOCUMENTED. Pinned to a rev of the owner's own repo in 92adf802 ('upgrade tmux-sessionizer'); no reason recorded for not following the branch.",
-      "removal": "Change the url to github:alisonjenkins/tmux-sessionizer (branch), lock, and build a host that uses it.",
-      "needs_triage": true,
-      "manual_test": "Follow the branch and `just build` ali-mba-linux or ali-work-laptop, which import it."
-    },
-    {
       "id": "pnpm-10.29.2",
       "class": "exception",
       "kind": "insecure-package",
