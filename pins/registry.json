@@ -89,19 +89,6 @@
                  "meaning": "update-available" }
     },
     {
-      "id": "pnpm-9.15.9",
-      "class": "exception",
-      "kind": "insecure-package",
-      "site": { "file": "flake-modules/hosts/ali-steam-deck/default.nix", "match": "pnpm-9.15.9" },
-      "pinned": "pnpm-9.15.9 permitted as insecure on ali-steam-deck",
-      "since": "2026-07-20",
-      "reviewed": "2026-10-23",
-      "review_by": "2026-12-01",
-      "reason": "Jovian's decky-loader build pins pnpm 9.15.9, flagged insecure in nixpkgs 26.11, to assemble Decky's static frontend. Build-time only, runs in the sandbox, never in the runtime closure.",
-      "removal": "Remove when Jovian's decky-loader moves to a supported pnpm (jovian-nixos input).",
-      "manual_test": "Delete the permit and evaluate nixosConfigurations.ali-steam-deck; if it evaluates, delete this entry."
-    },
-    {
       "id": "ffmpeg-git",
       "class": "workaround",
       "kind": "overlay-override",
