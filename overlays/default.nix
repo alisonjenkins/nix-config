@@ -714,13 +714,14 @@ in
     });
   };
 
-  # nix-cachyos-kernel turns DEBUG_INFO_BTF off for the LTO kernels when the
-  # pahole in scope is older than 1.33 (nixpkgs has 1.32; upstream
-  # nix-cachyos-kernel#115). Turn it back on for the LTO zen4 kernel. Rust
-  # .ko files need CachyOS's two dwarf_loader patches to get BTF, so the
-  # patched pahole goes first on the kernel build PATH. Rust stays on.
-  # Applied by modules/base with enableCachyOSKernel; drop it once upstream
-  # ships pahole >= 1.33 or re-enables BTF for LTO.
+  # nix-cachyos-kernel turns RUST off for the LTO kernels when the pahole in
+  # scope is older than 1.33 (nixpkgs has 1.32; upstream 9d100180, before
+  # that it turned DEBUG_INFO_BTF off instead, nix-cachyos-kernel#115). Keep
+  # both on for the LTO zen4 kernel: Rust .ko files need CachyOS's two
+  # dwarf_loader patches to get BTF, so the patched pahole goes first on the
+  # kernel build PATH. Our structuredExtraConfig is merged last with `//`,
+  # so it replaces upstream's mkForce'd values. Applied by modules/base with
+  # enableCachyOSKernel; drop it once upstream ships pahole >= 1.33.
   cachyos-lto-btf = _final: prev:
     let
       # 1.31 (26.05) rejects the patches, which are written against 1.32, so
@@ -741,6 +742,7 @@ in
               kernel = (kernelPrev.kernel.override {
                 structuredExtraConfig = {
                   DEBUG_INFO_BTF = prev.lib.kernel.yes;
+                  RUST = prev.lib.kernel.yes;
                 };
               }).overrideAttrs (old: {
                 nativeBuildInputs = [ pahole ] ++ (old.nativeBuildInputs or [ ]);
