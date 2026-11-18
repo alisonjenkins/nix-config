@@ -333,6 +333,10 @@ in {
           wantedBy = [ "graphical-session.target" ];
           wants = [ "obsbot-raw-camera-720p.service" ];
           after = [ "obsbot-raw-camera-720p.service" ];
+          # When the camera re-enumerates on USB, the bridge restarts with a
+          # new PipeWire node. pipewiresrc stays on the dead node without
+          # exiting, so Zoom shows a frozen frame. Restart with the bridge.
+          partOf = [ "obsbot-raw-camera-720p.service" ];
           # The bridge may come up after the feeder, so keep retrying it.
           startLimitIntervalSec = 0;
         };
