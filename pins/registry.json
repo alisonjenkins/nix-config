@@ -34,15 +34,15 @@
       "class": "tracked",
       "kind": "flake-input",
       "site": { "input": "nix-cachyos-kernel" },
-      "pinned": "f5e1fb8f (upstream master, kernel 7.3.4)",
+      "pinned": "c157f8dd (upstream master/release, kernel 7.3.5)",
       "since": "2026-10-23",
-      "reviewed": "2026-11-14",
-      "review_by": "2026-11-28",
-      "reason": "Kept as a rev pin, not branch-following, so a kernel bump is a reviewed change. Moved from 53532f14 (7.3.1) to f5e1fb8f (7.3.4; equals 3084b743 plus an auto flake update). Upstream disables DEBUG_INFO_BTF for LTO when pahole < 1.33 (nix-cachyos-kernel#115, Rust). modules/base overlays cachyos-lto-btf turns BTF back on for the LTO zen4 kernel with CachyOS's pahole patches (patches/pahole), Rust on. That build is not on cache.lantian.pub; hosts build it from source until it is pushed to our niks3 cache.",
+      "reviewed": "2026-11-18",
+      "review_by": "2026-12-02",
+      "reason": "Kept as a rev pin, not branch-following, so a kernel bump is a reviewed change. Moved from f5e1fb8f (7.3.4) to c157f8dd (7.3.5; master and release heads on 2026-11-18). Upstream 9d100180 now forces RUST off for LTO when pahole < 1.33 and leaves DEBUG_INFO_BTF on (earlier it forced BTF off, nix-cachyos-kernel#115). modules/base overlays cachyos-lto-btf sets both DEBUG_INFO_BTF and RUST on for the LTO zen4 kernel with CachyOS's pahole patches (patches/pahole); checked in the ali-desktop configfile (CONFIG_RUST=y, CONFIG_DEBUG_INFO_BTF=y). That build is not on cache.lantian.pub; hosts build it from source until it is pushed to our niks3 cache.",
       "removal": "Bump to the current upstream master rev when the probe says one exists.",
       "probe": {
         "type": "command",
-        "cmd": ["sh", "-c", "test \"$(nix flake metadata --json github:xddxdd/nix-cachyos-kernel/master | jq -r .locked.rev)\" != f5e1fb8f1185cb51ef6d433e27ab7b60f54cd0e0"],
+        "cmd": ["sh", "-c", "test \"$(nix flake metadata --json github:xddxdd/nix-cachyos-kernel/master | jq -r .locked.rev)\" != c157f8ddd2c830e8dd5ef6cf11a288668fb96189"],
         "meaning": "update-available"
       }
     },
