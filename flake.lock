@@ -1286,22 +1286,6 @@
         "type": "github"
       }
     },
-    "nixpkgs_lqx_pin": {
-      "locked": {
-        "lastModified": 1766342194,
-        "narHash": "sha256-/r5r5lTuqfGBLwqYOZWrizvHe1Tmz6FPyaiWMwqNXD8=",
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "82000a14b7ec4009a25cbf8d3d49bcb4a6a85e41",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nixos",
-        "repo": "nixpkgs",
-        "rev": "82000a14b7ec4009a25cbf8d3d49bcb4a6a85e41",
-        "type": "github"
-      }
-    },
     "nixpkgs_master": {
       "locked": {
         "lastModified": 1793926154,
@@ -1639,7 +1623,6 @@
         "nixos-apple-silicon": "nixos-apple-silicon",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs_5",
-        "nixpkgs_lqx_pin": "nixpkgs_lqx_pin",
         "nixpkgs_master": "nixpkgs_master",
         "nixpkgs_old": "nixpkgs_old",
         "nixpkgs_rea_pin": "nixpkgs_rea_pin",

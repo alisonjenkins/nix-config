@@ -562,14 +562,6 @@ in
       if (builtins.tryEval latest.drvPath).success then latest else final.mcp-nixos;
   };
 
-  lqx-pin-packages = final: _prev: {
-    lqx_pin = import inputs.nixpkgs_lqx_pin {
-      system = final.stdenv.hostPlatform.system;
-      config.allowUnfree = true;
-      overlays = [ openldapOverlay ];
-    };
-  };
-
   # python-lsp-server 1.14.0 declares `jedi<0.20.0` in pyproject.toml, but
   # nixpkgs now ships jedi 0.20.0 → pythonRuntimeDepsCheckHook fails. pylsp
   # works fine at runtime with jedi 0.20 (no API breakage), the upper bound

@@ -11,7 +11,6 @@ let
 
     overlays = [
         self.overlays.additions
-        self.overlays.lqx-pin-packages
         self.overlays.master-packages
         self.overlays.unstable-packages
         self.overlays.zk
