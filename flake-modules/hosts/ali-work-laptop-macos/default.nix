@@ -25,7 +25,6 @@ let
     overlays = [
         self.overlays.additions
         self.overlays.modifications
-        self.overlays.lqx-pin-packages
         self.overlays.master-packages
         self.overlays.unstable-packages
         self.overlays.tmux-sessionizer

@@ -29,20 +29,6 @@
       }
     },
     {
-      "id": "nixpkgs_lqx_pin",
-      "class": "workaround",
-      "kind": "flake-input",
-      "site": { "input": "nixpkgs_lqx_pin" },
-      "pinned": "nixpkgs 82000a14 (lqx kernel 1.17.13)",
-      "since": "2026-01-01",
-      "reviewed": "2026-10-23",
-      "review_by": "2026-11-06",
-      "reason": "Pinned in 69fc7338 'until amdgpu bugs fixed in latest kernels'. Nothing records which bugs or which kernel fixes them, and it is 10 months old.",
-      "removal": "Find which hosts use lqx_pin (pkgs.lqx_pin), boot the current kernel there and drop the input if the amdgpu bugs are gone.",
-      "needs_triage": true,
-      "manual_test": "On the affected host, switch the kernel to the current lqx/zen kernel from nixpkgs_unstable, run a GPU-heavy session for a day, and check dmesg for amdgpu errors."
-    },
-    {
       "id": "nix-cachyos-kernel",
       "class": "tracked",
       "kind": "flake-input",
