@@ -2093,7 +2093,6 @@
         "narHash": "sha256-EVL9ebfNm2R82qyrwKrQz2UFpxLL4mnhIytlVjlaSuk=",
         "owner": "alisonjenkins",
         "repo": "tmux-sessionizer",
-        "rev": "b9965259166c588479c01328e34f0fbc98fa03a2",
         "type": "github"
       },
       "original": {
