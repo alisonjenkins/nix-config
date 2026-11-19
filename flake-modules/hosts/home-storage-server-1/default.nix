@@ -179,20 +179,99 @@ in {
           '';
         };
 
-        # Marks pool branches on failing disks no-create (NC) so mergerfs sends
-        # new files elsewhere. NC leaves the branch readable and writable for
-        # files already on it; nothing moves. Reads the SMART data the smartctl
-        # exporter already caches instead of polling the disks again: they sit
-        # behind an HBA that logs a "sata affiliation conflict" storm under
-        # extra load.
+        # SnapRAID parity cap for data branches. SnapRAID sizes the parity file
+        # from each data disk's APPARENT usage (sum of file sizes, rounded up
+        # to 256 KiB blocks per file), not from what the filesystem reports
+        # as used. btrfs zstd compression and reflinked copies (downloads ->
+        # media imports) make the apparent size larger than df's "used", so a
+        # data disk the same size as the parity disk can outgrow parity while
+        # df still shows terabytes free. 2026-11-19: sync failed with "You
+        # miss 619715231744 bytes" on a 16 TB btrfs data disk with a 16 TB
+        # parity disk.
+        #
+        # The cap is derived from the parity filesystems at run time, so a
+        # bigger parity disk raises it with no edit here. Headroom covers the
+        # per-file block rounding, the content files and growth between gate
+        # runs. Tune it here.
+        snapraidParityHeadroomBytes = 1000 * 1000 * 1000 * 1000; # 1 TB
+        # du over a 16 TB branch is ~1 min of metadata reads; reuse the
+        # result for this long instead of walking every branch each run.
+        snapraidApparentCacheSeconds = 3600;
+
+        # Marks pool branches no-create (NC) so mergerfs sends new files
+        # elsewhere: branches on failing disks, and branches whose apparent
+        # usage has reached the SnapRAID parity cap above. NC leaves the
+        # branch readable and writable for files already on it; nothing moves.
+        # Reads the SMART data the smartctl exporter already caches instead of
+        # polling the disks again: they sit behind an HBA that logs a "sata
+        # affiliation conflict" storm under extra load.
         mediaBranchHealthGateScript = pkgs.writeShellApplication {
           name = "media-branch-health-gate";
           runtimeInputs = [ pkgs.coreutils pkgs.curl pkgs.gawk pkgs.gnugrep pkgs.attr pkgs.util-linux ];
           text = ''
             exporter_url="http://127.0.0.1:${toString config.modules.servers.prometheus.smartctlExporter.port}/metrics"
             control=/media/storage/.mergerfs
+            # One entry per parity level; a split level is comma-joined.
+            parity_levels=(${lib.escapeShellArgs config.services.snapraid.parityFiles})
+            parity_headroom=${toString snapraidParityHeadroomBytes}
+            apparent_cache_max_age=${toString snapraidApparentCacheSeconds}
+            apparent_cache_dir=/run/media-branch-health-gate
+            # Disk-rooted SnapRAID excludes ("/dir/"); other patterns are not
+            # subtracted, which only over-counts.
+            snapraid_excluded_dirs=(${lib.escapeShellArgs (lib.filter (e: lib.hasPrefix "/" e && lib.hasSuffix "/" e) config.services.snapraid.exclude)})
 
             log() { printf 'event=health_gate %s\n' "$*" >&2; }
+
+            # Space SnapRAID can give the parity file: per level, the summed
+            # size of the filesystems holding its (split) files; the smallest
+            # level wins. Prints nothing when a parity filesystem is missing,
+            # which disables the cap rather than guessing.
+            parity_capacity() {
+              local level part dir size total min="" parts=()
+              for level in "''${parity_levels[@]}"; do
+                total=0
+                IFS=, read -r -a parts <<< "$level"
+                for part in "''${parts[@]}"; do
+                  dir=$(dirname "$part")
+                  mountpoint -q "$dir" || return 0
+                  size=$(df -B1 --output=size "$dir" | tail -n 1 | tr -d ' ')
+                  total=$((total + size))
+                done
+                if [ -z "$min" ] || [ "$total" -lt "$min" ]; then
+                  min=$total
+                fi
+              done
+              [ -n "$min" ] && echo "$min"
+              return 0
+            }
+
+            # Apparent bytes on a branch, as SnapRAID counts them: du -b sums
+            # file sizes (so compressed and reflinked data count in full) and
+            # counts a hardlinked file once. Cached; see apparent_cache_max_age.
+            apparent_bytes() {
+              local mp=$1 cache age bytes dir excluded
+              cache="$apparent_cache_dir/$(basename "$mp")"
+              if [ -f "$cache" ]; then
+                age=$(( $(date +%s) - $(stat -c %Y "$cache") ))
+                if [ "$age" -lt "$apparent_cache_max_age" ]; then
+                  cat "$cache"
+                  return 0
+                fi
+              fi
+              # Files vanishing mid-walk make du exit non-zero; its total is
+              # still usable.
+              bytes=$(du -sbx -- "$mp" 2>/dev/null | cut -f 1) || true
+              [ -n "$bytes" ] || return 0
+              # SnapRAID skips its excluded dirs; so does the cap.
+              for dir in "''${snapraid_excluded_dirs[@]}"; do
+                [ -d "$mp$dir" ] || continue
+                excluded=$(du -sbx -- "$mp$dir" 2>/dev/null | cut -f 1) || true
+                bytes=$((bytes - ''${excluded:-0}))
+              done
+              mkdir -p "$apparent_cache_dir"
+              printf '%s\n' "$bytes" > "$cache"
+              echo "$bytes"
+            }
 
             if ! mountpoint -q /media/storage || [ ! -e "$control" ]; then
               log "status=skip reason=pool_not_mounted"
@@ -230,8 +309,18 @@ in {
               /^smartctl_device_smart_status\{/ && $NF + 0 == 0 { print device() }
             ' <<< "$metrics" | sort -u)
 
+            parity_bytes=$(parity_capacity)
+            if [ -n "$parity_bytes" ]; then
+              parity_cap=$((parity_bytes - parity_headroom))
+              log "parity_bytes=$parity_bytes parity_cap=$parity_cap"
+            else
+              parity_cap=""
+              log "status=parity_cap_off reason=parity_fs_not_mounted"
+            fi
+
             entries=()
             suspects=()
+            capped=()
             healthy=0
             for mp in /media/disks/*; do
               # An unmounted disk leaves an empty stub dir on the root fs; writing
@@ -249,8 +338,22 @@ in {
                 suspects+=("$mp")
               else
                 mode=RW
-                healthy=$((healthy + 1))
               fi
+              # Branch's apparent usage at the parity cap: no new files, or the
+              # next sync cannot fit it into parity.
+              # Skip the walk on disks under half the cap: compression and
+              # reflinks would have to double their contents to reach it.
+              fs_bytes=$(df -B1 --output=size "$mp" | tail -n 1 | tr -d ' ')
+              if [ "$mode" = RW ] && [ -n "$parity_cap" ] \
+                && [ $((fs_bytes * 2)) -ge "$parity_cap" ]; then
+                apparent=$(apparent_bytes "$mp")
+                if [ -n "$apparent" ] && [ "$apparent" -ge "$parity_cap" ]; then
+                  mode=NC
+                  capped+=("$mp")
+                  log "status=parity_cap branch=$(printf '%q' "$mp") apparent_bytes=$apparent parity_cap=$parity_cap"
+                fi
+              fi
+              [ "$mode" = RW ] && healthy=$((healthy + 1))
               entries+=("$mp=$mode")
             done
 
@@ -262,12 +365,12 @@ in {
             desired=$(IFS=:; echo "''${entries[*]}")
             current=$(getfattr --only-values -n user.mergerfs.branches "$control" 2>/dev/null || true)
             if [ "$current" = "$desired" ]; then
-              log "status=unchanged healthy=$healthy suspects=''${#suspects[@]}"
+              log "status=unchanged healthy=$healthy suspects=''${#suspects[@]} capped=''${#capped[@]}"
               exit 0
             fi
 
             setfattr -n user.mergerfs.branches -v "$desired" "$control"
-            log "status=applied healthy=$healthy suspects=''${#suspects[@]} no_create=\"''${suspects[*]:-none}\""
+            log "status=applied healthy=$healthy suspects=''${#suspects[@]} capped=''${#capped[@]} no_create=\"''${suspects[*]:-none}\" parity_capped=\"''${capped[*]:-none}\""
           '';
         };
       in
@@ -643,10 +746,11 @@ in {
         };
 
         # Keeps new files off disks with pending/uncorrectable sectors or a
-        # failed SMART verdict. The pool mounts with every branch RW, so this
-        # re-applies the marks after each boot and branch re-glob.
+        # failed SMART verdict, and off disks at the SnapRAID parity cap. The
+        # pool mounts with every branch RW, so this re-applies the marks after
+        # each boot and branch re-glob.
         systemd.services.media-branch-health-gate = {
-          description = "Mark failing disks no-create in the mergerfs pool";
+          description = "Mark failing or parity-capped disks no-create in the mergerfs pool";
           after = [ "media-storage.mount" "prometheus-smartctl-exporter.service" ];
           serviceConfig = {
             Type = "oneshot";
