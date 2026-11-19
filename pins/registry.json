@@ -123,6 +123,25 @@
         "attr": "claude-code",
         "version": "2.1.327"
       }
+    },
+    {
+      "id": "nginx-1.30.7-download-server-1",
+      "class": "workaround",
+      "kind": "overlay-override",
+      "site": { "file": "flake-modules/hosts/download-server-1/default.nix", "match": "version = \"1.30.7\";" },
+      "pinned": "nginx 1.30.7 tarball on download-server-1 over nixpkgs' 1.30.6",
+      "since": "2026-11-19",
+      "reviewed": "2026-11-19",
+      "review_by": "2027-01-03",
+      "reason": "nginx 1.30.6, which the locked nixpkgs ships, is affected by the HTTP/2 flow-control overflow CVE-2026-123007 and the HTTP/2 use-after-free CVE-2026-123633 (https://nginx.org/en/security_advisories.html). 1.30.7 fixes both; nixpkgs master has it but nixos-unstable did not on 2026-11-19, and download-server-1 serves HTTPS with HTTP/2 on.",
+      "removal": "Delete the services.nginx.package override and its comment in flake-modules/hosts/download-server-1/default.nix, delete this entry, then build download-server-1 and check services.nginx.package.version is 1.30.7 or later.",
+      "upstream": "https://nginx.org/en/CHANGES",
+      "probe": {
+        "type": "version-at-least",
+        "input": "nixpkgs",
+        "attr": "nginxStable",
+        "version": "1.30.7"
+      }
     }
   ]
 }

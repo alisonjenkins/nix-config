@@ -1677,6 +1677,21 @@ EOF
 
           nginx = {
             enable = true;
+            # nginx 1.30.7 fixes the HTTP/2 flaws CVE-2026-123007 and
+            # CVE-2026-123633; the pinned nixpkgs still has 1.30.6. The
+            # override switches itself off once nixpkgs catches up; drop it
+            # then (see pins/registry.json).
+            package =
+              if lib.versionAtLeast pkgs.nginxStable.version "1.30.7" then
+                pkgs.nginxStable
+              else
+                pkgs.nginxStable.overrideAttrs (_: rec {
+                  version = "1.30.7";
+                  src = pkgs.fetchurl {
+                    url = "https://nginx.org/download/nginx-${version}.tar.gz";
+                    hash = "sha256-JWW1yDcFDpWPcPsPc8SOK8pFQq00n9NW9G+wxyYQvG4=";
+                  };
+                });
             recommendedProxySettings = true;
             recommendedTlsSettings = true;
             recommendedOptimisation = true;
