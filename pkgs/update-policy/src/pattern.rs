@@ -2,8 +2,8 @@
 //!
 //! A key is `<kind>:<path>`, lowercase, for example `github:nixos/nixpkgs`
 //! or `action:actions/checkout`. A pattern has the same shape, and a `*`
-//! segment matches exactly one path segment (a trailing `*` after a prefix
-//! such as `https://channels.nixos.org/*` matches the rest of the path).
+//! segment matches exactly one non-empty path segment, never more: a key
+//! matches only a pattern with the same number of segments.
 
 use std::cmp::Ordering;
 use std::fmt;
@@ -71,22 +71,14 @@ impl Pattern {
             return false;
         }
         let parts: Vec<&str> = path.split('/').collect();
-        let last = self.segments.len() - 1;
-        for (i, seg) in self.segments.iter().enumerate() {
-            let Some(part) = parts.get(i) else { return false };
-            if seg == "*" {
-                if part.is_empty() {
-                    return false;
-                }
-                // A trailing `*` swallows the rest of the path.
-                if i == last {
-                    return true;
-                }
-            } else if seg != part {
-                return false;
-            }
-        }
         parts.len() == self.segments.len()
+            && self.segments.iter().zip(&parts).all(|(seg, part)| {
+                if seg == "*" {
+                    !part.is_empty()
+                } else {
+                    seg == part
+                }
+            })
     }
 
     /// Orders patterns so the most specific comes first: fewer wildcards,
@@ -128,10 +120,14 @@ mod tests {
     }
 
     #[test]
-    fn trailing_wildcard_swallows_rest_of_url() {
-        let pat = p("tarball:https://channels.nixos.org/*");
+    fn wildcard_never_spans_segments() {
+        let pat = p("tarball:https://channels.nixos.org/*/nixexprs.tar.xz");
         assert!(pat.matches("tarball:https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz"));
+        assert!(!pat.matches("tarball:https://channels.nixos.org/a/b/nixexprs.tar.xz"));
         assert!(!pat.matches("tarball:https://evil.example/channels.nixos.org/x"));
+        // A GitLab subgroup is a deeper path, not a match for the group's `*`.
+        assert!(!p("gitlab:gitlab.gnome.org/gnome/*").matches("gitlab:gitlab.gnome.org/gnome/sub/thing"));
+        assert!(!p("github:o/*").matches("github:o"));
     }
 
     #[test]

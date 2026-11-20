@@ -45,7 +45,7 @@
       "note": "Channels (nixos-unstable, nixos-26.05) are Hydra-gated."
     },
     {
-      "match": "tarball:https://channels.nixos.org/*",
+      "match": "tarball:https://channels.nixos.org/*/nixexprs.tar.xz",
       "tier": "core"
     },
     {
