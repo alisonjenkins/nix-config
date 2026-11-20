@@ -1,15 +1,59 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Implements docs/update-policy.md. Rules are ordered: a later rule overrides an earlier one, so the most specific rules come last.",
   "extends": [
     "config:recommended",
-    ":automergeAll",
     "helpers:pinGitHubActionDigests"
   ],
+  "minimumReleaseAge": "7 days",
+  "minimumReleaseAgeBehaviour": "timestamp-required",
+  "internalChecksFilter": "strict",
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "description": "Security fast path: a fix for a published advisory skips the cooldown and auto-merges once the PR check passes. Majors still need a human.",
+    "minimumReleaseAge": null,
+    "automerge": true,
+    "labels": ["security"]
+  },
   "packageRules": [
     {
+      "description": "Default tier for language packages (npm, crates, PyPI, Go modules), images and charts: established. 7 day cooldown (top-level minimumReleaseAge); minor, patch and pin updates auto-merge once the PR check passes.",
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "lockFileMaintenance"],
+      "automerge": true
+    },
+    {
+      "description": "Majors are never auto-merged outside the own tier.",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "A digest change under an unchanged tag looks exactly like a re-pointed tag, so it is reviewed by hand.",
+      "matchUpdateTypes": ["digest"],
+      "automerge": false
+    },
+    {
+      "description": "Core tier Actions (actions/*, github/*): 3 day cooldown.",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["actions/**", "github/**"],
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Sensitive: every Action this repository's own workflows run receives credentials (a write GITHUB_TOKEN, OIDC id-token, secrets) or runs on the self-hosted runner, so its bumps are always a PR to read. Actions in templates/ do not run here and keep the rules above.",
+      "matchManagers": ["github-actions"],
+      "matchFileNames": [".github/**"],
+      "automerge": false
+    },
+    {
+      "description": "RustCrypto digest crates move together.",
       "matchManagers": ["cargo"],
       "matchPackageNames": ["hmac", "sha2", "digest"],
       "groupName": "rustcrypto digest crates"
+    },
+    {
+      "description": "Own tier: your own packages, images and Actions are your CI output, so there is no upstream compromise to wait out.",
+      "matchPackageNames": ["alisonjenkins/**", "ghcr.io/alisonjenkins/**", "github.com/alisonjenkins/**"],
+      "minimumReleaseAge": null,
+      "automerge": true
     }
   ]
 }
