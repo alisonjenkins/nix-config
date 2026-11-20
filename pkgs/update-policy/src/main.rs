@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use update_policy::check::{check, Severity};
 use update_policy::date::Date;
-use update_policy::{files, lock, sources::Sources, workflows};
+use update_policy::{files, lock, sources::Sources};
 
 const USAGE: &str = "usage: update-policy check [--repo DIR] [--sources FILE] [--today YYYY-MM-DD]
 
@@ -64,11 +64,7 @@ fn run(args: Args) -> Result<bool, String> {
         Vec::new()
     };
 
-    let mut actions = Vec::new();
-    for file in files::workflow_files(&args.repo)? {
-        let rel = file.strip_prefix(&args.repo).unwrap_or(&file).display().to_string();
-        actions.extend(workflows::scan(&rel, &read(&file)?));
-    }
+    let actions = files::collect_actions(&args.repo)?;
 
     let findings = check(&sources, &inputs, &actions, args.today.unwrap_or_else(Date::today));
     for f in &findings {
