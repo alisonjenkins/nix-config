@@ -61,6 +61,14 @@ repos:
         language: system
         pass_filenames: false
         files: ^(flake\.nix|pins/registry\.json|scripts/pins\.py|scripts/tests/test_pins\.py|overlays/default\.nix|modules/base/default\.nix|flake-modules/hosts/[^/]+/default\.nix)$
+      # Every flake input and GitHub Action needs a trust tier; see
+      # docs/update-policy.md.
+      - id: update-policy-sources
+        name: every flake input and action has a trust tier
+        entry: nix run --option warn-dirty false .#update-policy -- check
+        language: system
+        pass_filenames: false
+        files: ^(flake\.lock|pins/sources\.json|\.github/(workflows|actions)/|pkgs/update-policy/)
       - id: nix-pull-build-tests
         name: nix-pull-build integration tests
         entry: bash home/programs/nix-pull-build/tests.sh
