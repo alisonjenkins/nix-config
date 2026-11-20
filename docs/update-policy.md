@@ -51,6 +51,11 @@ fails when an input, image, chart or action has no tier. A match is
 match wins, so `github:nix-community/lanzaboote` (sensitive) overrides
 `github:nix-community/*` (established).
 
+**Language packages** (npm, crates, PyPI, Go modules) that Renovate bumps take
+the **established** tier by default: 7 days, minor and patch auto-merge, majors
+by hand. A package can be given a different tier with a Renovate rule that
+names it.
+
 ## Rules for every update
 
 - **Pin by content, not by name.** Flake inputs are locked by `flake.lock`.
