@@ -18,6 +18,8 @@ struct Node {
     inputs: BTreeMap<String, Value>,
     #[serde(default)]
     original: Option<BTreeMap<String, Value>>,
+    #[serde(default)]
+    locked: Option<BTreeMap<String, Value>>,
 }
 
 /// One locked input that came from somewhere other than this repository.
@@ -65,8 +67,16 @@ fn key_for(node: &str, o: &BTreeMap<String, Value>) -> Result<Option<String>, Lo
     let key = match kind {
         "github" | "gitlab" | "sourcehut" => {
             let (owner, repo) = (s(o, "owner").unwrap_or(""), s(o, "repo").unwrap_or(""));
+            let default_host = match kind {
+                "github" => "github.com",
+                "gitlab" => "gitlab.com",
+                _ => "git.sr.ht",
+            };
             match s(o, "host") {
-                Some(host) if kind != "github" => format!("{kind}:{host}/{owner}/{repo}"),
+                // A GitHub Enterprise or self-hosted server is a different
+                // source from the public one, so it gets its own key and
+                // never inherits a public repository's tier.
+                Some(host) if !host.eq_ignore_ascii_case(default_host) => format!("{kind}:{host}/{owner}/{repo}"),
                 _ => format!("{kind}:{owner}/{repo}"),
             }
         }
@@ -130,8 +140,15 @@ pub fn inputs(text: &str) -> Result<Vec<LockedInput>, Vec<LockError>> {
     let mut out = Vec::new();
     let mut errors = Vec::new();
     for (name, path) in via {
-        let Some(original) = lock.nodes.get(&name).and_then(|n| n.original.as_ref()) else { continue };
-        match key_for(&name, original) {
+        let Some(node) = lock.nodes.get(&name) else { continue };
+        let Some(original) = node.original.as_ref() else { continue };
+        // An indirect reference (`nixpkgs` from the registry) is whatever
+        // the registry resolved it to when locking: classify that.
+        let source = match (s(original, "type"), node.locked.as_ref()) {
+            (Some("indirect"), Some(locked)) => locked,
+            _ => original,
+        };
+        match key_for(&name, source) {
             Ok(key) => out.push(LockedInput {
                 node: name,
                 via: path,
@@ -187,11 +204,17 @@ mod tests {
     #[test]
     fn tarball_and_git_urls() {
         let lock = r#"{"version": 7, "root": "root", "nodes": {
-            "root": {"inputs": {"a": "a", "b": "b", "c": "c", "d": "d"}},
+            "root": {"inputs": {"a": "a", "b": "b", "c": "c", "d": "d", "e": "e", "f": "f", "g": "g", "h": "h", "i": "i"}},
             "a": {"original": {"type": "tarball", "url": "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz"}},
             "b": {"original": {"type": "git", "url": "https://Example.org/x.git?ref=main"}},
             "c": {"original": {"type": "indirect", "id": "nixpkgs"}},
-            "d": {"original": {"type": "github", "host": "github.com", "owner": "o", "repo": "r"}}
+            "d": {"original": {"type": "github", "host": "github.com", "owner": "o", "repo": "r"}},
+            "e": {"original": {"type": "github", "host": "GHE.example.org", "owner": "NixOS", "repo": "nixpkgs"}},
+            "f": {"original": {"type": "indirect", "id": "nixpkgs"},
+                  "locked": {"type": "github", "owner": "NixOS", "repo": "nixpkgs", "rev": "abc"}},
+            "g": {"original": {"type": "gitlab", "host": "gitlab.com", "owner": "o", "repo": "r"}},
+            "h": {"original": {"type": "sourcehut", "owner": "~o", "repo": "r"}},
+            "i": {"original": {"type": "sourcehut", "host": "hg.example", "owner": "~o", "repo": "r"}}
         }}"#;
         let keys: Vec<String> = inputs(lock).unwrap().into_iter().filter_map(|i| i.key).collect();
         assert_eq!(
@@ -201,6 +224,11 @@ mod tests {
                 "git:https://example.org/x.git",
                 "indirect:nixpkgs",
                 "github:o/r",
+                "github:ghe.example.org/nixos/nixpkgs",
+                "github:nixos/nixpkgs",
+                "gitlab:o/r",
+                "sourcehut:~o/r",
+                "sourcehut:hg.example/~o/r",
             ]
         );
     }
