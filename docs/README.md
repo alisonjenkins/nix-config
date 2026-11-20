@@ -11,6 +11,10 @@ Documentation, runbooks, architecture decision records, specifications, and benc
 - [Local model capabilities](./local-model-capabilities.md): Capability and safety evaluations of candidate local LLMs running on Vulkan
 - [Spec-Kit setup](./spec-kit-setup.md): Integration guide and packaging for Spec-Kit with Claude Code and GitHub Copilot CLI
 
+## Updates and supply chain
+
+- [Update policy](./update-policy.md): Trust tiers, cooldowns and auto-merge rules for every automated update in nix-config and home-cluster (draft)
+
 ## Hosts and hardware
 
 - [ali-desktop boot time](./ali-desktop-boot-time.md): Boot phase profiling, LUKS keyslot optimization, and timing analysis
