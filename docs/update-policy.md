@@ -27,9 +27,21 @@ Every source of code belongs to exactly one tier. A source not listed is
 | --- | --- | --- | --- | --- |
 | **own** | Your own repositories and registries | `alisonjenkins/*` flakes, `ghcr.io/alisonjenkins/**` | none | yes |
 | **core** | Gated by an upstream release process with many reviewers | `nixos/nixpkgs` channels (Hydra-gated), `actions/*`, `github/*`, Docker Official Images | none for a channel bump; 3 days otherwise | yes |
-| **established** | Organisations with several maintainers and a track record | `nix-community/*`, `NixOS/*`, `hercules-ci/*`, `numtide/*`, `cachix/*`, `serokell/*`, `lnl7/nix-darwin`, `oxalica/*`, `ipetkov/crane`, `fluxcd/*`, `cilium/*`, `jetstack/*` | 3 days | yes |
-| **individual** | Projects with one or two maintainers | `tinted-theming/*`, `danth/stylix`, `pjones/plasma-manager`, `gmodena/nix-flatpak`, `YaLTeR/niri`, `noctalia-dev/*`, `quickshell-mirror/*` | 7 days | yes, if the diff passes the review gates below |
-| **sensitive** | Code that holds credentials, runs as kernel or boot code, or runs agent-controlled code | `xddxdd/nix-cachyos-kernel`, `lanzaboote`, `litellm`, `hermes-agent`, `n8n`, `signal-cli`, Actions that receive tokens or cloud credentials | 7 days | **no**: a PR to read |
+| **established** | Organisations with several maintainers and a track record | `nix-community/*`, `NixOS/*`, `hercules-ci/*`, `numtide/*`, `cachix/*`, `serokell/*`, `lnl7/nix-darwin`, `oxalica/*`, `ipetkov/crane`, `fluxcd/*`, `cilium/*`, `jetstack/*` | 7 days | yes |
+| **individual: cosmetic** | One- or two-maintainer projects that only supply data (themes, colour schemes), no code that runs | `tinted-theming/*`, `tomyun/base16-fish`, `rafaelmardojai/firefox-gnome-theme` | 7 days | yes, if the diff passes the review gates below |
+| **individual: code** | One- or two-maintainer projects whose code runs on your machines | `danth/stylix` (ships NixOS and home-manager modules), `YaLTeR/niri`, `noctalia-dev/*`, `quickshell-mirror/*`, `pjones/plasma-manager`, `gmodena/nix-flatpak`, `pabloaul/lsfg-vk-flake` | 7 days | **no**: a PR to read, batched weekly |
+| **sensitive** | Code that holds credentials, runs as kernel or boot code, or runs agent-controlled code | `xddxdd/nix-cachyos-kernel`, `lanzaboote`, `litellm`, `hermes-agent`, `n8n`, `signal-cli`, and any GitHub Action that receives credentials (see below) | 7 days | **no**: a PR to read |
+
+**Cosmetic** means the input's outputs are only consumed as data: colour
+values, theme files, CSS. An input that provides a package, module, overlay
+or anything that is executed is **individual: code**, however small. A
+cosmetic input whose diff adds Nix code that builds or runs something fails
+the review gates and becomes a PR.
+
+**GitHub Actions are sensitive when they get credentials**: a token with any
+write permission, a GitHub App token, a secret, cloud credentials (OIDC
+`id-token: write` included), or a job on the self-hosted runner. Every other
+Action takes its owner's tier (`actions/*` and `github/*` are **core**).
 
 The tier list lives in one machine-readable file, `pins/sources.json`
 (proposed), next to the pins registry, so both repositories' tooling read the
@@ -76,7 +88,7 @@ An update auto-merges only when all of these pass:
 2. **Workflow hygiene.** `actionlint` and `zizmor` pass on any changed
    workflow. No new `permissions:`, secrets, `pull_request_target` or
    self-hosted runner use without a human.
-3. **Diff limits for the individual tier.** For a flake input: no new
+3. **Diff limits for the individual: cosmetic tier.** For a flake input: no new
    `builtins.fetch*` or network fetch at evaluation time, no new
    setuid or systemd units running as root, and no change to `flake.nix`
    inputs of the input itself (its own supply chain). These are deterministic
@@ -99,7 +111,7 @@ tool, `flake-bump`, that for each input:
 
 The nightly workflow keeps its current shape (branch, PR, `flake-check`,
 auto-merge) and calls `flake-bump` instead of `nix flake update`. Inputs in the
-**sensitive** tier are bumped in a separate PR that is not auto-merged.
+**sensitive** and **individual: code** tiers are bumped in a separate PR that is not auto-merged.
 
 ## Exceptions
 
@@ -118,10 +130,11 @@ expires.
 | home-cluster PR checks | yamllint only | plus flux build, helm template, kubeconform, actionlint, zizmor |
 | home-cluster `flux-upgrade-schedule` | disabled, uses `fluxcd/flux2/action@main` | fixed, pinned by SHA, Flux upgrades through a PR |
 
-## Open questions
+## Decisions
 
-- Should **individual**-tier flake inputs auto-merge at all, or always be a PR?
-- Is 3 days enough for the **established** tier, or should it match the 7
-  days used for sensitive images?
-- Which Actions count as **sensitive**? Proposed: any that receive a token
-  other than a read-only `GITHUB_TOKEN`, or any cloud credential.
+- 2026-11-20: single-maintainer inputs are split. Cosmetic ones auto-merge
+  after 7 days; ones that run code are always a PR.
+- 2026-11-20: the **established** tier waits 7 days, the same as sensitive
+  images. Advisory fixes still skip it through the security fast path.
+- 2026-11-20: an Action is **sensitive** when it receives credentials or
+  runs on the self-hosted runner.
