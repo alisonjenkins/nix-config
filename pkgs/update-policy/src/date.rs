@@ -34,6 +34,10 @@ impl Date {
         Date::from_unix_seconds(secs)
     }
 
+    pub fn plus_days(self, n: u32) -> Date {
+        Date { days: self.days + i64::from(n) }
+    }
+
     pub fn days_until(self, later: Date) -> i64 {
         later.days - self.days
     }
@@ -137,6 +141,8 @@ mod tests {
         assert_eq!(a.days_until(b), 11);
         assert_eq!(b.days_until(a), -11);
         assert!(a < b);
+        assert_eq!(a.plus_days(11), b);
+        assert_eq!(a.plus_days(0), a);
     }
 
     #[test]
