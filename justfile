@@ -19,6 +19,10 @@ check:
 update-policy-check:
     nix run .#update-policy -- check
 
+# Show which flake inputs are due an update under the update policy (dry run, needs network)
+update-policy-bump:
+    nix run .#update-policy -- bump
+
 # Mutation-test pkgs/update-policy; every mutant should be caught
 update-policy-mutants:
     cd pkgs/update-policy && nix shell nixpkgs#cargo-mutants nixpkgs#cargo nixpkgs#rustc --command cargo mutants --no-shuffle --timeout 60
