@@ -4,6 +4,13 @@ on:
   schedule:
     - cron: "0 2 * * *"
   workflow_dispatch:
+    inputs:
+      manual:
+        description: >-
+          Also open the review PR for inputs whose tier does not auto-merge
+          (sensitive, individual-code). Otherwise that runs on Mondays only.
+        type: boolean
+        default: false
   repository_dispatch:
     types: [update-flake-lock]
 
@@ -54,15 +61,22 @@ jobs:
           branch="flake-update-${{ github.run_id }}-${{ github.run_attempt }}"
           git fetch origin main
           git checkout -B "$branch" origin/main
-          nix flake update --commit-lock-file
-          if [ "$(git rev-list --count origin/main..HEAD)" -eq 0 ]; then
-            echo "::notice::flake.lock already up to date, nothing to do"
+          # Not `nix flake update`: that takes every input's newest commit.
+          # update-policy bump applies each input's tier cooldown
+          # (docs/update-policy.md) to the auto-merge tiers only, and records
+          # when it first saw each upstream commit in pins/flake-seen.json.
+          summary="$RUNNER_TEMP/flake-bump-auto.md"
+          nix run .#update-policy -- bump --apply --group auto --summary "$summary"
+          git add flake.lock pins/flake-seen.json
+          if git diff --cached --quiet; then
+            echo "::notice::no input is due an update and no new upstream commits were seen"
             exit 0
           fi
+          git commit -m "chore(flake): nightly flake.lock update"
           git push origin "HEAD:$branch"
           pr_url=$(gh pr create \
             --title "chore(flake): nightly flake.lock update" \
-            --body "Automated nightly \`nix flake update\`." \
+            --body-file "$summary" \
             --base main \
             --head "$branch")
           echo "::notice::opened $pr_url, waiting for flake-check to auto-merge"
@@ -109,3 +123,63 @@ jobs:
           done
           echo "::error::$pr_url did not merge within timeout"
           exit 1
+
+  # Inputs whose tier does not auto-merge (sensitive, individual-code) are
+  # bumped weekly into one PR for a human to read. Runs after the nightly job
+  # so it starts from the main that job merged into.
+  review:
+    needs: build
+    if: ${{ always() && github.event.pull_request.head.repo.fork != true && (inputs.manual || github.event_name == 'schedule') }}
+    runs-on: home-nix-builder-amd64
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Configure host Nix
+        uses: ./.github/actions/setup-host-nix
+        with:
+          extra-tools: gh
+      - name: Open the review PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NIX_CONFIG: "access-tokens = github.com=${{ github.token }}"
+          MANUAL: ${{ inputs.manual }}
+        run: |
+          set -euo pipefail
+          if [ "$MANUAL" != true ] && [ "$(date -u +%u)" != 1 ]; then
+            echo "::notice::review PR runs on Mondays (or with the manual input)"
+            exit 0
+          fi
+          git config --global user.name 'Github Actions'
+          git config --global user.email 'alisonjenkins-gha@users.noreply.github.com'
+          title="chore(flake): weekly update of inputs that need review"
+          branch="flake-review-${{ github.run_id }}-${{ github.run_attempt }}"
+          git fetch origin main
+          git checkout -B "$branch" origin/main
+          summary="$RUNNER_TEMP/flake-bump-manual.md"
+          nix run .#update-policy -- bump --apply --group manual --summary "$summary"
+          git add flake.lock
+          if git diff --cached --quiet; then
+            echo "::notice::no input that needs review is due an update"
+            exit 0
+          fi
+          git commit -m "$title"
+          git push origin "HEAD:$branch"
+          {
+            echo
+            echo "These inputs' tiers do not auto-merge. Read each upstream diff before merging; see docs/update-policy.md."
+          } >> "$summary"
+          pr_url=$(gh pr create --title "$title" --body-file "$summary" --base main --head "$branch")
+          echo "::notice::opened $pr_url for review"
+          new_number="${pr_url##*/}"
+          for old in $(gh pr list --state open --author "app/github-actions" \
+              --search "in:title \"$title\"" --json number,headRefName \
+              --jq ".[] | select(.headRefName | startswith(\"flake-review-\")) | select(.number != $new_number) | .number"); do
+            gh pr close "$old" --delete-branch --comment "Superseded by $pr_url." \
+              || echo "::warning::could not close superseded PR #$old"
+          done
+          # A PR opened with GITHUB_TOKEN never starts pull_request workflows.
+          gh workflow run pr-check.yaml --ref "$branch"

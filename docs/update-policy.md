@@ -108,19 +108,37 @@ An update auto-merges only when all of these pass:
 ## Flake inputs: how the cooldown is applied
 
 `nix flake update` takes the newest commit of every input, so the nightly job
-cannot apply a cooldown on its own. The proposed replacement is a small Rust
-tool, `flake-bump`, that for each input:
+uses `update-policy bump` (in `pkgs/update-policy`) instead. For each direct
+input in `flake.lock` it:
 
-1. reads its tier from `pins/sources.json`,
-2. picks the newest upstream commit at least as old as the tier's cooldown
-   (for `nixos/nixpkgs`, the current channel head),
-3. locks to it with `nix flake lock --override-input`,
-4. writes a summary of what moved, what was held back and why, for the PR
-   body.
+1. reads the input's tier from `pins/sources.json`;
+2. asks GitHub for the current head of the input's branch or tag with
+   `git ls-remote` (no API token, no REST rate limit);
+3. records the head in `pins/flake-seen.json` with today's date if it has not
+   been seen before;
+4. picks the newest recorded commit, newer than the locked one, that was
+   first seen at least the tier's cooldown ago (a nixpkgs channel branch such
+   as `nixos-unstable` has no cooldown: Hydra already gates it);
+5. locks to it with `nix flake lock --override-input`, which keeps the
+   `flake.nix` reference as it is.
 
-The nightly workflow keeps its current shape (branch, PR, `flake-check`,
-auto-merge) and calls `flake-bump` instead of `nix flake update`. Inputs in the
-**sensitive** and **individual: code** tiers are bumped in a separate PR that is not auto-merged.
+**The cooldown runs from when we first saw a commit, not from its commit
+date.** Anyone can set a commit date, so a poisoned commit backdated by a
+month would otherwise skip the wait. The cost is that the first run sees
+everything as new: for the first 7 days after this ships, only the `own`
+tier and nixpkgs channels move.
+
+Transitive inputs move with the input that brings them in. Inputs pinned to
+a `rev` in `flake.nix` are left alone (they are in the pins registry).
+
+The nightly workflow (`update.yaml`) runs `bump --group auto` into the
+auto-merged nightly PR, whose body lists what moved, what is waiting and
+until when, and what could not be read. On Mondays a second job runs
+`bump --group manual` and opens one PR, not auto-merged, for the
+**sensitive** and **individual: code** tiers, closing last week's if it is
+still open. Only the nightly PR writes `pins/flake-seen.json`, so the two
+PRs never conflict over it. `workflow_dispatch` with `manual: true` opens the
+review PR on any day. `update-policy bump` with no `--apply` is a dry run.
 
 ## What is implemented
 
@@ -128,8 +146,8 @@ auto-merge) and calls `flake-bump` instead of `nix flake update`. Inputs in the
 | --- | --- | --- |
 | Tier data | `pins/sources.json` | done: every current flake input and Action |
 | `update-policy check` | `pkgs/update-policy` (Rust) | done: runs in the PR check and as a pre-commit hook |
-| Renovate rules per tier | `renovate.json` | next |
-| `flake-bump` cooldowns | `pkgs/update-policy` | planned |
+| Renovate rules per tier | `renovate.json` | done (#1015) |
+| `update-policy bump` cooldowns | `pkgs/update-policy`, `update.yaml` | done |
 | home-cluster checks | home-cluster | planned |
 
 `update-policy check` fails when a flake input (direct or transitive) or a
@@ -152,7 +170,7 @@ expires.
 | Area | Today | Under this policy |
 | --- | --- | --- |
 | nix-config Renovate | `:automergeAll`, no cooldown | cooldown by tier, majors and new sources manual |
-| nix-config nightly flake update | every input to its newest commit, auto-merged | `flake-bump` with tier cooldowns; sensitive inputs in a separate PR |
+| nix-config nightly flake update | every input to its newest commit, auto-merged | `update-policy bump` with tier cooldowns; sensitive and individual-code inputs in a weekly review PR |
 | home-cluster Renovate | 3 day image/chart cooldown, 7 days for sensitive images, digest bumps manual, Actions manual | unchanged, plus signed digest bumps and core-tier Actions may auto-merge |
 | home-cluster PR checks | yamllint only | plus flux build, helm template, kubeconform, actionlint, zizmor |
 | home-cluster `flux-upgrade-schedule` | disabled, uses `fluxcd/flux2/action@main` | fixed, pinned by SHA, Flux upgrades through a PR |
