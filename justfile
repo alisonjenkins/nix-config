@@ -15,6 +15,14 @@ list:
 check:
     .github/scripts/pr-check-x86_64-linux.sh
 
+# Check every flake input and GitHub Action has a trust tier (docs/update-policy.md)
+update-policy-check:
+    nix run .#update-policy -- check
+
+# Mutation-test pkgs/update-policy; every mutant should be caught
+update-policy-mutants:
+    cd pkgs/update-policy && nix shell nixpkgs#cargo-mutants nixpkgs#cargo nixpkgs#rustc --command cargo mutants --no-shuffle --timeout 60
+
 # Check the skill-authoring guidance sources for stale or overdue entries (network)
 skill-currency:
     nix shell nixpkgs#jq nixpkgs#curl --command home/skills/skill-authoring/scripts/check-currency.sh
