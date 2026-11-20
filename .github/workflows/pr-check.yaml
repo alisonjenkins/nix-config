@@ -67,5 +67,11 @@ jobs:
           nix shell --inputs-from . nixpkgs#python3 --command bash -c
           "python3 scripts/pins.py check
           && python3 -m unittest discover -s scripts/tests -p test_pins.py"
+      # Every flake input and GitHub Action needs a trust tier in
+      # pins/sources.json, and Actions outside the `own` tier must be pinned
+      # to a commit SHA (docs/update-policy.md). Building the package runs
+      # its tests; the check itself reads flake.lock and .github.
+      - name: Update policy sources
+        run: nix run .#update-policy -- check
       - name: PR check (modules, overlays, devShells, packages, aarch64 hosts)
         run: .github/scripts/pr-check-x86_64-linux.sh

@@ -1,6 +1,6 @@
 # Update policy
 
-Status: draft for review (2026-11-20).
+Status: accepted (2026-11-20). Implementation is in progress; see [What is implemented](#what-is-implemented).
 
 One policy for every automated update in this repository and in
 [home-cluster](https://github.com/alisonjenkins/home-cluster): flake inputs,
@@ -43,9 +43,13 @@ write permission, a GitHub App token, a secret, cloud credentials (OIDC
 `id-token: write` included), or a job on the self-hosted runner. Every other
 Action takes its owner's tier (`actions/*` and `github/*` are **core**).
 
-The tier list lives in one machine-readable file, `pins/sources.json`
-(proposed), next to the pins registry, so both repositories' tooling read the
-same data. CI fails when an input, image, chart or action has no tier.
+The tier list lives in one machine-readable file, `pins/sources.json`, next
+to the pins registry, so both repositories' tooling read the same data. CI
+fails when an input, image, chart or action has no tier. A match is
+`<kind>:<owner>/<repo>` in lowercase (`github:`, `gitlab:<host>/`, `tarball:`,
+`action:`), a `*` segment matches one path segment, and the most specific
+match wins, so `github:nix-community/lanzaboote` (sensitive) overrides
+`github:nix-community/*` (established).
 
 ## Rules for every update
 
@@ -112,6 +116,24 @@ tool, `flake-bump`, that for each input:
 The nightly workflow keeps its current shape (branch, PR, `flake-check`,
 auto-merge) and calls `flake-bump` instead of `nix flake update`. Inputs in the
 **sensitive** and **individual: code** tiers are bumped in a separate PR that is not auto-merged.
+
+## What is implemented
+
+| Piece | Where | State |
+| --- | --- | --- |
+| Tier data | `pins/sources.json` | done: every current flake input and Action |
+| `update-policy check` | `pkgs/update-policy` (Rust) | done: runs in the PR check and as a pre-commit hook |
+| Renovate rules per tier | `renovate.json` | next |
+| `flake-bump` cooldowns | `pkgs/update-policy` | planned |
+| home-cluster checks | home-cluster | planned |
+
+`update-policy check` fails when a flake input (direct or transitive) or a
+GitHub Action has no tier, or when an Action outside the `own` tier is not
+pinned to a full commit SHA. It warns when an exception is past its
+`review_by` date. Each error names the file, the source and the entry to add.
+Run it with `just update-policy-check`. Its tests run when the package
+builds; `just update-policy-mutants` runs cargo-mutants, and every mutant
+should be caught.
 
 ## Exceptions
 
