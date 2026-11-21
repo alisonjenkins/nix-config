@@ -2239,7 +2239,7 @@ EOF
             # CoreDNS in home-cluster-1 forwards `.` here.
             lanDns = {
               enable = true;
-              listenAddress = "192.168.1.132";
+              listenAddresses = [ self.lib.homeLan.hosts.download-server-1.ip ];
               allowSubnets = [
                 "192.168.1.0/24"   # LAN clients
                 "10.42.0.0/16"     # home-cluster-1 pod CIDR (CoreDNS)
