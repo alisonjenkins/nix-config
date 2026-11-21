@@ -126,7 +126,7 @@ in {
             package = pkgs.unstable.k3s_1_34;
             tokenFile = "/run/secrets/k8s-token";
 
-            extraFlags = toString [
+            extraFlags = toString ([
               "--cluster-cidr=10.42.0.0/16"
               "--cluster-init"
               "--disable-network-policy"
@@ -143,6 +143,12 @@ in {
               # Agents join by this name (resolved from /etc/hosts). k3s
               # already adds the bare hostname and the node IP.
               "--tls-san=${outputs.lib.homeLan.hosts.home-k8s-master-1.fqdn}"
+            ] ++ map (ip: "--tls-san=${ip}") (lib.unique [
+              # Both the current and the planned address, so the cert is
+              # valid at either one while master-1 moves between them.
+              outputs.lib.homeLan.hosts.home-k8s-master-1.ip
+              outputs.lib.homeLan.hosts.home-k8s-master-1.plannedIp
+            ]) ++ [
               "--write-kubeconfig-mode \"0400\""
               # etcd fdatasync stalls (~1s+) make lease renewals miss the
               # default 10s deadline; k3s exits on a lost embedded-controller
@@ -159,7 +165,7 @@ in {
               "--kube-apiserver-arg=feature-gates=ImageVolume=true"
               "--kubelet-arg=feature-gates=ImageVolume=true"
               # "--disable-kube-proxy"
-            ];
+            ]);
 
             manifests =
               {
