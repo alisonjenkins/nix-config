@@ -78,7 +78,7 @@ in {
         services.k3s = {
           enable = hasSecrets;
           role = "agent";
-          serverAddr = "https://192.168.1.129:6443";
+          serverAddr = "https://${outputs.lib.homeLan.hosts.home-k8s-master-1.ip}:6443";
           # Must match the server's version (see home-k8s-master-1).
           package = pkgs.unstable.k3s_1_34;
           tokenFile = "/run/secrets/k8s-token";
