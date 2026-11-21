@@ -16,6 +16,7 @@ let
   # clients (Prometheus, the Jellyseerr WAF) arrive from one of these.
   k8sNodeIPs = [
     "192.168.1.129" # home-k8s-master-1
+    "192.168.1.130" # home-k8s-server-1 (UDM DHCP reservation)
   ];
   # Sources allowed to scrape the Prometheus exporters: the LAN admin hosts
   # plus the k8s nodes, which is where the in-cluster Prometheus scrapes from.
