@@ -14,10 +14,12 @@ let
   # LAN IPs of the home-cluster-1 k8s nodes. Pod traffic leaving the cluster
   # is masqueraded to the IP of the node the pod runs on, so in-cluster
   # clients (Prometheus, the Jellyseerr WAF) arrive from one of these.
-  k8sNodeIPs = map (name: self.lib.homeLan.hosts.${name}.ip) [
+  # Both ip and plannedIp, so a node mid-move is allowed at either address.
+  k8sNodeIPs = lib.unique (lib.filter (ip: ip != null) (lib.concatMap
+    (name: with self.lib.homeLan.hosts.${name}; [ ip plannedIp ]) [
     "home-k8s-master-1"
     "home-k8s-server-1"
-  ];
+  ]));
   # Sources allowed to scrape the Prometheus exporters: the LAN admin hosts
   # plus the k8s nodes, which is where the in-cluster Prometheus scrapes from.
   monitoringSources = qbittorrentAllowedIPs ++ k8sNodeIPs;
