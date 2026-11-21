@@ -118,15 +118,17 @@ in {
           };
         };
 
-        # home-k8s-server-1 = {
-        #   hostname = "home-k8s-server-1.lan";
-        #   profiles = {
-        #     system = {
-        #       user = "root";
-        #       path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.home-k8s-server-1;
-        #     };
-        #   };
-        # };
+        home-k8s-server-1 = {
+          # The UDM DHCP reservation. home-k8s-server-1.lan still resolves
+          # to the box's old lease (192.168.1.251), so the name is not used.
+          hostname = "192.168.1.130";
+          profiles = {
+            system = {
+              user = "root";
+              path = inputs.deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.home-k8s-server-1;
+            };
+          };
+        };
       };
     };
   };
