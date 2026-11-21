@@ -119,9 +119,10 @@ in {
         };
 
         home-k8s-server-1 = {
-          # The UDM DHCP reservation. home-k8s-server-1.lan still resolves
-          # to the box's old lease (192.168.1.251), so the name is not used.
-          hostname = "192.168.1.130";
+          # The address from homeLan, not the .lan name: until the box is
+          # reinstalled on its reservation, home-k8s-server-1.lan resolves to
+          # its old DHCP lease.
+          hostname = self.lib.homeLan.hosts.home-k8s-server-1.ip;
           profiles = {
             system = {
               user = "root";
