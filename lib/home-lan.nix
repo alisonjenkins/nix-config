@@ -85,7 +85,7 @@ let
     home-k8s-server-2 = { ip = null; plannedIp = "192.168.1.32"; role = "k8s"; };
 
     # Services.
-    download-server-1 = { ip = "192.168.1.132"; plannedIp = "192.168.1.40"; mac = "52:54:00:0a:29:2d"; role = "service"; };
+    download-server-1 = { ip = "192.168.1.40"; plannedIp = "192.168.1.40"; mac = "52:54:00:0a:29:2d"; role = "service"; };
     # Inactive VM.
     home-vpn-gateway-1 = { ip = null; plannedIp = "192.168.1.41"; role = "service"; };
 
