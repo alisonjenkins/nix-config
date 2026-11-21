@@ -140,6 +140,9 @@ in {
               "--service-cidr=10.43.0.0/16"
               "--tls-san=home-k8s-master-1.tail476348.ts.net"
               "--tls-san=100.87.232.102"
+              # Agents join by this name (resolved from /etc/hosts). k3s
+              # already adds the bare hostname and the node IP.
+              "--tls-san=${outputs.lib.homeLan.hosts.home-k8s-master-1.fqdn}"
               "--write-kubeconfig-mode \"0400\""
               # etcd fdatasync stalls (~1s+) make lease renewals miss the
               # default 10s deadline; k3s exits on a lost embedded-controller
