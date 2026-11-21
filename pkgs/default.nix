@@ -40,6 +40,7 @@
   citron = pkgs.callPackage ./citron { ffmpeg = ffmpeg-git; };
   eden = pkgs.callPackage ./eden {};
   sift = pkgs.callPackage ./sift {};
+  update-policy = pkgs.callPackage ./update-policy {};
   vr-foveation-bench = pkgs.callPackage ./vr-foveation-bench {};
   obscura = pkgs.callPackage ./obscura {};
   camoufox-browser = pkgs.callPackage ./camoufox-browser {};

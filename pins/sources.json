@@ -1,0 +1,229 @@
+{
+  "schema": 1,
+  "_doc": "Trust tier for every source of code that automated updates can move: flake inputs, GitHub Actions, and (from home-cluster) container images and Helm charts. Policy and tier meanings: docs/update-policy.md. A match is '<kind>:<owner>/<repo>', lowercase; '*' matches any one path segment. When several entries match, the most specific (fewest wildcards, longest) wins, so a single repo can override its owner's tier. `update-policy check` fails CI when a source has no tier.",
+  "tiers": {
+    "own": {
+      "cooldown_days": 0,
+      "automerge": true,
+      "description": "Your own repositories and registries."
+    },
+    "core": {
+      "cooldown_days": 3,
+      "automerge": true,
+      "channel_cooldown_days": 0,
+      "description": "Gated by an upstream release process with many reviewers. A nixpkgs channel bump has no cooldown: Hydra already gates it."
+    },
+    "established": {
+      "cooldown_days": 7,
+      "automerge": true,
+      "description": "Organisations with several maintainers and a track record."
+    },
+    "individual-cosmetic": {
+      "cooldown_days": 7,
+      "automerge": true,
+      "description": "One- or two-maintainer projects consumed only as data (themes, colour schemes). Auto-merges only if the diff passes the review gates."
+    },
+    "individual-code": {
+      "cooldown_days": 7,
+      "automerge": false,
+      "description": "One- or two-maintainer projects whose code runs on your machines. Always a PR, batched weekly."
+    },
+    "sensitive": {
+      "cooldown_days": 7,
+      "automerge": false,
+      "description": "Holds credentials, runs as kernel or boot code, deploys as root, or runs agent-controlled code. Always a PR."
+    }
+  },
+  "sources": [
+    {
+      "match": "github:alisonjenkins/*",
+      "tier": "own"
+    },
+    {
+      "match": "github:nixos/nixpkgs",
+      "tier": "core",
+      "note": "Channels (nixos-unstable, nixos-26.05) are Hydra-gated."
+    },
+    {
+      "match": "tarball:https://channels.nixos.org/*/nixexprs.tar.xz",
+      "tier": "core"
+    },
+    {
+      "match": "action:actions/*",
+      "tier": "core"
+    },
+    {
+      "match": "action:github/*",
+      "tier": "core"
+    },
+    {
+      "match": "github:nixos/*",
+      "tier": "established"
+    },
+    {
+      "match": "github:nix-community/*",
+      "tier": "established"
+    },
+    {
+      "match": "github:hercules-ci/*",
+      "tier": "established"
+    },
+    {
+      "match": "github:numtide/*",
+      "tier": "established"
+    },
+    {
+      "match": "github:cachix/*",
+      "tier": "established"
+    },
+    {
+      "match": "github:nix-systems/*",
+      "tier": "established"
+    },
+    {
+      "match": "github:lnl7/nix-darwin",
+      "tier": "established"
+    },
+    {
+      "match": "github:oxalica/rust-overlay",
+      "tier": "established"
+    },
+    {
+      "match": "github:ipetkov/crane",
+      "tier": "established"
+    },
+    {
+      "match": "github:edolstra/flake-compat",
+      "tier": "established"
+    },
+    {
+      "match": "github:rust-lang/rust-analyzer",
+      "tier": "established"
+    },
+    {
+      "match": "github:neovim/neovim",
+      "tier": "established"
+    },
+    {
+      "match": "gitlab:gitlab.gnome.org/gnome/*",
+      "tier": "established",
+      "note": "GNOME's own GitLab."
+    },
+    {
+      "match": "action:determinatesystems/*",
+      "tier": "established"
+    },
+    {
+      "match": "github:tinted-theming/*",
+      "tier": "individual-cosmetic",
+      "note": "Theme data only."
+    },
+    {
+      "match": "github:tomyun/base16-fish",
+      "tier": "individual-cosmetic",
+      "note": "Theme data only."
+    },
+    {
+      "match": "github:rafaelmardojai/firefox-gnome-theme",
+      "tier": "individual-cosmetic",
+      "note": "Theme data only."
+    },
+    {
+      "match": "github:danth/stylix",
+      "tier": "individual-code",
+      "note": "Ships NixOS and home-manager modules."
+    },
+    {
+      "match": "github:senchopens/base16.nix",
+      "tier": "individual-code",
+      "note": "stylix dependency, Nix code."
+    },
+    {
+      "match": "github:senchopens/fromyaml",
+      "tier": "individual-code",
+      "note": "stylix dependency, Nix code."
+    },
+    {
+      "match": "github:yalter/niri",
+      "tier": "individual-code",
+      "note": "Compositor."
+    },
+    {
+      "match": "github:noctalia-dev/*",
+      "tier": "individual-code",
+      "note": "Shell; carries fork patches (CLAUDE.md)."
+    },
+    {
+      "match": "github:quickshell-mirror/*",
+      "tier": "individual-code"
+    },
+    {
+      "match": "github:pjones/plasma-manager",
+      "tier": "individual-code"
+    },
+    {
+      "match": "github:gmodena/nix-flatpak",
+      "tier": "individual-code"
+    },
+    {
+      "match": "github:pabloaul/lsfg-vk-flake",
+      "tier": "individual-code",
+      "note": "Vulkan layer."
+    },
+    {
+      "match": "github:0xc000022070/zen-browser-flake",
+      "tier": "individual-code",
+      "note": "Browser build."
+    },
+    {
+      "match": "github:ashleyyakeley/nixvirt",
+      "tier": "individual-code",
+      "note": "libvirt definitions."
+    },
+    {
+      "match": "github:icedborn/pipewire-screenaudio",
+      "tier": "individual-code"
+    },
+    {
+      "match": "github:jovian-experiments/jovian-nixos",
+      "tier": "individual-code",
+      "note": "Steam Deck system modules."
+    },
+    {
+      "match": "github:nix-community/lanzaboote",
+      "tier": "sensitive",
+      "note": "Secure Boot: boot code."
+    },
+    {
+      "match": "github:nix-community/nixos-apple-silicon",
+      "tier": "sensitive",
+      "note": "Kernel and boot chain for ali-mba-linux."
+    },
+    {
+      "match": "github:xddxdd/nix-cachyos-kernel",
+      "tier": "sensitive",
+      "note": "Kernel."
+    },
+    {
+      "match": "github:serokell/deploy-rs",
+      "tier": "sensitive",
+      "note": "Deploys to every host as root."
+    },
+    {
+      "match": "github:mic92/sops-nix",
+      "tier": "sensitive",
+      "note": "Decrypts every host's secrets."
+    },
+    {
+      "match": "github:mic92/niks3",
+      "tier": "sensitive",
+      "note": "Holds the cache push token."
+    },
+    {
+      "match": "github:nix-community/nur",
+      "tier": "sensitive",
+      "note": "Aggregates packages from any user."
+    }
+  ],
+  "exceptions": []
+}

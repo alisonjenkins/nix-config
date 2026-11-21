@@ -24,6 +24,7 @@ in
       cavemem = (pkgsFor system).cavemem;
       rea = (pkgsFor system).rea;
       sift = (pkgsFor system).sift;
+      update-policy = (pkgsFor system).update-policy;
       memory-recall = (pkgsFor system).memory-recall;
       token-tools = (pkgsFor system).token-tools;
       rootly-cli = (pkgsFor system).rootly-cli;
