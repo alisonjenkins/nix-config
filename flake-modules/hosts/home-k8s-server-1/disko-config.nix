@@ -2,9 +2,10 @@
   flake.nixosModules.home-k8s-server-1-disko-config = {
     disko.devices = {
       disk = {
-        vda = {
+        main = {
           type = "disk";
-          device = "/dev/vda";
+          # Kingston SA400 120G SATA SSD (the fitlet2's only disk).
+          device = "/dev/disk/by-id/ata-KINGSTON_SA400M8120G_50026B7683D9077F";
           content = {
             type = "gpt";
             partitions = {
@@ -28,16 +29,6 @@
                   extraOpenArgs = [ ];
                   passwordFile = "/tmp/secret.key";
                   settings.allowDiscards = true;
-                  # Match SSD physical sector size (4 KiB) for
-                  # ~5-15% throughput improvement. The guest
-                  # virtio-blk passes through to host NVMe, so the
-                  # host's underlying physical sector size still
-                  # benefits. Format-time only; applies on next
-                  # reinstall.
-                  extraFormatArgs = [
-                    "--sector-size"
-                    "4096"
-                  ];
                   content = {
                     type = "lvm_pv";
                     vg = "pool";
