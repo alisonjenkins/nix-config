@@ -20,6 +20,7 @@ in {
       # Custom modules via flake outputs
       self.nixosModules.locale
       self.nixosModules.base
+      self.nixosModules.initrd-ssh
       self.nixosModules.nohang
       self.nixosModules.servers
       self.nixosModules.home-k8s-server-1-hardware
@@ -96,6 +97,16 @@ in {
             restartUnits = [ "k3s.service" ];
           };
         };
+        # Remote LUKS unlock: the box is headless, so a boot that stops at
+        # the passphrase prompt is answered over SSH on port 2222 with
+        # `systemd-tty-ask-password-agent`. The initrd gets its address by
+        # DHCP on eno1 (igb, loaded from hardware-configuration.nix).
+        modules.initrd-ssh = {
+          enable = true;
+          authorizedKeys = [ outputs.lib.sshKeys.primary ];
+          hostKeyComment = "home-k8s-server-1-initrd";
+        };
+
         programs.zsh.enable = true;
         services.logrotate.checkConfig = false;
         time.timeZone = "Europe/London";
@@ -111,6 +122,8 @@ in {
               canTouchEfiVariables = true;
             };
           };
+          # Required by modules.initrd-ssh.
+          initrd.systemd.enable = true;
           # Bypass kernel workqueues for dm-crypt: lower latency on
           # the SATA SSD. Runtime-only, applies on next boot.
           initrd.luks.devices.crypted.crypttabExtraOpts = [
