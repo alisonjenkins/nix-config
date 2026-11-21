@@ -20,6 +20,13 @@ let
     "home-k8s-master-1"
     "home-k8s-server-1"
   ]));
+  homeLan = self.lib.homeLan;
+  # This host's LAN addresses. Both ip and plannedIp while it moves, so it
+  # answers on the old and new address at once; the first stays the source.
+  lanAddresses = lib.unique (lib.filter (ip: ip != null)
+    (with homeLan.hosts.download-server-1; [ ip plannedIp ]));
+  # The host's own resolver. Also a kill-switch DNS exception below.
+  hostResolver = "9.9.9.9";
   # Sources allowed to scrape the Prometheus exporters: the LAN admin hosts
   # plus the k8s nodes, which is where the in-cluster Prometheus scrapes from.
   monitoringSources = qbittorrentAllowedIPs ++ k8sNodeIPs;
@@ -362,6 +369,27 @@ in {
           # carries NFS straight to storage (off both the LAN br0 and the wg-quick
           # VPN default route). MTU 9000 must match every hop.
           networkmanager.ensureProfiles.profiles = {
+            # LAN uplink, static from homeLan. Replaces the imperative
+            # "Wired connection 1" profile (autoconnect-priority -999), which
+            # this one outranks.
+            lan = {
+              connection = {
+                id = "lan";
+                type = "ethernet";
+                autoconnect = true;
+              };
+              ethernet.mac-address = homeLan.hosts.download-server-1.mac;
+              ipv4 = {
+                method = "manual";
+                gateway = homeLan.gateway;
+                dns = "${hostResolver};";
+                ignore-auto-dns = true;
+              } // lib.listToAttrs (lib.imap1 (i: ip: {
+                name = "address${toString i}";
+                value = "${ip}/${toString homeLan.prefixLength}";
+              }) lanAddresses);
+              ipv6.method = "auto";
+            };
             storage-jumbo = {
               connection = {
                 id = "storage-jumbo";
@@ -2239,7 +2267,7 @@ EOF
             # CoreDNS in home-cluster-1 forwards `.` here.
             lanDns = {
               enable = true;
-              listenAddresses = [ self.lib.homeLan.hosts.download-server-1.ip ];
+              listenAddresses = lanAddresses;
               allowSubnets = [
                 "192.168.1.0/24"   # LAN clients
                 "10.42.0.0/16"     # home-cluster-1 pod CIDR (CoreDNS)
@@ -2251,7 +2279,7 @@ EOF
               dnsServers = [
                 "149.112.112.112"
                 "192.168.1.1"
-                "9.9.9.9"
+                hostResolver
               ];
 
               domains = {
