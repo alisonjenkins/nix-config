@@ -15,6 +15,7 @@ in {
       # Custom modules via flake outputs
       self.nixosModules.locale
       self.nixosModules.base
+      self.nixosModules.home-lan-hosts
       self.nixosModules.nohang
       self.nixosModules.home-k8s-master-1-hardware
       self.nixosModules.home-k8s-master-1-disko-config
@@ -34,6 +35,7 @@ in {
           enable = true;
           extraProtectedProcesses = [ "k3s" "containerd" ];
         };
+        modules.homeLanHosts.enable = true;
         modules.base = {
           enable = true;
         };

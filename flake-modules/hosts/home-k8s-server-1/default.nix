@@ -30,6 +30,7 @@ in {
       # Custom modules via flake outputs
       self.nixosModules.locale
       self.nixosModules.base
+      self.nixosModules.home-lan-hosts
       self.nixosModules.initrd-ssh
       self.nixosModules.nohang
       self.nixosModules.servers
@@ -46,6 +47,7 @@ in {
           enable = true;
           extraProtectedProcesses = [ "k3s" "containerd" ];
         };
+        modules.homeLanHosts.enable = true;
         modules.base = {
           enable = true;
           bootLoader = if secureBootReady then "secure-boot" else "systemd-boot";
