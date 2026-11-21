@@ -29,6 +29,9 @@
 #                  gear that sets its own address)
 #   fqdn           derived: "<name>.lan"
 #
+# `moveBlockers` lists hosts whose plannedIp is still another host's live
+# ip, and which host must move first (`nix eval .#lib.homeLan.moveBlockers`).
+#
 # Evaluation fails if two hosts share an `ip`, two share a `plannedIp`, an
 # address is outside the subnet, or a `plannedIp` falls inside the DHCP or
 # Cilium LB pool.
@@ -136,6 +139,16 @@ let
     map (p: "${p.name}.plannedIp = ${p.addr}")
       (lib.filter (p: inPool dhcpPool p.addr || inPool ciliumLbPool p.addr) (pairs "plannedIp"));
 
+  # A host whose plannedIp is another host's live ip cannot move until that
+  # host does; the duplicate-ip check rejects the flip if it is done first.
+  liveOwner = lib.listToAttrs (map (p: lib.nameValuePair p.addr p.name) (pairs "ip"));
+  moveBlockers = lib.concatMap
+    (p:
+      let owner = liveOwner.${p.addr} or null;
+      in lib.optional (owner != null && owner != p.name)
+        { host = p.name; plannedIp = p.addr; waitsFor = owner; })
+    (pairs "plannedIp");
+
   errors =
     map (d: "duplicate ip ${d}") (duplicates "ip")
     ++ map (d: "duplicate plannedIp ${d}") (duplicates "plannedIp")
@@ -143,7 +156,7 @@ let
     ++ map (e: "inside the DHCP or Cilium LB pool: ${e}") plannedInPools;
 
   homeLan = {
-    inherit domain subnet prefixLength gateway dhcpPool ciliumLbPool dnsServers services hosts;
+    inherit domain subnet prefixLength gateway dhcpPool ciliumLbPool dnsServers services hosts moveBlockers;
   };
 in
 if errors == [ ] then homeLan
