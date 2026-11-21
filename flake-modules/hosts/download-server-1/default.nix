@@ -11,10 +11,15 @@ let
     "192.168.1.39"
     "192.168.1.66"
   ];
+  # LAN IPs of the home-cluster-1 k8s nodes. Pod traffic leaving the cluster
+  # is masqueraded to the IP of the node the pod runs on, so in-cluster
+  # clients (Prometheus, the Jellyseerr WAF) arrive from one of these.
+  k8sNodeIPs = [
+    "192.168.1.129" # home-k8s-master-1
+  ];
   # Sources allowed to scrape the Prometheus exporters: the LAN admin hosts
-  # plus the k8s cluster node (192.168.1.129), which is where the in-cluster
-  # Prometheus scrapes from (pod traffic is masqueraded to the node IP).
-  monitoringSources = qbittorrentAllowedIPs ++ [ "192.168.1.129" ];
+  # plus the k8s nodes, which is where the in-cluster Prometheus scrapes from.
+  monitoringSources = qbittorrentAllowedIPs ++ k8sNodeIPs;
 
   # Proton WireGuard server (CH#540). Must match the Endpoint in
   # secrets/vpn.yaml; the pinned route and the firewall allow-list below both
@@ -2173,8 +2178,7 @@ EOF
               }
               {
                 port = 5055;
-                sources = [
-                  "192.168.1.129"
+                sources = k8sNodeIPs ++ [
                   "192.168.1.187"
                   "192.168.1.190"
                   "192.168.1.39"
