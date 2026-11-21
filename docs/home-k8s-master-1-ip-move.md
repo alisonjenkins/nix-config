@@ -90,11 +90,14 @@ First prove a hostNetwork pod resolves the name on **each** node. Replace
 `<node>` with `home-k8s-master-1`, then `home-k8s-server-1`:
 
 ```bash
-kubectl -n kube-system run hosts-check --rm -it --restart=Never --image=docker.io/library/busybox:1.37 --overrides='{"spec":{"hostNetwork":true,"nodeName":"<node>"}}' -- sh -c 'grep home-k8s-master-1 /etc/hosts && ping -c1 -W1 home-k8s-master-1.lan'
+kubectl -n kube-system run hosts-check --rm -i --restart=Never --pod-running-timeout=3m --image=docker.io/library/busybox:1.37 --overrides='{"apiVersion":"v1","spec":{"hostNetwork":true,"nodeName":"<node>"}}' -- sh -c 'grep home-k8s-master-1 /etc/hosts && nc -z -w2 home-k8s-master-1.lan 6443 && echo API_OK'
 ```
 
-The `grep` must print the `192.168.1.129` line, and `ping` must resolve to
-that address. Merge only when both nodes pass.
+The `grep` must print the `192.168.1.129` line, and the command must end with
+`API_OK`. Merge only when both nodes pass. Do not test with `ping`: the hosts
+ignore all ICMP echo (`modules.base.enableICMPPing` is off), so it always
+fails. On master-1 the `grep` also prints `127.0.0.2 home-k8s-master-1`, the
+NixOS entry for its own hostname; that is expected.
 
 After Flux applies it:
 
