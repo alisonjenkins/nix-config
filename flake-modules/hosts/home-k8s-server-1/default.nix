@@ -64,6 +64,9 @@ in {
         modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
         modules.servers.enable = true;
+        # The cluster's node-exporter DaemonSet binds host port 9100 on every
+        # node; a host exporter on the same port crash-loops it.
+        modules.servers.prometheus.nodeExporter.enable = !hasSecrets;
 
         console.keyMap = "us";
         networking.hostName = "home-k8s-server-1";
