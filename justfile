@@ -112,6 +112,39 @@ install-remote hostname="ali-steam-deck" target="root@192.168.1.67":
     ssh "${SSH_OPTS[@]}" "{{target}}" \
       "nixos-install --root /mnt --no-root-passwd --no-channel-copy --system $storepath"
 
+# Wipe and install a host over SSH with nixos-anywhere (kexec + disko).
+# DESTROYS every disk the host's disko config names. Ships the host key
+# from ~/.local/share/nixos-anywhere/<hostname> (its age key decrypts the
+# host's sops secrets) and the LUKS passphrase to /tmp/secret.key, where
+# disko's passwordFile reads it. keyfile="" prompts for the passphrase.
+install-anywhere hostname target keyfile="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    extra="$HOME/.local/share/nixos-anywhere/{{hostname}}"
+    if [ ! -f "$extra/etc/ssh/ssh_host_ed25519_key" ]; then
+      echo "missing $extra/etc/ssh/ssh_host_ed25519_key" >&2
+      exit 1
+    fi
+
+    keyfile="{{keyfile}}"
+    if [ -z "$keyfile" ]; then
+      keyfile=$(mktemp)
+      trap 'rm -f "$keyfile"' EXIT
+      read -rsp "LUKS passphrase for {{hostname}}: " p1; echo
+      read -rsp "Repeat: " p2; echo
+      [ "$p1" = "$p2" ] || { echo "passphrases differ" >&2; exit 1; }
+      printf '%s' "$p1" > "$keyfile"
+      unset p1 p2
+    fi
+
+    nix run --inputs-from . nixpkgs#nixos-anywhere -- \
+      --flake ".#{{hostname}}" \
+      --target-host "{{target}}" \
+      --build-on local \
+      --extra-files "$extra" \
+      --disk-encryption-keys /tmp/secret.key "$keyfile"
+
 # Build the config for this system and activate it
 switch *extraargs:
     #!/usr/bin/env bash

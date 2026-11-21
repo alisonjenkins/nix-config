@@ -53,6 +53,25 @@ Do not bind PCR 15 (it is measured after unlock; see `modules/luksPCR15`).
 Do not bind PCR 11. It changes with every kernel or initrd rebuild, so the
 token stops unsealing; `docs/ali-desktop-boot-time.md` describes that failure.
 
+## Install
+
+**This wipes the SSD.** It replaces whatever runs on the box.
+
+```sh
+just install-anywhere home-k8s-server-1 ali@192.168.1.251
+```
+
+- The recipe prompts for a new LUKS passphrase. Pass a file as the third
+  argument to skip the prompt.
+- The target user needs passwordless sudo, or use `root@`.
+- It ships the host key from
+  `~/.local/share/nixos-anywhere/home-k8s-server-1/etc/ssh/`. Its age
+  recipient is the `server_home-k8s-server-1` key in `.sops.yaml`, so the
+  k3s token decrypts on first boot. Back the key up; a new key means
+  re-keying the secret with `sops updatekeys`.
+- The first boot stops at the passphrase prompt. Unlock it over initrd SSH
+  (see Disk unlock).
+
 ## Runbook: TPM auto-unlock with Secure Boot
 
 You need to be at the box (keyboard and monitor) for steps 1 and 5.
