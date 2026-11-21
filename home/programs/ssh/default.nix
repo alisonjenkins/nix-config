@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   primarySSHKey,
   # Azure DevOps only supports RSA keys (not ed25519); set per work machine, empty on personal machines
@@ -37,6 +38,7 @@
 
     ".ssh/config".text =
       let
+        inherit (inputs.self.lib.homeLan) hosts;
         use1password = true;
         identity_sock_path =
           if pkgs.stdenv.isLinux then
@@ -164,13 +166,13 @@
 
         Host home-k8s-server-1.lan home-k8s-server-1 hk8s1
           user ali
-          HostName 192.168.1.130
+          HostName ${hosts.home-k8s-server-1.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
         Host hk8s1-setup
           user nixos
-          HostName 192.168.1.130
+          HostName ${hosts.home-k8s-server-1.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
