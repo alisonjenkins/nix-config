@@ -38,6 +38,10 @@ in
   # directory under home/skills/ is all it takes to expose it.
   flake.lib.skills = lib.genAttrs skillNames (name: skillsDir + "/${name}");
 
+  # Home LAN address map: the single source of truth for LAN IPs. See the
+  # header of lib/home-lan.nix for the fields and the ip/plannedIp rule.
+  flake.lib.homeLan = import ../lib/home-lan.nix { inherit lib; };
+
   flake.lib.sshKeys = {
     inherit primary phone nixBuilderLaptop;
     all = [
