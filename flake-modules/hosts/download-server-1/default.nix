@@ -14,9 +14,9 @@ let
   # LAN IPs of the home-cluster-1 k8s nodes. Pod traffic leaving the cluster
   # is masqueraded to the IP of the node the pod runs on, so in-cluster
   # clients (Prometheus, the Jellyseerr WAF) arrive from one of these.
-  k8sNodeIPs = [
-    "192.168.1.129" # home-k8s-master-1
-    "192.168.1.130" # home-k8s-server-1 (UDM DHCP reservation)
+  k8sNodeIPs = map (name: self.lib.homeLan.hosts.${name}.ip) [
+    "home-k8s-master-1"
+    "home-k8s-server-1"
   ];
   # Sources allowed to scrape the Prometheus exporters: the LAN admin hosts
   # plus the k8s nodes, which is where the in-cluster Prometheus scrapes from.
