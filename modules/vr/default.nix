@@ -288,6 +288,22 @@ in
             if ! ${pkgs.libcap}/bin/getcap "$launcher" | ${pkgs.gnugrep}/bin/grep -qE 'cap_sys_nice[+=]ep($|[[:space:],])'; then
               ${pkgs.libcap}/bin/setcap cap_sys_nice+ep "$launcher"
             fi
+
+            # Lets the Steam Link VR driver (driver_vrlink.so) use OpenSSL.
+            # It dlopen()s the unversioned "libcrypto.so", but vrserver runs
+            # inside the Steam Linux Runtime (sniper) container, which only
+            # ships libcrypto.so.1.1. The lookup fails and stream encryption
+            # falls back to soft AES (~25 MB/s instead of ~1600 MB/s).
+            # bin/linux64 is first on vrserver's LD_LIBRARY_PATH; the target
+            # is a path inside the container, so it dangles on the host.
+            # Never replaces a real file Valve might ship there later.
+            crypto="$(dirname "$launcher")/libcrypto.so"
+            crypto_target=/usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
+            if [ ! -e "$crypto" ] || [ -L "$crypto" ]; then
+              if [ "$(readlink "$crypto")" != "$crypto_target" ]; then
+                ln -sfn "$crypto_target" "$crypto"
+              fi
+            fi
           done
 
           # Clears vrserver's IPC shared-memory segment when it's orphaned
