@@ -54,6 +54,17 @@ working after each. Step 6 is the move itself.
   The `scp` needs read access. If root owns the file, copy it to `/tmp` with
   `sudo cp` and `sudo chown ali` first.
 
+- Use the dev shell. `deploy` comes from it, so run each `deploy` below as
+  `nix develop -c deploy ...` from this repo. In `terraform/unifi`, run
+  `just` inside `nix develop` too; it provides `tofu`.
+- Never run two deploy-rs runs to the same host at once. They race on the
+  profile and the activation.
+- Keep step 6 and 7 commands IP-based. Your desktop loses LAN DNS from the
+  reboot until Cilium is restarted in step 7, about 10 minutes on
+  2026-11-21. `home-k8s-master-1.lan` does not resolve then, so use
+  `192.168.1.30`, `kubectl --server=https://192.168.1.30:6443`, and
+  `ssh -o HostKeyAlias=home-k8s-master-1.lan 192.168.1.30`.
+
 ## Steps
 
 ### 1. Deploy home-k8s-master-1
@@ -263,6 +274,25 @@ kubectl get nodes -o wide
 
 Both nodes must be `Ready`; master-1's `INTERNAL-IP` must be `192.168.1.30`.
 
+Restart both Cilium agents. They are hostNetwork pods, and both kept stale
+state on 2026-11-21:
+
+- server-1's agent still read the old `/etc/hosts` inode, so it resolved
+  master-1 to `.129`.
+- master-1's agent started before its Node object updated, so its
+  CiliumNode kept `.129` as `InternalIP`. That broke the VXLAN tunnel and,
+  with it, LAN DNS on `.246` and `.247`.
+
+```bash
+kubectl --server=https://192.168.1.30:6443 -n kube-system delete pod -l k8s-app=cilium
+```
+
+```bash
+kubectl --server=https://192.168.1.30:6443 get ciliumnodes -o wide
+```
+
+master-1's CiliumNode must show `192.168.1.30`.
+
 ```bash
 kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -E 'Kubernetes|KubeProxyReplacement'
 ```
@@ -280,28 +310,36 @@ dig +short @192.168.1.247 example.com
 ## Fallback: etcd cluster reset
 
 master-1 runs embedded etcd as a single member (`--cluster-init`). The etcd
-member records its peer URL with the node IP. If k3s does not rewrite it
-after the move, etcd fails to start and the journal shows the old
-`192.168.1.129:2380` peer URL. This is not verified on k3s v1.34, so be
-ready for it.
+member records its peer URL with the node IP. k3s v1.34 does not rewrite it
+after the move. On 2026-11-21 etcd would not start and the journal said the
+node was `not a member` and found the old `192.168.1.129:2380` peer URL. Plan
+for this reset as a normal part of step 6, not a rare fallback.
 
 `--cluster-reset` rewrites the membership to one member at the current
-address and keeps the data:
+address and keeps the data. A bare `k3s server --cluster-reset` is not
+enough: it must run with every flag the unit uses (`--token-file`,
+`--cluster-cidr`, `--tls-san` and the rest), or k3s starts with the wrong
+config. Print the unit's command first:
+
+```bash
+ssh 192.168.1.30 'systemctl cat k3s | grep ^ExecStart='
+```
+
+Stop k3s:
 
 ```bash
 ssh 192.168.1.30 sudo systemctl stop k3s
 ```
 
-```bash
-ssh 192.168.1.30 sudo k3s server --cluster-reset
-```
-
-Wait for `Managed etcd cluster membership has been reset, restart without
---cluster-reset flag now`. Then:
+Then, on master-1, run that exact `ExecStart` command under `sudo` with
+`--cluster-reset` added at the end. Wait for `Managed etcd cluster membership
+has been reset, restart without --cluster-reset flag now`. Then:
 
 ```bash
 ssh 192.168.1.30 sudo systemctl start k3s
 ```
+
+After the reset, do the Cilium restart in step 7.
 
 If the data itself is damaged, restore the snapshot instead. Copy it back to
 `/var/lib/rancher/k3s/server/db/snapshots/` first if it is gone:
@@ -311,8 +349,12 @@ ssh 192.168.1.30 sudo systemctl stop k3s
 ```
 
 ```bash
-ssh 192.168.1.30 sudo k3s server --cluster-reset --cluster-reset-restore-path=/var/lib/rancher/k3s/server/db/snapshots/<pre-ip-move-file>
+ssh 192.168.1.30 'systemctl cat k3s | grep ^ExecStart='
 ```
+
+Run that command under `sudo` with these flags added:
+`--cluster-reset --cluster-reset-restore-path=/var/lib/rancher/k3s/server/db/snapshots/<pre-ip-move-file>`.
+Then:
 
 ```bash
 ssh 192.168.1.30 sudo systemctl start k3s
