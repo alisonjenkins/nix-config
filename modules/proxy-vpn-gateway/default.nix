@@ -143,17 +143,21 @@ in
       type = types.submodule {
         options = {
           enable = mkEnableOption ''
-            a LAN-facing Unbound resolver. Listens on `listenAddress`,
+            a LAN-facing Unbound resolver. Listens on `listenAddresses`,
             answers queries from `allowSubnets`, and forces upstream
             queries out via the VPN interface for privacy. Pair with an
             in-cluster CoreDNS (or any forwarder) that delegates `.` to
             this address.
           '';
-          listenAddress = mkOption {
-            type = types.str;
-            default = "";
-            description = "LAN IP address Unbound should bind to (UDP+TCP/53).";
-            example = "192.168.1.132";
+          listenAddresses = mkOption {
+            type = types.listOf types.str;
+            default = [];
+            description = ''
+              LAN IP addresses Unbound binds to (UDP+TCP/53). More than one
+              lets the host keep answering on its old address during an IP
+              move.
+            '';
+            example = [ "192.168.1.40" ];
           };
           allowSubnets = mkOption {
             type = types.listOf types.str;
@@ -181,7 +185,7 @@ in
           };
         };
       };
-      default = { enable = false; listenAddress = ""; allowSubnets = []; };
+      default = { enable = false; listenAddresses = []; allowSubnets = []; };
       description = ''
         Optional LAN-facing Unbound resolver. Designed for
         download-server-1: an in-cluster CoreDNS forwards LAN-bound
@@ -312,6 +316,13 @@ in
       };
     in
     {
+      assertions = [
+        {
+          assertion = !cfg.lanDns.enable || cfg.lanDns.listenAddresses != [];
+          message = "services.proxyVpnGateway.lanDns.listenAddresses must list at least one address when lanDns is enabled.";
+        }
+      ];
+
       environment.systemPackages = with pkgs; [
         iproute2
         microsocks
@@ -442,13 +453,15 @@ in
 
                   # == LAN DNS RESOLVER (lanDns) ==
                   # Accept DNS queries (UDP+TCP/53) from allowed subnets
-                  # to the Unbound listener bound on listenAddress.
+                  # to the Unbound listeners bound on listenAddresses.
                   ${lib.optionalString cfg.lanDns.enable (
                     lib.concatMapStringsSep "\n" (lanInterface:
-                      lib.concatMapStringsSep "\n" (sub: ''
-                        iifname "${lanInterface}" ip saddr ${sub} ip daddr ${cfg.lanDns.listenAddress} udp dport 53 accept
-                        iifname "${lanInterface}" ip saddr ${sub} ip daddr ${cfg.lanDns.listenAddress} tcp dport 53 accept
-                      '') cfg.lanDns.allowSubnets
+                      lib.concatMapStringsSep "\n" (sub:
+                        lib.concatMapStringsSep "\n" (addr: ''
+                          iifname "${lanInterface}" ip saddr ${sub} ip daddr ${addr} udp dport 53 accept
+                          iifname "${lanInterface}" ip saddr ${sub} ip daddr ${addr} tcp dport 53 accept
+                        '') cfg.lanDns.listenAddresses
+                      ) cfg.lanDns.allowSubnets
                     ) cfg.lanInterfaces
                   )}
 
@@ -524,7 +537,7 @@ in
       # ====================================================================
       # LAN DNS resolver (services.proxyVpnGateway.lanDns)
       # ====================================================================
-      # Unbound listens on lanDns.listenAddress, answers queries from
+      # Unbound listens on lanDns.listenAddresses, answers queries from
       # lanDns.allowSubnets, and routes upstream queries (DoT to Quad9 /
       # Cloudflare by default) out via the VPN interface using Unbound's
       # `outgoing-interface:` directive bound to the VPN's source IP.
@@ -546,8 +559,12 @@ in
               pidfile: "/var/lib/unbound-lan-dns/unbound.pid"
               username: ""
 
-              # Bind to LAN IP only.
-              interface: ${cfg.lanDns.listenAddress}
+              # Bind to the LAN IPs only. Freebind lets Unbound start before
+              # NetworkManager has put every address on the interface.
+              ${lib.concatMapStringsSep "\n    " (addr:
+                "interface: ${addr}"
+              ) cfg.lanDns.listenAddresses}
+              ip-freebind: yes
               port: 53
               do-ip4: yes
               do-ip6: no
