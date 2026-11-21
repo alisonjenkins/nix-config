@@ -111,9 +111,8 @@ in {
               canTouchEfiVariables = true;
             };
           };
-          # Bypass kernel workqueues for dm-crypt — significant
-          # I/O improvement on virtio-blk backed by host NVMe.
-          # Runtime-only, applies on next boot.
+          # Bypass kernel workqueues for dm-crypt: lower latency on
+          # the SATA SSD. Runtime-only, applies on next boot.
           initrd.luks.devices.crypted.crypttabExtraOpts = [
             "no-read-workqueue"
             "no-write-workqueue"
