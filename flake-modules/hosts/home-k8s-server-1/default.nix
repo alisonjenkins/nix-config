@@ -82,13 +82,14 @@ in {
         # Worker node for home-cluster-1. An agent, not a second server: a
         # two-member embedded etcd loses quorum when either node goes down,
         # which is worse than the single control plane on master-1.
-        # serverAddr is an IP so joining never depends on LAN DNS, which this
-        # node will itself be serving.
+        # serverAddr is a name from /etc/hosts (modules.homeLanHosts), so
+        # joining never depends on LAN DNS, which this node will itself
+        # serve. master-1's cert must carry the name (see its --tls-san).
         services.openssh.enable = true;
         services.k3s = {
           enable = hasSecrets;
           role = "agent";
-          serverAddr = "https://${outputs.lib.homeLan.hosts.home-k8s-master-1.ip}:6443";
+          serverAddr = "https://${outputs.lib.homeLan.hosts.home-k8s-master-1.fqdn}:6443";
           # Must match the server's version (see home-k8s-master-1).
           package = pkgs.unstable.k3s_1_34;
           tokenFile = "/run/secrets/k8s-token";
