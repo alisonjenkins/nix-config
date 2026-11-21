@@ -97,7 +97,9 @@ let
     emonpi = { ip = "192.168.1.113"; plannedIp = "192.168.1.54"; mac = "b8:27:eb:9d:01:57"; role = "automation"; };
     openevse = { ip = "192.168.1.232"; plannedIp = "192.168.1.55"; mac = "ac:67:b2:0b:30:44"; role = "automation"; };
     tasmota-67ec7f = { ip = "192.168.1.158"; plannedIp = "192.168.1.56"; mac = "e8:db:84:67:ec:7f"; role = "automation"; };
-    plug-d5a4d7 = { ip = "192.168.1.40"; plannedIp = "192.168.1.57"; mac = "34:98:7a:d5:a4:d7"; role = "automation"; };
+    # Interim reservation: frees .40 for download-server-1 before the office
+    # switch leaves .57.
+    plug-d5a4d7 = { ip = "192.168.1.58"; plannedIp = "192.168.1.57"; mac = "34:98:7a:d5:a4:d7"; role = "automation"; };
 
     # Workstations.
     ali-desktop = { ip = "192.168.1.187"; plannedIp = "192.168.1.60"; mac = "9c:6b:00:1e:db:6d"; role = "workstation"; };
