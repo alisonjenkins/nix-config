@@ -214,6 +214,12 @@ in
             # the machine can't pivot to the real root, so /persistence/passwords/root
             # is unreachable and sulogin locks us out.
             emergencyAccess = true;
+            # The cryptsetup generator gives only /dev/mapper/<name> an
+            # infinite job timeout. Devices stacked on it (LVM LVs, the root
+            # filesystem) keep the 90 s default, so a passphrase typed after
+            # 90 s drops the boot into emergency mode. Wait for them forever.
+            settings.Manager.DefaultDeviceTimeoutSec =
+              lib.mkIf (config.boot.initrd.luks.devices != { }) "infinity";
           };
         };
 
