@@ -7,6 +7,11 @@ let
   # evaluates and builds.
   secretsFile = self + "/secrets/home-k8s-server-1/secrets.yaml";
   hasSecrets = builtins.pathExists secretsFile;
+  # Flip to true only once sbctl keys exist at /var/lib/sbctl on the box
+  # (runbook step 4 in docs/home-k8s-server-1.md). Lanzaboote cannot
+  # install the bootloader without them, so the first install uses
+  # systemd-boot.
+  secureBootReady = false;
 in {
   flake.nixosConfigurations.home-k8s-server-1 = lib.nixosSystem {
     specialArgs = {
@@ -38,7 +43,18 @@ in {
         };
         modules.base = {
           enable = true;
+          bootLoader = if secureBootReady then "secure-boot" else "systemd-boot";
+          # TODO: set from `systemd-analyze pcrs 15 --json=short` after the
+          # first boot with Secure Boot enforced (runbook step 7). null skips
+          # the check-pcrs unit.
+          pcr15Value = null;
         };
+        # TPM2 LUKS unlock: adds tpm2-device=auto (and PCR 15 measurement)
+        # to crypttab. Set here as well as by bootLoader = "secure-boot" so
+        # it applies from the first install. No TPM token is enrolled until
+        # the runbook's systemd-cryptenroll step; until then the passphrase
+        # prompt (local or initrd-ssh) unlocks the disk.
+        systemIdentity.enable = true;
         # Server profile; see ADR 0057.
         modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
