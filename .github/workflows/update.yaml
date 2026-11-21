@@ -2,10 +2,19 @@ name: Update and push flake lock
 
 on:
   schedule:
-    - cron: "0 2 * * *"
+    # Weekly, Saturday 02:00 UTC (03:00 London in summer time). Nightly
+    # bumps mostly superseded each other before anyone deployed them.
+    - cron: "0 2 * * 6"
   workflow_dispatch:
   repository_dispatch:
     types: [update-flake-lock]
+
+# Serialise runs: each run closes the open flake-update PRs other than its
+# own, so two overlapping runs would close each other's PR. Never cancel a
+# run that may already have opened its PR.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -20,13 +29,33 @@ jobs:
     # a `pull_request` trigger is added here by mistake. Inert for schedule and
     # dispatch events (github.event.pull_request is null → null != true → true).
     if: ${{ github.event.pull_request.head.repo.fork != true }}
+    # The built-in token is not used to write anything: the branch push and
+    # the PR go through the flake-update App's token below.
     permissions:
-      contents: write
-      pull-requests: write
-      actions: write
-      id-token: write
+      contents: read
     steps:
+      # Why an App token and not GITHUB_TOKEN: the repo's fork-PR approval
+      # policy is `all_external_contributors` (OpenTofu, github/ stack), and
+      # GitHub counts github-actions[bot] as an external contributor, so every
+      # PR opened with GITHUB_TOKEN had its pull_request runs held at "Action
+      # required" on the home runner. A PR opened by an App installed on this
+      # repo with write access runs its checks like Renovate's do, with the
+      # approval policy left as it is. The token is scoped to this repo and
+      # to contents + pull-requests, and is revoked when the job ends.
+      - name: Get flake-update App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.FLAKE_UPDATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.FLAKE_UPDATE_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The branch push must come from the App, or its pull_request runs
+          # are held for approval again.
+          token: ${{ steps.app-token.outputs.token }}
       - name: Configure host Nix
         uses: ./.github/actions/setup-host-nix
         with:
@@ -38,15 +67,16 @@ jobs:
           git config --global user.email 'alisonjenkins-gha@users.noreply.github.com'
       - name: Update flake
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           # Unauthenticated github: input fetches share the runner's IP and
           # hit GitHub's unauth API rate limit (60/hr) fast with ~15+ inputs
           # -> "API rate limit exceeded" 403s. Authenticate nix's own fetcher.
+          # The read-only built-in token is enough for public inputs.
           NIX_CONFIG: "access-tokens = github.com=${{ github.token }}"
         run: |
           set -euo pipefail
-          # main requires the "flake-check" status check, which only runs on
-          # pull_request (pr-check.yaml) — a direct push here can never
+          # main requires the "flake-check" status check (pr-check.yaml),
+          # which only runs on pull_request — a direct push here can never
           # satisfy it. Go through a PR instead, and let it auto-merge once
           # flake-check passes.
           # run_attempt makes a manual rerun (same run_id) use a fresh branch
@@ -61,27 +91,26 @@ jobs:
           fi
           git push origin "HEAD:$branch"
           pr_url=$(gh pr create \
-            --title "chore(flake): nightly flake.lock update" \
-            --body "Automated nightly \`nix flake update\`." \
+            --title "chore(flake): weekly flake.lock update" \
+            --body "Automated weekly \`nix flake update\`." \
             --base main \
             --head "$branch")
           echo "::notice::opened $pr_url, waiting for flake-check to auto-merge"
-          # Every night's lock supersedes the last. A night whose flake-check
+          # Each week's lock supersedes the last. A week whose flake-check
           # fails leaves its PR open and BEHIND main forever, so they pile up
-          # unless the next run closes them. Best effort: failing to tidy must
-          # not stop this PR's auto-merge being armed.
+          # unless the next run closes them. Matches this repo's own
+          # flake-update-* branches with a chore(flake) title only (never a
+          # fork's), whoever opened them, so the old github-actions[bot]
+          # nightly PRs are tidied too. Best
+          # effort: failing to tidy must not stop this PR's auto-merge.
           new_number="${pr_url##*/}"
-          for old in $(gh pr list --state open --author "app/github-actions" \
-              --search 'in:title "chore(flake): nightly flake.lock update"' \
-              --json number,headRefName \
-              --jq ".[] | select(.headRefName | startswith(\"flake-update-\")) | select(.number != $new_number) | .number"); do
+          for old in $(gh pr list --state open --base main \
+              --json number,title,headRefName,isCrossRepository \
+              --jq ".[] | select(.isCrossRepository | not) | select(.headRefName | startswith(\"flake-update-\")) | select(.title | startswith(\"chore(flake): \")) | select(.number != $new_number) | .number"); do
             gh pr close "$old" --delete-branch --comment "Superseded by $pr_url." \
               || echo "::warning::could not close superseded PR #$old"
           done
           gh pr merge --rebase --auto --delete-branch "$pr_url"
-          # A PR opened with GITHUB_TOKEN never starts pull_request
-          # workflows, so flake-check would never report; dispatch it.
-          gh workflow run pr-check.yaml --ref "$branch"
 
           # --auto only arms auto-merge and returns immediately, so without
           # this the job would report success even when flake-check fails
@@ -100,10 +129,10 @@ jobs:
             esac
             # main requires an up-to-date branch; a push to main while the
             # check runs leaves the PR BEHIND and auto-merge waits forever.
-            # The rebase is pushed with GITHUB_TOKEN too, so re-dispatch.
+            # The rebase is pushed with the App token, so it starts a fresh
+            # pull_request run by itself.
             if [ "$(gh pr view "$pr_url" --json mergeStateStatus -q .mergeStateStatus)" = BEHIND ]; then
               gh pr update-branch --rebase "$pr_url"
-              gh workflow run pr-check.yaml --ref "$branch"
             fi
             sleep 30
           done
