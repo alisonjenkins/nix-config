@@ -12,6 +12,7 @@ Bare-metal k3s agent for home-cluster-1.
 | Disk | Kingston SA400 120 GB SATA SSD (`ata-KINGSTON_SA400M8120G_50026B7683D9077F`) |
 | NICs | `eno1`, `enp1s0` (i211, igb); `enp3s0` (i210, igb). Only `eno1` is cabled. |
 | TPM | Intel PTT (fTPM) on the SoC; a `J9A1 - TPM HDR` header for a discrete module |
+| LAN address | `192.168.1.130` on `eno1`, a UDM DHCP reservation. It must stay outside the Cilium LB pool (`192.168.1.240/28`). |
 
 On 2026-11-21 the OS saw no TPM. There was no ACPI TPM2 table, no SMBIOS
 type-43 entry and no `/dev/tpm*` device. Another fitlet2 (BIOS .02.00) does
@@ -26,15 +27,15 @@ one of three ways, tried in this order:
    It works only after a TPM token has been enrolled (step 6 below).
 2. **Passphrase at the console.**
 3. **Passphrase over SSH in the initrd.** The initrd gets an address by DHCP
-   on `eno1` and listens on port 2222:
+   on `eno1` (the UDM reserves 192.168.1.130 for it) and listens on port 2222:
 
    ```sh
-   ssh -p 2222 root@192.168.1.251
+   ssh -p 2222 root@192.168.1.130
    systemd-tty-ask-password-agent
    ```
 
    The initrd host key is generated at build time. After a nixpkgs bump it
-   can change; clear the old one with `ssh-keygen -R "[192.168.1.251]:2222"`.
+   can change; clear the old one with `ssh-keygen -R "[192.168.1.130]:2222"`.
 
 Until a TPM token is enrolled, every reboot needs step 2 or 3.
 
@@ -58,8 +59,12 @@ token stops unsealing; `docs/ali-desktop-boot-time.md` describes that failure.
 **This wipes the SSD.** It replaces whatever runs on the box.
 
 ```sh
-just install-anywhere home-k8s-server-1 ali@192.168.1.251
+just install-anywhere home-k8s-server-1 ali@192.168.1.130
 ```
+
+Until the UDM reservation for 192.168.1.130 is in place, the box may still
+be on its old DHCP lease (192.168.1.251). Use that address instead, and
+add the reservation before the install so the initrd comes up on .130.
 
 - The recipe prompts for a new LUKS passphrase. Pass a file as the third
   argument to skip the prompt.
