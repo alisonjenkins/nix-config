@@ -8,6 +8,7 @@
     camera-resume = import ../modules/camera-resume.nix;
     hetzner = import ../modules/hetzner;
     initrd-ssh = import ../modules/initrd-ssh.nix;
+    home-lan-hosts = import ../modules/home-lan-hosts.nix;
     btfs-streaming = import ../modules/btfs-streaming;
     desktop = import ../modules/desktop;
     docker = import ../modules/docker;
