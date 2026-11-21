@@ -58,6 +58,12 @@ convex corners with a small radius is fine; check a 2 mm wall survives the offse
 - Export 3mf, not STL: `openscad -o x.3mf x.scad`. 3mf is the current format; it
   carries units (mm) and a proper mesh, and Qidi Studio opens it directly. Use STL
   only when a tool needs it. Prefer a 3mf the user supplies over an STL too.
+- Check the model is the number of solid pieces you meant:
+  `python3 scripts/check-model.py part.3mf` (`--parts N` when it is several).
+  A leg that stops short of its plate looks fine in a render from the front,
+  prints as two loose parts, and makes the strength calc meaningless. This once
+  cost a failed print. Also write a test for the model's geometry (one piece,
+  size from the parameters), and watch it fail on the broken version first.
 - Check the exported bounding box against the intended size.
 - Re-export after every edit and compare against a fresh export before saying
   it is current (3mf is a zip with no timestamps from openscad; compare the
