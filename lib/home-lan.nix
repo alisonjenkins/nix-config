@@ -79,7 +79,7 @@ let
     home-storage-server-1 = { ip = "192.168.1.97"; plannedIp = "192.168.1.20"; mac = "52:54:00:69:9c:5c"; role = "storage"; };
 
     # k8s nodes.
-    home-k8s-master-1 = { ip = "192.168.1.129"; plannedIp = "192.168.1.30"; mac = "52:54:00:0a:29:2c"; role = "k8s"; };
+    home-k8s-master-1 = { ip = "192.168.1.30"; plannedIp = "192.168.1.30"; mac = "52:54:00:0a:29:2c"; role = "k8s"; };
     # Not installed yet, so it starts on its planned address.
     home-k8s-server-1 = { ip = "192.168.1.31"; plannedIp = "192.168.1.31"; mac = "00:01:c0:28:8b:0f"; role = "k8s"; };
     home-k8s-server-2 = { ip = null; plannedIp = "192.168.1.32"; role = "k8s"; };
