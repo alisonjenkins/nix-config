@@ -17,6 +17,10 @@ in
 {
   perSystem = { system, ... }: {
     packages = {
+      # The home LAN address map (lib/home-lan.nix) as JSON, for Terraform
+      # and the CoreDNS zone. Plain data, so no overlays are needed.
+      home-lan-json = inputs.nixpkgs.legacyPackages.${system}.writeText "home-lan.json"
+        (builtins.toJSON self.lib.homeLan);
       positional-audio-bench = (pkgsFor system).positional-audio-bench;
       # Renovate bumps these packages' lockfiles, but cannot update the Nix
       # hash of their dependencies, so a bump can break the build while still
