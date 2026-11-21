@@ -647,7 +647,7 @@ in {
         networking = {
           hostName = "ali-steam-deck";
           extraHosts = ''
-            192.168.1.202 home-kvm-hypervisor-1
+            ${self.lib.homeLan.hosts.home-kvm-hypervisor-1.ip} home-kvm-hypervisor-1
           '';
         };
 
