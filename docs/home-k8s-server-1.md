@@ -23,8 +23,10 @@ report an Intel fTPM, so PTT is most likely disabled in this unit's BIOS setup.
 The root volume is LUKS2 (`crypted`) with LVM and ext4 on top. It unlocks in
 one of three ways, tried in this order:
 
-1. **TPM2.** crypttab carries `tpm2-device=auto` (from `systemIdentity.enable`).
-   It works only after a TPM token has been enrolled (step 6 below).
+1. **TPM2.** crypttab carries `tpm2-device=auto` (from `systemIdentity.enable`)
+   only while `hasTpm = true` in the host file. It is `false` today, because
+   the OS sees no TPM, so the initrd asks for the passphrase at once. TPM
+   unlock works only after a token has been enrolled (step 6 below).
 2. **Passphrase at the console.**
 3. **Passphrase over SSH in the initrd.** The initrd gets an address by DHCP
    on `eno1` (the UDM reserves 192.168.1.31 for it) and listens on port 2222:
@@ -99,6 +101,10 @@ You need to be at the box (keyboard and monitor) for steps 1 and 5.
    ls /dev/tpmrm0
    sudo systemd-cryptenroll --tpm2-device=list
    ```
+
+   Once both show a TPM, set `hasTpm = true` in
+   `flake-modules/hosts/home-k8s-server-1/default.nix` and deploy. That adds
+   `tpm2-device=auto` and the PCR 15 measurement back to crypttab.
 
 2. **Install** with `secureBootReady = false` (systemd-boot); see the Install
    section below.

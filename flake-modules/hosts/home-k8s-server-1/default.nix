@@ -12,6 +12,11 @@ let
   # install the bootloader without them, so the first install uses
   # systemd-boot.
   secureBootReady = false;
+  # The OS sees no TPM on this unit (no fTPM even on BIOS FLT2.0.46.06.00).
+  # Without one, tpm2-device=auto makes the initrd wait for a token before
+  # asking for the passphrase. Flip to true once /dev/tpmrm0 exists (runbook
+  # step 1 in docs/home-k8s-server-1.md).
+  hasTpm = false;
 in {
   flake.nixosConfigurations.home-k8s-server-1 = lib.nixosSystem {
     specialArgs = {
@@ -50,11 +55,11 @@ in {
           pcr15Value = null;
         };
         # TPM2 LUKS unlock: adds tpm2-device=auto (and PCR 15 measurement)
-        # to crypttab. Set here as well as by bootLoader = "secure-boot" so
-        # it applies from the first install. No TPM token is enrolled until
-        # the runbook's systemd-cryptenroll step; until then the passphrase
-        # prompt (local or initrd-ssh) unlocks the disk.
-        systemIdentity.enable = true;
+        # to crypttab. Forced because bootLoader = "secure-boot" turns it on
+        # unconditionally. No TPM token is enrolled until the runbook's
+        # systemd-cryptenroll step; until then the passphrase prompt (local
+        # or initrd-ssh) unlocks the disk.
+        systemIdentity.enable = lib.mkForce hasTpm;
         # Server profile; see ADR 0057.
         modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
