@@ -347,8 +347,9 @@ in
             LAN_IF="${builtins.head cfg.lanInterfaces}"
             echo "Attempting to find IP for interface $LAN_IF..."
 
-            # This command finds the IPv4 address for the specified interface.
-            LISTEN_IP=$(${pkgs.iproute2}/bin/ip -4 addr show dev "$LAN_IF" | ${pkgs.gnugrep}/bin/grep -oP "inet \K[\d.]+")
+            # The interface's primary IPv4 address. It may hold more than one
+            # during an IP move, and microsocks binds to a single address.
+            LISTEN_IP=$(${pkgs.iproute2}/bin/ip -4 addr show dev "$LAN_IF" | ${pkgs.gnugrep}/bin/grep -oP "inet \K[\d.]+" | ${pkgs.coreutils}/bin/head -n1)
 
             if [ -z "$LISTEN_IP" ]; then
               echo "FATAL: Could not find IPv4 address for $LAN_IF. Cannot start proxy." >&2
