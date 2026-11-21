@@ -8,6 +8,9 @@ keys:
   - &user_ali-work-laptop-macos age1vkzthtd57jefjamh2t8vtxacdyz6wyajrvu7xve6pc0qlz0ue3esyt8lk0
   - &server_download-server-1 age1dket3z3j325e0vt3ynwaxxzume9sv0qcphvumaqk2ew7htmd93us4tncsw
   - &server_home-k8s-master-1 age1hrzy6fzhhxznvhs672pja4jg40vew3ed4n8lszyw3zxpz43yfv5qvmzpjq
+  # From the host key shipped by `just install-anywhere` (kept outside the
+  # repo in ~/.local/share/nixos-anywhere/home-k8s-server-1).
+  - &server_home-k8s-server-1 age108alpr87l73haxx9a6jy53ppcr74g0h2qvx9xcuhylk2qvsetq3slr7vuk
   - &server_home-storage-server-1 age1qs58x4rqva0s5mkwx0dul2akfnrwvarjkt2x75qtaz0g3mhzpezssj0wmx
   - &server_ali-mba age1ltrjsdrf5wpdee7ate44perh0y4xz7dm2mhtsf2jad2mgcrrdg2q0rl6ev
   - &vm_ali-mba-linux-builder age13rrpdnr7f9knpgdvafvjkp74ejacuhcvzhdw2j8h5xjwyrmrhv4s4tvr8j
@@ -61,6 +64,12 @@ creation_rules:
           - *admin_ali
           - *ali_personal
           - *server_home-k8s-master-1
+  - path_regex: ^secrets/home-k8s-server-1/[^/]+\.(yaml|json|env|ini|bin)$
+    key_groups:
+      - age:
+          - *admin_ali
+          - *ali_personal
+          - *server_home-k8s-server-1
   - path_regex: ^flake-modules/hosts/home-storage-server-1/secrets/[^/]+\.(yaml|json|env|ini|bin)$
     key_groups:
       - age:
