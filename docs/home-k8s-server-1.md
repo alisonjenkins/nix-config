@@ -12,7 +12,7 @@ Bare-metal k3s agent for home-cluster-1.
 | Disk | Kingston SA400 120 GB SATA SSD (`ata-KINGSTON_SA400M8120G_50026B7683D9077F`) |
 | NICs | `eno1`, `enp1s0` (i211, igb); `enp3s0` (i210, igb). Only `eno1` is cabled. |
 | TPM | Intel PTT (fTPM) on the SoC; a `J9A1 - TPM HDR` header for a discrete module |
-| LAN address | `192.168.1.130` on `eno1`, a UDM DHCP reservation. It must stay outside the Cilium LB pool (`192.168.1.240/28`). |
+| LAN address | `192.168.1.31` on `eno1`, a UDM DHCP reservation for MAC `00:01:c0:28:8b:0f`. It comes from `lib/home-lan.nix` (`outputs.lib.homeLan`), which keeps it outside the DHCP pool (.100–.239) and the Cilium LB pool (.240–.255). |
 
 On 2026-11-21 the OS saw no TPM. There was no ACPI TPM2 table, no SMBIOS
 type-43 entry and no `/dev/tpm*` device. Another fitlet2 (BIOS .02.00) does
@@ -27,15 +27,15 @@ one of three ways, tried in this order:
    It works only after a TPM token has been enrolled (step 6 below).
 2. **Passphrase at the console.**
 3. **Passphrase over SSH in the initrd.** The initrd gets an address by DHCP
-   on `eno1` (the UDM reserves 192.168.1.130 for it) and listens on port 2222:
+   on `eno1` (the UDM reserves 192.168.1.31 for it) and listens on port 2222:
 
    ```sh
-   ssh -p 2222 root@192.168.1.130
+   ssh -p 2222 root@192.168.1.31
    systemd-tty-ask-password-agent
    ```
 
    The initrd host key is generated at build time. After a nixpkgs bump it
-   can change; clear the old one with `ssh-keygen -R "[192.168.1.130]:2222"`.
+   can change; clear the old one with `ssh-keygen -R "[192.168.1.31]:2222"`.
 
 Until a TPM token is enrolled, every reboot needs step 2 or 3.
 
@@ -59,12 +59,24 @@ token stops unsealing; `docs/ali-desktop-boot-time.md` describes that failure.
 **This wipes the SSD.** It replaces whatever runs on the box.
 
 ```sh
-just install-anywhere home-k8s-server-1 ali@192.168.1.130
+just install-anywhere home-k8s-server-1 ali@192.168.1.31
 ```
 
-Until the UDM reservation for 192.168.1.130 is in place, the box may still
+Until the UDM reservation for 192.168.1.31 is in place, the box may still
 be on its old DHCP lease (192.168.1.251). Use that address instead, and
-add the reservation before the install so the initrd comes up on .130.
+add the reservation (MAC `00:01:c0:28:8b:0f`) before the install so the
+initrd comes up on .31.
+
+### Address transition
+
+`lib/home-lan.nix` gives each host two addresses. `ip` is the address it
+has today, and every consumer reads `ip`. `plannedIp` is where it moves
+once its UniFi reservation changes. This host is new, so both are .31.
+
+home-k8s-master-1 keeps `ip = .129` until its reservation moves to .30.
+So the k3s `serverAddr` here and the download-server-1 allow-lists keep
+pointing at .129. Changing master-1's `ip` in that file moves them all
+in one commit; nothing here has to wait for that move.
 
 - The recipe prompts for a new LUKS passphrase. Pass a file as the third
   argument to skip the prompt.
