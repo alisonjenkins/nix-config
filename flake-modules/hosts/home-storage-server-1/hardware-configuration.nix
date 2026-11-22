@@ -62,7 +62,16 @@
         };
         "/media/disks/ata-WDC_WD20SPZX-00UA7T0_WD-WX32A123N2JH-part1".device = "/dev/disk/by-id/ata-WDC_WD20SPZX-00UA7T0_WD-WX32A123N2JH-part1";
         "/media/disks/ata-WDC_WD20SPZX-22UA7T0_WD-WX72AA1HJFH3-part1".device = "/dev/disk/by-id/ata-WDC_WD20SPZX-22UA7T0_WD-WX72AA1HJFH3-part1";
-        "/media/parity/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1".device = "/dev/disk/by-id/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1";
+        # Old 16TB parity: 100% full, sync failed with "Insufficient parity space". Its
+        # snapraid.parity was copied to the MG11 below on 2026-11-22. Kept commented, not
+        # deleted, until the MG11 parity is proven; it then becomes a data disk.
+        # "/media/parity/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1".device = "/dev/disk/by-id/ata-TOSHIBA_MG08ACA16TE_7190A0UNFVGG-part1";
+        # The only parity disk (24TB, bay 24). Parity files are generated from the sorted
+        # /media/parity/* mount names, so a second parity disk added later gets its level
+        # from its name, not from where it is listed.
+        # Formatted by hand: mkfs.xfs -f -m reflink=0,rmapbt=0 -L mg11parity. Parity is one
+        # file rewritten in place, so reflink/rmapbt only cost space (~400G on 24TB).
+        "/media/parity/ata-TOSHIBA_MG11ACA24TE_46E2A00VF6AL-part1".device = "/dev/disk/by-id/ata-TOSHIBA_MG11ACA24TE_46E2A00VF6AL-part1";
         "/media/disks/ata-ST31500341AS_9VS21EM9-part1".device = "/dev/disk/by-id/ata-ST31500341AS_9VS21EM9-part1";
         "/media/disks/ata-ST31500341AS_9VS21ESL-part1".device = "/dev/disk/by-id/ata-ST31500341AS_9VS21ESL-part1";
         "/media/disks/ata-ST31500341AS_9VS21WFH-part1" = {
