@@ -109,7 +109,7 @@ let
     ali-laptop-wifi = { ip = "192.168.1.11"; plannedIp = "192.168.1.62"; role = "workstation"; };
     ali-framework-laptop-wifi = { ip = "192.168.1.39"; plannedIp = "192.168.1.63"; role = "workstation"; };
     ali-work-laptop = { ip = "192.168.1.107"; plannedIp = "192.168.1.64"; role = "workstation"; };
-    aliju-steamdeck = { ip = "192.168.1.67"; plannedIp = "192.168.1.65"; role = "workstation"; };
+    ali-steam-deck = { ip = "192.168.1.67"; plannedIp = "192.168.1.65"; role = "workstation"; };
 
     # Media and printers.
     shield-tv = { ip = "192.168.1.225"; plannedIp = "192.168.1.70"; mac = "00:04:4b:fa:96:35"; role = "media"; };
