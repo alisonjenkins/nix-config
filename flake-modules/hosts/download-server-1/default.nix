@@ -7,8 +7,10 @@ let
   # allowedServices and qBittorrent's AuthSubnetWhitelist)
   qbittorrentAllowedIPs = [
     "192.168.1.190"
-    "192.168.1.39"
   ]
+  # ali-framework-laptop, at both addresses while it moves.
+  ++ lib.unique (lib.filter (ip: ip != null)
+    (with self.lib.homeLan.hosts.ali-framework-laptop-wifi; [ ip plannedIp ]))
   # ali-desktop, at both addresses while it moves.
   ++ lib.unique (lib.filter (ip: ip != null)
     (with self.lib.homeLan.hosts.ali-desktop; [ ip plannedIp ]))
