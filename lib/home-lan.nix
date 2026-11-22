@@ -104,7 +104,7 @@ let
     plug-d5a4d7 = { ip = "192.168.1.58"; plannedIp = "192.168.1.57"; mac = "34:98:7a:d5:a4:d7"; role = "automation"; };
 
     # Workstations.
-    ali-desktop = { ip = "192.168.1.187"; plannedIp = "192.168.1.60"; mac = "9c:6b:00:1e:db:6d"; role = "workstation"; };
+    ali-desktop = { ip = "192.168.1.60"; plannedIp = "192.168.1.60"; mac = "9c:6b:00:1e:db:6d"; role = "workstation"; };
     tower = { ip = "192.168.1.94"; plannedIp = "192.168.1.61"; role = "workstation"; };
     ali-laptop-wifi = { ip = "192.168.1.11"; plannedIp = "192.168.1.62"; role = "workstation"; };
     ali-framework-laptop-wifi = { ip = "192.168.1.39"; plannedIp = "192.168.1.63"; role = "workstation"; };
