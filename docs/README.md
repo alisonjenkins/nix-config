@@ -21,6 +21,7 @@ Documentation, runbooks, architecture decision records, specifications, and benc
 - [Fix broken Nix store on ali-desktop](./ali-desktop-fix-broken-nix-store.md): Live-disk recovery steps to mount the root filesystem and repair the Nix store
 - [ali-desktop GPU tuning and hang triage](./ali-desktop-gpu.md): RX 9070 XT voltage curves, kernel parameters, and DRM hang diagnostics
 - [home-k8s-server-1](./home-k8s-server-1.md): Bare-metal fitlet2 k3s agent: hardware, LUKS unlock paths and the TPM plus Secure Boot runbook
+- [Homelab LUKS unlock](./homelab-luks-unlock.md): Unlock the hypervisor and its encrypted VMs over initrd SSH, in boot order
 - [Hardware video on ali-mba-linux](./ali-mba-linux-hardware-video.md): VA-API hardware video decode configuration on Asahi Linux
 - [Pull and build this system](./nix-pull-build.md): Shared workflow and skill to pull latest changes and rebuild system configurations
 
