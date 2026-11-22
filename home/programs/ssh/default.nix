@@ -124,7 +124,7 @@
 
         Host home-kvm-hypervisor-1.lan home-kvm-hypervisor-1 hkh1
           user ali
-          HostName 192.168.1.66
+          HostName ${hosts.home-kvm-hypervisor-1.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
