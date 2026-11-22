@@ -18,6 +18,7 @@ in {
       self.nixosModules.nohang
       self.nixosModules.servers
       self.nixosModules.libvirtd
+      self.nixosModules.initrd-ssh
       self.nixosModules.vfio-isolate
       self.nixosModules.home-kvm-hypervisor-1-hardware
       self.nixosModules.home-kvm-hypervisor-1-disko-config
@@ -28,7 +29,7 @@ in {
       inputs.sops-nix.nixosModules.sops
 
       # Host-specific configuration
-      ({ inputs, lib, outputs, pkgs, ... }: {
+      ({ config, inputs, lib, outputs, pkgs, ... }: {
         modules.nohang = {
           enable = true;
           extraProtectedProcesses = [ "libvirtd" "qemu-system-x86_64" ];
@@ -38,6 +39,20 @@ in {
           bootLoader = "grub";
         };
         modules.libvirtd.enable = true;
+        # Remote LUKS unlock on port 2222, on br0 at the homeLan address so
+        # it needs neither DHCP nor DNS. Unlock this host first: the VMs
+        # only start once it is up.
+        modules.initrd-ssh = {
+          enable = true;
+          authorizedKeys = [ outputs.lib.sshKeys.primary ];
+          hostKeyComment = "home-kvm-hypervisor-1-initrd";
+          hostKeyPath = "/etc/secrets/initrd/ssh_host_ed25519_key";
+          network = {
+            matchConfig.Name = "br0";
+            address = "${outputs.lib.homeLan.hosts.home-kvm-hypervisor-1.ip}/${toString outputs.lib.homeLan.prefixLength}";
+            inherit (outputs.lib.homeLan) gateway;
+          };
+        };
         # Server profile; see ADR 0057.
         modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
@@ -152,7 +167,17 @@ in {
           initrd = {
             availableKernelModules = [
               "ixgbe"
+              "bridge"
             ];
+            # The initrd builds the same br0 as stage 2, with the same pinned
+            # MAC, so .10 keeps one MAC from unlock prompt to running host and
+            # only the cabled ixgbe port carries it.
+            systemd.network = {
+              netdevs."20-br0".netdevConfig = config.systemd.network.netdevs."20-br0".netdevConfig;
+              networks."30-lan-uplink" = {
+                inherit (config.systemd.network.networks."30-lan-uplink") matchConfig networkConfig linkConfig;
+              };
+            };
             # Bypass kernel workqueues for dm-crypt — significant
             # NVMe I/O improvement on a CPU with hardware AES (the
             # actual crypto is near-free; the workqueue latency
