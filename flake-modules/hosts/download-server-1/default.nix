@@ -95,6 +95,7 @@ in {
       self.nixosModules.proxy-vpn-gateway
       self.nixosModules.btfs-streaming
       self.nixosModules.storage-server
+      self.nixosModules.initrd-ssh
       self.nixosModules.download-server-1-hardware
       self.nixosModules.download-server-1-disko-config
 
@@ -121,6 +122,21 @@ in {
         # Server profile; see ADR 0057.
         modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
+        # Remote LUKS unlock on port 2222, on the LAN address from homeLan
+        # so it needs neither DHCP nor DNS. Only sshd runs in the initrd,
+        # and the NIC is flushed before stage 2, so the VPN kill switch
+        # still starts from an unconfigured interface.
+        modules.initrd-ssh = {
+          enable = true;
+          authorizedKeys = [ outputs.lib.sshKeys.primary ];
+          hostKeyComment = "download-server-1-initrd";
+          hostKeyPath = "/persistence/etc/secrets/initrd/ssh_host_ed25519_key";
+          network = {
+            matchConfig.MACAddress = homeLan.hosts.download-server-1.mac;
+            address = "${homeLan.hosts.download-server-1.ip}/${toString homeLan.prefixLength}";
+            inherit (homeLan) gateway;
+          };
+        };
         modules.storage-server.enable = true;
         modules.servers = {
           enable = true;
