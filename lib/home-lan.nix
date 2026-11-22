@@ -55,12 +55,12 @@ let
 
   rawHosts = {
     # Network gear (UniFi sets these itself).
-    usw-pro-24 = { ip = "192.168.1.178"; plannedIp = "192.168.1.2"; mac = "74:ac:b9:af:90:20"; role = "net"; managedBy = "device"; };
-    office-switch = { ip = "192.168.1.116"; plannedIp = "192.168.1.3"; mac = "f4:92:bf:8b:7b:65"; role = "net"; managedBy = "device"; };
-    living-room-switch = { ip = "192.168.1.220"; plannedIp = "192.168.1.4"; mac = "74:83:c2:1d:82:e0"; role = "net"; managedBy = "device"; };
-    ap-office = { ip = "192.168.1.21"; plannedIp = "192.168.1.5"; mac = "8c:30:66:74:a7:35"; role = "net"; managedBy = "device"; };
-    ap-living-room = { ip = "192.168.1.234"; plannedIp = "192.168.1.6"; mac = "68:d7:9a:5f:71:97"; role = "net"; managedBy = "device"; };
-    ap-ac-lr = { ip = "192.168.1.172"; plannedIp = "192.168.1.7"; mac = "f4:92:bf:2c:bd:6a"; role = "net"; managedBy = "device"; };
+    usw-pro-24 = { ip = "192.168.1.2"; plannedIp = "192.168.1.2"; mac = "74:ac:b9:af:90:20"; role = "net"; managedBy = "device"; };
+    office-switch = { ip = "192.168.1.3"; plannedIp = "192.168.1.3"; mac = "f4:92:bf:8b:7b:65"; role = "net"; managedBy = "device"; };
+    living-room-switch = { ip = "192.168.1.4"; plannedIp = "192.168.1.4"; mac = "74:83:c2:1d:82:e0"; role = "net"; managedBy = "device"; };
+    ap-office = { ip = "192.168.1.5"; plannedIp = "192.168.1.5"; mac = "8c:30:66:74:a7:35"; role = "net"; managedBy = "device"; };
+    ap-living-room = { ip = "192.168.1.6"; plannedIp = "192.168.1.6"; mac = "68:d7:9a:5f:71:97"; role = "net"; managedBy = "device"; };
+    ap-ac-lr = { ip = "192.168.1.7"; plannedIp = "192.168.1.7"; mac = "f4:92:bf:2c:bd:6a"; role = "net"; managedBy = "device"; };
 
     # Hypervisors and out-of-band.
     home-kvm-hypervisor-1 = {
