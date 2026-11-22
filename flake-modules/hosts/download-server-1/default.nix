@@ -6,10 +6,12 @@ let
   # IPs allowed to access the qBittorrent WebUI (used in both firewall
   # allowedServices and qBittorrent's AuthSubnetWhitelist)
   qbittorrentAllowedIPs = [
-    "192.168.1.187"
     "192.168.1.190"
     "192.168.1.39"
   ]
+  # ali-desktop, at both addresses while it moves.
+  ++ lib.unique (lib.filter (ip: ip != null)
+    (with self.lib.homeLan.hosts.ali-desktop; [ ip plannedIp ]))
   # home-kvm-hypervisor-1, at both addresses while it moves.
   ++ lib.unique (lib.filter (ip: ip != null)
     (with self.lib.homeLan.hosts.home-kvm-hypervisor-1; [ ip plannedIp ]));
