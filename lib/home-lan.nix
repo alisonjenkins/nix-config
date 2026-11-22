@@ -96,9 +96,9 @@ let
     hive-hub = { ip = "192.168.1.51"; plannedIp = "192.168.1.51"; mac = "00:1c:2b:b4:d8:28"; role = "automation"; };
     hue-bridge = { ip = "192.168.1.52"; plannedIp = "192.168.1.52"; mac = "00:17:88:66:4d:2f"; role = "automation"; };
     smartthings-hub = { ip = "192.168.1.53"; plannedIp = "192.168.1.53"; mac = "d0:52:a8:a6:71:4b"; role = "automation"; };
-    emonpi = { ip = "192.168.1.113"; plannedIp = "192.168.1.54"; mac = "b8:27:eb:9d:01:57"; role = "automation"; };
-    openevse = { ip = "192.168.1.232"; plannedIp = "192.168.1.55"; mac = "ac:67:b2:0b:30:44"; role = "automation"; };
-    tasmota-67ec7f = { ip = "192.168.1.158"; plannedIp = "192.168.1.56"; mac = "e8:db:84:67:ec:7f"; role = "automation"; };
+    emonpi = { ip = "192.168.1.54"; plannedIp = "192.168.1.54"; mac = "b8:27:eb:9d:01:57"; role = "automation"; };
+    openevse = { ip = "192.168.1.55"; plannedIp = "192.168.1.55"; mac = "ac:67:b2:0b:30:44"; role = "automation"; };
+    tasmota-67ec7f = { ip = "192.168.1.56"; plannedIp = "192.168.1.56"; mac = "e8:db:84:67:ec:7f"; role = "automation"; };
     plug-d5a4d7 = { ip = "192.168.1.57"; plannedIp = "192.168.1.57"; mac = "34:98:7a:d5:a4:d7"; role = "automation"; };
     ring-doorbell = { ip = "192.168.1.58"; plannedIp = "192.168.1.58"; mac = "50:51:a9:66:34:1a"; role = "automation"; };
 
@@ -112,8 +112,8 @@ let
     alisons-macbook-pro = { ip = "192.168.1.66"; plannedIp = "192.168.1.66"; mac = "f4:d4:88:5b:c6:21"; role = "workstation"; };
 
     # Media and printers.
-    shield-tv = { ip = "192.168.1.225"; plannedIp = "192.168.1.70"; mac = "00:04:4b:fa:96:35"; role = "media"; };
-    qidi-max4 = { ip = "192.168.1.181"; plannedIp = "192.168.1.71"; mac = "58:e4:eb:88:b6:6a"; role = "media"; };
+    shield-tv = { ip = "192.168.1.70"; plannedIp = "192.168.1.70"; mac = "00:04:4b:fa:96:35"; role = "media"; };
+    qidi-max4 = { ip = "192.168.1.71"; plannedIp = "192.168.1.71"; mac = "58:e4:eb:88:b6:6a"; role = "media"; };
     camera-living-room = { ip = "192.168.1.92"; plannedIp = "192.168.1.72"; mac = "e0:63:da:af:d7:59"; role = "media"; managedBy = "device"; };
   };
 
