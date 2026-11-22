@@ -2180,21 +2180,11 @@ EOF
             allowedServices = [
               {
                 port = 443;
-                sources = [
-                  "192.168.1.187"
-                  "192.168.1.190"
-                  "192.168.1.39"
-                  "192.168.1.66"
-                ];
+                sources = qbittorrentAllowedIPs;
               }
               {
                 port = 6767;
-                sources = [
-                  "192.168.1.187"
-                  "192.168.1.190"
-                  "192.168.1.39"
-                  "192.168.1.66"
-                ];
+                sources = qbittorrentAllowedIPs;
               }
               {
                 port = 8080;
@@ -2202,48 +2192,23 @@ EOF
               }
               {
                 port = 8112;
-                sources = [
-                  "192.168.1.187"
-                  "192.168.1.190"
-                  "192.168.1.39"
-                  "192.168.1.66"
-                ];
+                sources = qbittorrentAllowedIPs;
               }
               {
                 port = 5055;
-                sources = k8sNodeIPs ++ [
-                  "192.168.1.187"
-                  "192.168.1.190"
-                  "192.168.1.39"
-                  "192.168.1.66"
-                ];
+                sources = k8sNodeIPs ++ qbittorrentAllowedIPs;
               }
               {
                 port = 7878;
-                sources = [
-                  "192.168.1.187"
-                  "192.168.1.190"
-                  "192.168.1.66"
-                  "192.168.1.39"
-                ];
+                sources = qbittorrentAllowedIPs;
               }
               {
                 port = 8989;
-                sources = [
-                  "192.168.1.187"
-                  "192.168.1.190"
-                  "192.168.1.39"
-                  "192.168.1.66"
-                ];
+                sources = qbittorrentAllowedIPs;
               }
               {
                 port = 9696;
-                sources = [
-                  "192.168.1.187"
-                  "192.168.1.190"
-                  "192.168.1.39"
-                  "192.168.1.66"
-                ];
+                sources = qbittorrentAllowedIPs;
               }
               # Prometheus exporters (scraped by the k8s cluster + LAN admins)
               { port = 9100; sources = monitoringSources; }  # node exporter
