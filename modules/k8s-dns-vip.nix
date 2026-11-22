@@ -16,8 +16,9 @@ let
   self = homeLan.hosts.${config.networking.hostName}.ip;
   peers = lib.filter (ip: ip != self) (map (name: homeLan.hosts.${name}.ip) cfg.nodes);
   # keepalived runs the script without a shell, so the pipe needs a wrapper.
+  # dig +short prints timeout errors to stdout, so match an address, not any line.
   check = pkgs.writeShellScript "lan-dns-check" ''
-    ${pkgs.dnsutils}/bin/dig +time=1 +tries=1 +short @127.0.0.1 cloudflare.com A | ${pkgs.gnugrep}/bin/grep -q .
+    ${pkgs.dnsutils}/bin/dig +time=1 +tries=1 +short @127.0.0.1 cloudflare.com A | ${pkgs.gnugrep}/bin/grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'
   '';
 in
 {
