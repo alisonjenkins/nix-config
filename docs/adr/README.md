@@ -84,6 +84,12 @@ for the live-maintenance runbook.
 | [0026](0026-hetzner-worker-node-networking.md) | Keep Hetzner worker nodes usable: dial kubelets by name, heal a stuck Cilium host datapath | Accepted |
 | [0060](0060-upgrade-the-hetzner-master-in-place-with-systemd-boot.md) | Upgrade the Hetzner master in place with systemd-boot, and defer the edge node | Accepted |
 
+## Homelab
+
+| # | Decision | Status |
+|---|---|---|
+| [0063](0063-unlock-homelab-luks-over-initrd-ssh-with-static-addresses.md) | Unlock homelab LUKS over initrd SSH, with static addresses and an on-host key | Accepted, pending live test |
+
 ## CI
 
 | # | Decision | Status |
