@@ -93,9 +93,9 @@ let
 
     # Home automation.
     homeassistant = { ip = "192.168.1.50"; plannedIp = "192.168.1.50"; mac = "20:f8:3b:01:42:e9"; role = "automation"; };
-    hive-hub = { ip = "192.168.1.9"; plannedIp = "192.168.1.51"; mac = "00:1c:2b:b4:d8:28"; role = "automation"; };
-    hue-bridge = { ip = "192.168.1.69"; plannedIp = "192.168.1.52"; mac = "00:17:88:66:4d:2f"; role = "automation"; };
-    smartthings-hub = { ip = "192.168.1.26"; plannedIp = "192.168.1.53"; mac = "d0:52:a8:a6:71:4b"; role = "automation"; };
+    hive-hub = { ip = "192.168.1.51"; plannedIp = "192.168.1.51"; mac = "00:1c:2b:b4:d8:28"; role = "automation"; };
+    hue-bridge = { ip = "192.168.1.52"; plannedIp = "192.168.1.52"; mac = "00:17:88:66:4d:2f"; role = "automation"; };
+    smartthings-hub = { ip = "192.168.1.53"; plannedIp = "192.168.1.53"; mac = "d0:52:a8:a6:71:4b"; role = "automation"; };
     emonpi = { ip = "192.168.1.113"; plannedIp = "192.168.1.54"; mac = "b8:27:eb:9d:01:57"; role = "automation"; };
     openevse = { ip = "192.168.1.232"; plannedIp = "192.168.1.55"; mac = "ac:67:b2:0b:30:44"; role = "automation"; };
     tasmota-67ec7f = { ip = "192.168.1.158"; plannedIp = "192.168.1.56"; mac = "e8:db:84:67:ec:7f"; role = "automation"; };
@@ -105,11 +105,11 @@ let
 
     # Workstations.
     ali-desktop = { ip = "192.168.1.60"; plannedIp = "192.168.1.60"; mac = "9c:6b:00:1e:db:6d"; role = "workstation"; };
-    tower = { ip = "192.168.1.94"; plannedIp = "192.168.1.61"; mac = "52:54:00:ce:1e:9a"; role = "workstation"; };
-    ali-laptop-wifi = { ip = "192.168.1.11"; plannedIp = "192.168.1.62"; mac = "e4:5e:37:02:32:12"; role = "workstation"; };
-    ali-framework-laptop-wifi = { ip = "192.168.1.39"; plannedIp = "192.168.1.63"; mac = "2c:9c:58:eb:a1:ff"; role = "workstation"; };
+    tower = { ip = "192.168.1.61"; plannedIp = "192.168.1.61"; mac = "52:54:00:ce:1e:9a"; role = "workstation"; };
+    ali-laptop-wifi = { ip = "192.168.1.62"; plannedIp = "192.168.1.62"; mac = "e4:5e:37:02:32:12"; role = "workstation"; };
+    ali-framework-laptop-wifi = { ip = "192.168.1.63"; plannedIp = "192.168.1.63"; mac = "2c:9c:58:eb:a1:ff"; role = "workstation"; };
     ali-work-laptop = { ip = "192.168.1.107"; plannedIp = "192.168.1.64"; role = "workstation"; };
-    ali-steam-deck = { ip = "192.168.1.67"; plannedIp = "192.168.1.65"; mac = "b0:0c:9d:93:f2:aa"; role = "workstation"; };
+    ali-steam-deck = { ip = "192.168.1.65"; plannedIp = "192.168.1.65"; mac = "b0:0c:9d:93:f2:aa"; role = "workstation"; };
 
     # Media and printers.
     shield-tv = { ip = "192.168.1.225"; plannedIp = "192.168.1.70"; mac = "00:04:4b:fa:96:35"; role = "media"; };
