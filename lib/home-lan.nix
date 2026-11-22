@@ -64,7 +64,7 @@ let
 
     # Hypervisors and out-of-band.
     home-kvm-hypervisor-1 = {
-      ip = "192.168.1.66";
+      ip = "192.168.1.10";
       plannedIp = "192.168.1.10";
       # Locally administered MAC of the br0 bridge, pinned by the host's
       # systemd-networkd netdev so the reservation survives a rebuild.
