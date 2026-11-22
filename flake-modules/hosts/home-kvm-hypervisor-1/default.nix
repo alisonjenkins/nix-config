@@ -249,6 +249,8 @@ in {
                 netdevConfig = {
                   Kind = "bridge";
                   Name = "br0";
+                  # The UniFi DHCP reservation keys on this MAC.
+                  MACAddress = outputs.lib.homeLan.hosts.home-kvm-hypervisor-1.mac;
                 };
               };
 
