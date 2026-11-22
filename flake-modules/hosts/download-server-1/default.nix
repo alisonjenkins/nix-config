@@ -9,8 +9,10 @@ let
     "192.168.1.187"
     "192.168.1.190"
     "192.168.1.39"
-    "192.168.1.66"
-  ];
+  ]
+  # home-kvm-hypervisor-1, at both addresses while it moves.
+  ++ lib.unique (lib.filter (ip: ip != null)
+    (with self.lib.homeLan.hosts.home-kvm-hypervisor-1; [ ip plannedIp ]));
   # LAN IPs of the home-cluster-1 k8s nodes. Pod traffic leaving the cluster
   # is masqueraded to the IP of the node the pod runs on, so in-cluster
   # clients (Prometheus, the Jellyseerr WAF) arrive from one of these.
