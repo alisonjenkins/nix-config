@@ -19,6 +19,7 @@ in {
       self.nixosModules.servers
       self.nixosModules.storage-server
       self.nixosModules.disk-evacuation
+      self.nixosModules.initrd-ssh
       self.nixosModules.home-storage-server-1-hardware
       self.nixosModules.home-storage-server-1-disko-config
 
@@ -283,6 +284,25 @@ in {
         # Server profile; see ADR 0057.
         modules.kernelTuning.profiles = [ "hardened-server" ];
         modules.locale.enable = true;
+        # Remote LUKS unlock on port 2222, on the LAN address from homeLan
+        # so it needs neither DHCP nor DNS. Unlock this VM before the
+        # others: download-server-1 and the k8s nodes mount its NFS.
+        modules.initrd-ssh =
+          let
+            homeLan = outputs.lib.homeLan;
+            lan = homeLan.hosts.home-storage-server-1;
+          in
+          {
+            enable = true;
+            authorizedKeys = [ outputs.lib.sshKeys.primary ];
+            hostKeyComment = "home-storage-server-1-initrd";
+            hostKeyPath = "/persistence/etc/secrets/initrd/ssh_host_ed25519_key";
+            network = {
+              matchConfig.MACAddress = lan.mac;
+              address = "${lan.ip}/${toString homeLan.prefixLength}";
+              inherit (homeLan) gateway;
+            };
+          };
         modules.storage-server.enable = true;
         # sdg (ST5000LM000, ~5.9k pending sectors) and sdk (ST4000DM004) sit
         # outside the pool at /mnt/rescue, mounted read-only. sdr and sdh are
