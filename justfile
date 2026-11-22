@@ -112,6 +112,52 @@ install-remote hostname="ali-steam-deck" target="root@192.168.1.65":
     ssh "${SSH_OPTS[@]}" "{{target}}" \
       "nixos-install --root /mnt --no-root-passwd --no-channel-copy --system $storepath"
 
+# Unlock the homelab's LUKS hosts over initrd SSH, in boot order: the
+# hypervisor first (its VMs start only once it is up), then storage (the
+# others mount its NFS), then download. A host already up on port 22 is
+# skipped, so this is safe to re-run. See docs/homelab-luks-unlock.md.
+unlock-homelab *hosts="home-kvm-hypervisor-1 home-storage-server-1 download-server-1":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    SSH_OPTS=(
+      -o IdentitiesOnly=yes
+      -o IdentityFile="$HOME/.ssh/id_personal.pub"
+      -o IdentityAgent="$HOME/.1password/agent.sock"
+      -o StrictHostKeyChecking=accept-new
+    )
+    # How long to wait for a host to reach its unlock prompt, then to boot.
+    wait_seconds=600
+
+    port_open() { timeout 2 bash -c "exec 3<>/dev/tcp/$1/$2" 2>/dev/null; }
+
+    wait_port() {
+      local ip=$1 port=$2 waited=0
+      until port_open "$ip" "$port"; do
+        if (( waited >= wait_seconds )); then
+          echo "    $ip:$port still closed after ${wait_seconds}s" >&2
+          return 1
+        fi
+        sleep 5
+        waited=$((waited + 5))
+      done
+    }
+
+    for host in {{hosts}}; do
+      ip=$(nix eval --raw ".#lib.homeLan.hosts.$host.ip")
+      port=$(nix eval ".#nixosConfigurations.$host.config.modules.initrd-ssh.port")
+      echo "==> $host ($ip)"
+      if port_open "$ip" 22; then
+        echo "    already up, skipping"
+        continue
+      fi
+      echo "    waiting for the unlock prompt on port $port"
+      wait_port "$ip" "$port"
+      ssh -t "${SSH_OPTS[@]}" -p "$port" "root@$ip" systemd-tty-ask-password-agent
+      echo "    waiting for boot to reach sshd on port 22"
+      wait_port "$ip" 22
+    done
+
 # Wipe and install a host over SSH with nixos-anywhere (kexec + disko).
 # DESTROYS every disk the host's disko config names. Ships the host key
 # from ~/.local/share/nixos-anywhere/<hostname> (its age key decrypts the
