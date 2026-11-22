@@ -178,13 +178,13 @@
 
         Host home-storage-server-1.lan
           user ali
-          HostName 192.168.1.97
+          HostName ${hosts.home-storage-server-1.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
         Host hss1
           user ali
-          HostName 192.168.1.97
+          HostName ${hosts.home-storage-server-1.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
@@ -196,7 +196,7 @@
 
         Host hss1-setup
           user nixos
-          HostName 192.168.1.97
+          HostName ${hosts.home-storage-server-1.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
