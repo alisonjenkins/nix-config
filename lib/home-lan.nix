@@ -72,8 +72,8 @@ let
       role = "hypervisor";
     };
     home-kvm-hypervisor-1-ipmi = { ip = "192.168.1.11"; plannedIp = "192.168.1.11"; mac = "9c:6b:00:e2:36:51"; role = "oob"; };
-    pikvm = { ip = "192.168.1.111"; plannedIp = "192.168.1.12"; role = "oob"; };
-    pikvm-wifi = { ip = "192.168.1.112"; plannedIp = "192.168.1.13"; role = "oob"; };
+    pikvm = { ip = "192.168.1.111"; plannedIp = "192.168.1.12"; mac = "dc:a6:32:51:71:39"; role = "oob"; };
+    pikvm-wifi = { ip = "192.168.1.112"; plannedIp = "192.168.1.13"; mac = "dc:a6:32:51:71:3a"; role = "oob"; };
 
     # Storage.
     # Not .20: UniFi reserves 192.168.1.20 as its device fallback address
@@ -100,19 +100,21 @@ let
     openevse = { ip = "192.168.1.232"; plannedIp = "192.168.1.55"; mac = "ac:67:b2:0b:30:44"; role = "automation"; };
     tasmota-67ec7f = { ip = "192.168.1.158"; plannedIp = "192.168.1.56"; mac = "e8:db:84:67:ec:7f"; role = "automation"; };
     plug-d5a4d7 = { ip = "192.168.1.57"; plannedIp = "192.168.1.57"; mac = "34:98:7a:d5:a4:d7"; role = "automation"; };
+    ring-doorbell = { ip = "192.168.1.90"; plannedIp = "192.168.1.58"; mac = "50:51:a9:66:34:1a"; role = "automation"; };
 
     # Workstations.
     ali-desktop = { ip = "192.168.1.60"; plannedIp = "192.168.1.60"; mac = "9c:6b:00:1e:db:6d"; role = "workstation"; };
     tower = { ip = "192.168.1.61"; plannedIp = "192.168.1.61"; mac = "52:54:00:ce:1e:9a"; role = "workstation"; };
     ali-laptop-wifi = { ip = "192.168.1.62"; plannedIp = "192.168.1.62"; mac = "e4:5e:37:02:32:12"; role = "workstation"; };
     ali-framework-laptop-wifi = { ip = "192.168.1.63"; plannedIp = "192.168.1.63"; mac = "2c:9c:58:eb:a1:ff"; role = "workstation"; };
-    ali-work-laptop = { ip = "192.168.1.107"; plannedIp = "192.168.1.64"; role = "workstation"; };
+    ali-work-laptop = { ip = "192.168.1.107"; plannedIp = "192.168.1.64"; mac = "38:8d:3d:28:f5:5e"; role = "workstation"; };
     ali-steam-deck = { ip = "192.168.1.65"; plannedIp = "192.168.1.65"; mac = "b0:0c:9d:93:f2:aa"; role = "workstation"; };
+    alisons-macbook-pro = { ip = "192.168.1.49"; plannedIp = "192.168.1.66"; mac = "f4:d4:88:5b:c6:21"; role = "workstation"; };
 
     # Media and printers.
     shield-tv = { ip = "192.168.1.225"; plannedIp = "192.168.1.70"; mac = "00:04:4b:fa:96:35"; role = "media"; };
     qidi-max4 = { ip = "192.168.1.181"; plannedIp = "192.168.1.71"; mac = "58:e4:eb:88:b6:6a"; role = "media"; };
-    camera-living-room = { ip = "192.168.1.92"; plannedIp = "192.168.1.72"; role = "media"; managedBy = "device"; };
+    camera-living-room = { ip = "192.168.1.92"; plannedIp = "192.168.1.72"; mac = "e0:63:da:af:d7:59"; role = "media"; managedBy = "device"; };
   };
 
   hosts = lib.mapAttrs
