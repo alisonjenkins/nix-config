@@ -105,11 +105,11 @@ let
 
     # Workstations.
     ali-desktop = { ip = "192.168.1.60"; plannedIp = "192.168.1.60"; mac = "9c:6b:00:1e:db:6d"; role = "workstation"; };
-    tower = { ip = "192.168.1.94"; plannedIp = "192.168.1.61"; role = "workstation"; };
-    ali-laptop-wifi = { ip = "192.168.1.11"; plannedIp = "192.168.1.62"; role = "workstation"; };
-    ali-framework-laptop-wifi = { ip = "192.168.1.39"; plannedIp = "192.168.1.63"; role = "workstation"; };
+    tower = { ip = "192.168.1.94"; plannedIp = "192.168.1.61"; mac = "52:54:00:ce:1e:9a"; role = "workstation"; };
+    ali-laptop-wifi = { ip = "192.168.1.11"; plannedIp = "192.168.1.62"; mac = "e4:5e:37:02:32:12"; role = "workstation"; };
+    ali-framework-laptop-wifi = { ip = "192.168.1.39"; plannedIp = "192.168.1.63"; mac = "2c:9c:58:eb:a1:ff"; role = "workstation"; };
     ali-work-laptop = { ip = "192.168.1.107"; plannedIp = "192.168.1.64"; role = "workstation"; };
-    ali-steam-deck = { ip = "192.168.1.67"; plannedIp = "192.168.1.65"; role = "workstation"; };
+    ali-steam-deck = { ip = "192.168.1.67"; plannedIp = "192.168.1.65"; mac = "b0:0c:9d:93:f2:aa"; role = "workstation"; };
 
     # Media and printers.
     shield-tv = { ip = "192.168.1.225"; plannedIp = "192.168.1.70"; mac = "00:04:4b:fa:96:35"; role = "media"; };
