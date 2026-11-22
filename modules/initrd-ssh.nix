@@ -200,7 +200,9 @@ in {
         enable = true;
         # Hand stage 2 a clean NIC, as on a boot without initrd networking,
         # so a host's own network and firewall setup starts from nothing.
-        flushBeforeStage2 = mkIf (cfg.network.address != null) (mkDefault true);
+        # A DHCP lease from the initrd is only renewed by networkd, so
+        # without it in stage 2 the address expires a lease time after boot.
+        flushBeforeStage2 = mkIf (cfg.network.address != null || !config.networking.useNetworkd) (mkDefault true);
         ssh = {
           enable = true;
           inherit (cfg) port authorizedKeys;
