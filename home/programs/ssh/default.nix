@@ -70,7 +70,7 @@
           )
           }
 
-        Host 192.168.1.187
+        Host ${hosts.ali-desktop.ip}
           User root
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
