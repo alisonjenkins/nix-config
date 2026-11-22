@@ -1552,7 +1552,7 @@ EOF
           "L+ /media/tv - - - - /media/storage/media/TV"
         ];
 
-        # NFS mounts of the storage server (192.168.1.97), which exports a
+        # NFS mounts of the storage server, which exports a
         # mergerfs (FUSE) union from /media/storage/*.
         #
         # ─────────────────────────────────────────────────────────────────────
@@ -1611,7 +1611,7 @@ EOF
         #
         # Target 10.10.10.2 = storage's jumbo (MTU 9000, br-storage) IP, keeping
         # the bulk NFS traffic on the isolated fast path off the LAN br0. To fall
-        # back to the LAN, change this to 192.168.1.97 (the root export also
+        # back to the LAN, use the storage server's homeLan ip (the root export also
         # allows download-server-1.lan).
         #
         # async dropped (the old downloads-only knob): one mount can't be both
