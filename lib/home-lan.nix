@@ -92,7 +92,7 @@ let
     home-vpn-gateway-1 = { ip = null; plannedIp = "192.168.1.41"; role = "service"; };
 
     # Home automation.
-    homeassistant = { ip = "192.168.1.16"; plannedIp = "192.168.1.50"; mac = "20:f8:3b:01:42:e9"; role = "automation"; };
+    homeassistant = { ip = "192.168.1.50"; plannedIp = "192.168.1.50"; mac = "20:f8:3b:01:42:e9"; role = "automation"; };
     hive-hub = { ip = "192.168.1.9"; plannedIp = "192.168.1.51"; mac = "00:1c:2b:b4:d8:28"; role = "automation"; };
     hue-bridge = { ip = "192.168.1.69"; plannedIp = "192.168.1.52"; mac = "00:17:88:66:4d:2f"; role = "automation"; };
     smartthings-hub = { ip = "192.168.1.26"; plannedIp = "192.168.1.53"; mac = "d0:52:a8:a6:71:4b"; role = "automation"; };
