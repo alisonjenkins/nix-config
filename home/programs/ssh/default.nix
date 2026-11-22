@@ -141,6 +141,12 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
+        Host pikvm pikvm.lan
+          User root
+          HostName ${hosts.pikvm.ip}
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
         Host home-k8s-master-1.lan
           user ali
           HostName ${hosts.home-k8s-master-1.ip}
@@ -174,6 +180,14 @@
         Host hk8s1-setup
           user nixos
           HostName ${hosts.home-k8s-server-1.ip}
+          IdentityFile ~/.ssh/id_personal.pub
+          IdentitiesOnly yes
+
+        # LUKS unlock in the initrd (modules/initrd-ssh.nix).
+        Host hk8s1-unlock
+          User root
+          HostName ${hosts.home-k8s-server-1.ip}
+          Port 2222
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
