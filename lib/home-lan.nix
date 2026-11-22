@@ -71,7 +71,7 @@ let
       mac = "62:95:4d:75:14:61";
       role = "hypervisor";
     };
-    home-kvm-hypervisor-1-ipmi = { ip = "192.168.1.144"; plannedIp = "192.168.1.11"; mac = "9c:6b:00:e2:36:51"; role = "oob"; };
+    home-kvm-hypervisor-1-ipmi = { ip = "192.168.1.11"; plannedIp = "192.168.1.11"; mac = "9c:6b:00:e2:36:51"; role = "oob"; };
     pikvm = { ip = "192.168.1.111"; plannedIp = "192.168.1.12"; role = "oob"; };
     pikvm-wifi = { ip = "192.168.1.112"; plannedIp = "192.168.1.13"; role = "oob"; };
 
