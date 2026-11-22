@@ -42,6 +42,52 @@ in {
       '';
     };
 
+    hostKeyPath = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      example = "/persistence/etc/secrets/initrd/ssh_host_ed25519_key";
+      description = ''
+        Path on the target host to the initrd SSH host private key.
+        The bootloader copies it into the initrd as an initrd secret at
+        install time, so it never enters the Nix store or a binary
+        cache, and it survives nixpkgs bumps. It must exist before the
+        first switch that sets this, or bootloader install fails:
+            sudo install -d -m 700 "$(dirname PATH)"
+            sudo ssh-keygen -t ed25519 -N "" -f PATH
+        On an impermanence host, point it under the persistence path.
+        When null, a build-time key from the Nix store is used.
+      '';
+    };
+
+    network = {
+      matchConfig = mkOption {
+        type = types.attrsOf types.str;
+        default = { Name = "en* eth*"; };
+        example = { MACAddress = "52:54:00:69:9c:5c"; };
+        description = ''
+          systemd-networkd [Match] section for the initrd LAN interface.
+          Ignored when wifi is enabled.
+        '';
+      };
+
+      address = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        example = "192.168.1.22/24";
+        description = ''
+          Static address with prefix length for the initrd. When null,
+          the initrd uses DHCP. A static address keeps the unlock
+          reachable when the DHCP server is itself behind the LUKS prompt.
+        '';
+      };
+
+      gateway = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "Default gateway used with a static address.";
+      };
+    };
+
     hostKeyComment = mkOption {
       type = types.str;
       default = "initrd-ssh";
@@ -152,10 +198,19 @@ in {
 
       network = {
         enable = true;
+        # Hand stage 2 a clean NIC, as on a boot without initrd networking,
+        # so a host's own network and firewall setup starts from nothing.
+        flushBeforeStage2 = mkIf (cfg.network.address != null) (mkDefault true);
         ssh = {
           enable = true;
           inherit (cfg) port authorizedKeys;
-          hostKeys = [ephemeralHostKey];
+          hostKeys = [
+            (
+              if cfg.hostKeyPath != null
+              then cfg.hostKeyPath
+              else ephemeralHostKey
+            )
+          ];
         };
       };
 
@@ -170,14 +225,22 @@ in {
       systemd = {
         network = {
           enable = true;
-          networks."10-initrd-net" = {
-            matchConfig.Name =
-              if cfg.wifi.enable
-              then cfg.wifi.interface
-              else "en* eth*";
-            DHCP = "yes";
-            linkConfig.RequiredForOnline = "routable";
-          };
+          networks."10-initrd-net" =
+            {
+              matchConfig =
+                if cfg.wifi.enable
+                then {Name = cfg.wifi.interface;}
+                else cfg.network.matchConfig;
+              linkConfig.RequiredForOnline = "routable";
+            }
+            // (
+              if cfg.network.address == null
+              then {DHCP = "yes";}
+              else {
+                address = [cfg.network.address];
+                gateway = optional (cfg.network.gateway != null) cfg.network.gateway;
+              }
+            );
         };
 
         # Bundle wpa_supplicant + the helpers used by the
