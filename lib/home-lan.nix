@@ -66,8 +66,8 @@ let
     home-kvm-hypervisor-1 = {
       ip = "192.168.1.66";
       plannedIp = "192.168.1.10";
-      # Locally administered MAC of the br0 bridge. It should be pinned in
-      # the NixOS config so the reservation survives a rebuild.
+      # Locally administered MAC of the br0 bridge, pinned by the host's
+      # systemd-networkd netdev so the reservation survives a rebuild.
       mac = "62:95:4d:75:14:61";
       role = "hypervisor";
     };
