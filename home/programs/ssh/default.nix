@@ -78,6 +78,7 @@
 
         Host ali-desktop.lan
           user ali
+          HostName ${hosts.ali-desktop.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
@@ -93,14 +94,14 @@
           IdentityFile ${primarySSHKey}
           IdentitiesOnly yes
 
-        Host download-server-1
-          HostName download-server-1.lan
+        Host download-server-1 ds1
+          HostName ${hosts.download-server-1.ip}
           IdentitiesOnly yes
           IdentityFile ~/.ssh/id_personal.pub
           User ali
 
         Host download-server-1.lan
-          HostName download-server-1.lan
+          HostName ${hosts.download-server-1.ip}
           User ali
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
@@ -112,7 +113,7 @@
           IdentitiesOnly yes
 
         Host ds1-setup
-          HostName download-server-1.lan
+          HostName ${hosts.download-server-1.ip}
           User nixos
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
@@ -136,19 +137,19 @@
 
         Host hkh1-setup
           user nixos
-          HostName home-kvm-hypervisor-1.lan
+          HostName ${hosts.home-kvm-hypervisor-1.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
         Host home-k8s-master-1.lan
           user ali
-          HostName home-k8s-master-1.lan
+          HostName ${hosts.home-k8s-master-1.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
-        Host hk8m1
+        Host hk8m1 home-k8s-master-1
           user ali
-          HostName home-k8s-master-1.lan
+          HostName ${hosts.home-k8s-master-1.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
@@ -160,7 +161,7 @@
 
         Host hk8m1-setup
           user nixos
-          HostName home-k8s-master-1.lan
+          HostName ${hosts.home-k8s-master-1.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
@@ -182,7 +183,7 @@
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
-        Host hss1
+        Host hss1 home-storage-server-1
           user ali
           HostName ${hosts.home-storage-server-1.ip}
           IdentityFile ~/.ssh/id_personal.pub
@@ -202,13 +203,13 @@
 
         Host ali-work-laptop.lan
           user ali
-          HostName ali-work-laptop.lan
+          HostName ${hosts.ali-work-laptop.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
         Host ali-worklaptop-setup
           user nixos
-          HostName ali-work-laptop.lan
+          HostName ${hosts.ali-work-laptop.ip}
           IdentityFile ~/.ssh/id_personal.pub
           IdentitiesOnly yes
 
