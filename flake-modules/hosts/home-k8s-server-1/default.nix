@@ -31,6 +31,7 @@ in {
       self.nixosModules.locale
       self.nixosModules.base
       self.nixosModules.home-lan-hosts
+      self.nixosModules.k8s-dns-vip
       self.nixosModules.initrd-ssh
       self.nixosModules.nohang
       self.nixosModules.servers
@@ -48,6 +49,11 @@ in {
           extraProtectedProcesses = [ "k3s" "containerd" ];
         };
         modules.homeLanHosts.enable = true;
+        modules.k8sDnsVip = {
+          enable = true;
+          interface = "eno1";
+          priority = 150;
+        };
         modules.base = {
           enable = true;
           bootLoader = if secureBootReady then "secure-boot" else "systemd-boot";

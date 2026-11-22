@@ -16,6 +16,7 @@ in {
       self.nixosModules.locale
       self.nixosModules.base
       self.nixosModules.home-lan-hosts
+      self.nixosModules.k8s-dns-vip
       self.nixosModules.nohang
       self.nixosModules.home-k8s-master-1-hardware
       self.nixosModules.home-k8s-master-1-disko-config
@@ -36,6 +37,11 @@ in {
           extraProtectedProcesses = [ "k3s" "containerd" ];
         };
         modules.homeLanHosts.enable = true;
+        modules.k8sDnsVip = {
+          enable = true;
+          interface = "enp1s0";
+          priority = 100;
+        };
         modules.base = {
           enable = true;
         };
