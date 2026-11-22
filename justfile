@@ -82,7 +82,7 @@ build hostname="" *extraargs:
 # nixos-install on the remote to write bootloader + /etc.
 # Use when the target machine's CPU is too slow to build (e.g. Steam Deck).
 # Defaults match installing ali-steam-deck from a fast machine on the LAN.
-install-remote hostname="ali-steam-deck" target="root@192.168.1.67":
+install-remote hostname="ali-steam-deck" target="root@192.168.1.65":
     #!/usr/bin/env bash
     set -euo pipefail
 
