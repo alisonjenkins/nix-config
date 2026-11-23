@@ -160,6 +160,23 @@ class CveDiffTest(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIn("1 accepted CVE(s) whose exception", out)
 
+    def test_expired_version_selector_covers_only_that_version(self):
+        report = [item("openssl", "3.5", ["CVE-2026-1"], {"CVE-2026-1": 9.8})]
+        wl = self.whitelist('["openssl-3.0"]\ncve = ["CVE-2026-1"]\nuntil = "2026-11-01"\ncomment = "x"\n')
+        rc, _ = self.run_diff(report, report, "--whitelist", str(wl), "--today", "2026-11-23")
+        self.assertEqual(rc, 0)
+        wl = self.whitelist('["openssl-3.5"]\ncve = ["CVE-2026-1"]\nuntil = "2026-11-01"\ncomment = "x"\n')
+        rc, _ = self.run_diff(report, report, "--whitelist", str(wl), "--today", "2026-11-23")
+        self.assertEqual(rc, 1)
+
+    def test_has_expired(self):
+        def has(text):
+            with redirect_stdout(io.StringIO()):
+                return cve_diff.main(["--has-expired", str(self.whitelist(text)), "--today", "2026-11-23"])
+        self.assertEqual(has('["a"]\ncve = ["CVE-1"]\nuntil = "2026-11-01"\ncomment = "x"\n'), 0)
+        self.assertEqual(has('["a"]\ncve = ["CVE-1"]\nuntil = "2026-12-01"\ncomment = "x"\n'), 1)
+        self.assertEqual(has(""), 1)
+
     def test_exception_in_date_does_not_fail(self):
         report = [item("openssl", "3.5", ["CVE-2026-1"], {"CVE-2026-1": 9.8})]
         wl = self.whitelist('["openssl"]\ncve = ["CVE-2026-1"]\nuntil = "2026-12-01"\ncomment = "x"\n')
