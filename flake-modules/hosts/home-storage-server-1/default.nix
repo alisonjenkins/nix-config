@@ -45,6 +45,14 @@ in {
           (builtins.filter (lib.hasPrefix "/media/disks/")
             (builtins.attrNames config.fileSystems));
 
+        # Read-only map of front drive slots to disks (vault: hss1 Drive Bay
+        # Map). The shebang is dropped because writeShellApplication adds its own.
+        driveBaysScript = pkgs.writeShellApplication {
+          name = "drive-bays";
+          runtimeInputs = [ pkgs.coreutils pkgs.findutils pkgs.util-linux pkgs.attr ];
+          text = lib.removePrefix "#!/usr/bin/env bash\n" (builtins.readFile ./drive-bays.sh);
+        };
+
         # Self-healing watchdog for ghost dentries / stale mergerfs views (see
         # the media-storage-watchdog systemd unit below for the incident this
         # guards against). shellcheck-clean via writeShellApplication; every
@@ -718,6 +726,7 @@ in {
           pathsToLink = [ "/share/zsh" ];
 
           systemPackages = with pkgs; [
+            driveBaysScript
             parted
             xfsprogs
           ];
