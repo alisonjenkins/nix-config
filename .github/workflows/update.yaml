@@ -94,8 +94,12 @@ jobs:
           done
           gh pr merge --rebase --auto --delete-branch "$pr_url"
           # A PR opened with GITHUB_TOKEN never starts pull_request
-          # workflows, so flake-check would never report; dispatch it.
+          # workflows on its own (GitHub holds them for a maintainer's
+          # approval), so flake-check would never report; dispatch it.
+          # adr-repo-claims also watches flake.lock; dispatch it too so a
+          # bump that breaks an ADR claim shows on the PR.
           gh workflow run pr-check.yaml --ref "$branch"
+          gh workflow run adr-repo-claims.yaml --ref "$branch"
 
           # --auto only arms auto-merge and returns immediately, so without
           # this the job would report success even when flake-check fails
@@ -118,6 +122,7 @@ jobs:
             if [ "$(gh pr view "$pr_url" --json mergeStateStatus -q .mergeStateStatus)" = BEHIND ]; then
               gh pr update-branch --rebase "$pr_url"
               gh workflow run pr-check.yaml --ref "$branch"
+              gh workflow run adr-repo-claims.yaml --ref "$branch"
             fi
             sleep 30
           done
@@ -183,3 +188,4 @@ jobs:
           done
           # A PR opened with GITHUB_TOKEN never starts pull_request workflows.
           gh workflow run pr-check.yaml --ref "$branch"
+          gh workflow run adr-repo-claims.yaml --ref "$branch"
