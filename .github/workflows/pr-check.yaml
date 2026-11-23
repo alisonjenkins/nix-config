@@ -117,8 +117,16 @@ jobs:
           CVE_REPORT: ${{ runner.temp }}/cve-report.md
         run: |
           [ -s "$CVE_REPORT" ] || exit 0
+          # cve-comment receives it in one environment variable, which Linux
+          # caps at 128 KiB, and a comment holds 65536 characters: cut it
+          # here. The job summary keeps the whole report.
+          report="$CVE_REPORT"
+          if [ "$(wc -c <"$CVE_REPORT")" -gt 60000 ]; then
+            report="$RUNNER_TEMP/cve-report.cut.md"
+            { head -c 60000 "$CVE_REPORT"; printf '\n\n_Cut short; the full report is in the job summary._\n'; } >"$report"
+          fi
           eof="EOF_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
-          { echo "report<<$eof"; cat "$CVE_REPORT"; echo "$eof"; } >>"$GITHUB_OUTPUT"
+          { echo "report<<$eof"; cat "$report"; echo "$eof"; } >>"$GITHUB_OUTPUT"
 
   # One comment on the PR with the CVE report, edited in place on each push.
   # A job of its own on a GitHub-hosted runner, so the only job holding a
@@ -142,13 +150,8 @@ jobs:
         run: |
           marker='<!-- cve-scan:report -->'
           body="$RUNNER_TEMP/body.md"
-          # A comment holds at most 65536 characters.
-          if [ "${#REPORT}" -gt 60000 ]; then
-            report="${REPORT:0:60000}"$'\n\n'"_Cut short; the full report is in the [job summary]($RUN_URL)._"
-          else
-            report="$REPORT"
-          fi
-          printf '%s\n%s\n\n[Scan run](%s)\n' "$marker" "$report" "$RUN_URL" >"$body"
+          # Already cut to fit by cve-scan's last step.
+          printf '%s\n%s\n\n[Scan run](%s)\n' "$marker" "$REPORT" "$RUN_URL" >"$body"
           id="$(gh api --paginate "repos/$REPO/issues/$PR/comments" |
             jq -rs --arg m "$marker" 'add | map(select(.user.login == "github-actions[bot]" and (.body | startswith($m)))) | first | .id // empty')"
           if [ -n "$id" ]; then
