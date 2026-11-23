@@ -1,0 +1,375 @@
+{
+  "schema": 1,
+  "_doc": "Written by `update-policy bump` (pkgs/update-policy). When each upstream commit was first seen at the head of a flake input's branch; the update policy's cooldown is measured from this, not from commit dates, which can be set to anything. Do not edit by hand.",
+  "inputs": {
+    "ali-neovim": {
+      "source": "github:alisonjenkins/neovim-nix-flake",
+      "seen": [
+        {
+          "rev": "022ef42e3be8e6784ae086b4d9ba3c436f05b970",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "claude-monitor": {
+      "source": "github:alisonjenkins/claude-monitor",
+      "seen": [
+        {
+          "rev": "2636dba06cfe509031fed6ceaf3932b13b305930",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "darwin": {
+      "source": "github:lnl7/nix-darwin@nix-darwin-26.05",
+      "seen": [
+        {
+          "rev": "d31953cf55f9027a56e9be938daf5db8c5655663",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "deploy-rs": {
+      "source": "github:serokell/deploy-rs",
+      "seen": [
+        {
+          "rev": "1cec0527bd09074bbee6d4461900ce5d58267217",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "disko": {
+      "source": "github:nix-community/disko",
+      "seen": [
+        {
+          "rev": "44761d4f745b95e037458a0e57133c5700c8e320",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "fenix": {
+      "source": "github:nix-community/fenix",
+      "seen": [
+        {
+          "rev": "012c1a71bd93921f320def3d0e586cc4dd332b65",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "flake-parts": {
+      "source": "github:hercules-ci/flake-parts",
+      "seen": [
+        {
+          "rev": "ea2630b7470978622c7689a1ff75d2b389175399",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "framework-inputmodule-rs-flake": {
+      "source": "github:alisonjenkins/framework-inputmodule-rs-flake",
+      "seen": [
+        {
+          "rev": "12ab00efbdcc9158b70daf2160edf09ef988234e",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "haumea": {
+      "source": "github:nix-community/haumea@v0.2.2",
+      "seen": [
+        {
+          "rev": "34dd58385092a23018748b50f9b23de6266dffc2",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "home-manager": {
+      "source": "github:nix-community/home-manager@release-26.05",
+      "seen": [
+        {
+          "rev": "6480d7d8533b88c78cc6dcda395ab89cd546e450",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "impermanence": {
+      "source": "github:nix-community/impermanence",
+      "seen": [
+        {
+          "rev": "fa627f4c8b8e92f58f58a73d99ee4e1304e64eb2",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "jovian-nixos": {
+      "source": "github:jovian-experiments/jovian-nixos",
+      "seen": [
+        {
+          "rev": "1069ce1dcac046b565cae5c0b2e5c5596a15c709",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "lanzaboote": {
+      "source": "github:nix-community/lanzaboote@master",
+      "seen": [
+        {
+          "rev": "69c7f74b872aae4f360bdd0050106e0fddfed7aa",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "lsfg-vk-flake": {
+      "source": "github:pabloaul/lsfg-vk-flake@main",
+      "seen": [
+        {
+          "rev": "62aadfc844b2002abe47cbbc9dfd028033376248",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "luks-controller-unlock": {
+      "source": "github:alisonjenkins/luks-controller-unlock",
+      "seen": [
+        {
+          "rev": "2548c6eab7d3baf1401da973be61a781238472e6",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "niks3": {
+      "source": "github:mic92/niks3@v1.7.0",
+      "seen": [
+        {
+          "rev": "6c40621993fa46f186d512f3060872c005d307b2",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "niri": {
+      "source": "github:yalter/niri",
+      "seen": [
+        {
+          "rev": "02ee0585b9da359cb30aa2a13a6023a6e471cc23",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "niri-virtual": {
+      "source": "github:alisonjenkins/niri@rebase-feat-virtual",
+      "seen": [
+        {
+          "rev": "5e659dcb4c1e1eb854345a4bd1110f643f76cf22",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nix-flatpak": {
+      "source": "github:gmodena/nix-flatpak@latest",
+      "seen": [
+        {
+          "rev": "f1f045fc8b35ff59f88982c1752d3f3a42ca6a61",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nix-index-database": {
+      "source": "github:nix-community/nix-index-database",
+      "seen": [
+        {
+          "rev": "905f3e6f1e78165e79457c0bbe7ec4b885a5fce1",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nixgl": {
+      "source": "github:nix-community/nixgl",
+      "seen": [
+        {
+          "rev": "4306ae1d15adf3d386f1462b330d4f2648404711",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nixos-apple-silicon": {
+      "source": "github:nix-community/nixos-apple-silicon",
+      "seen": [
+        {
+          "rev": "22142b67aff1bf0ada5c384974f05524f3980b14",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nixos-hardware": {
+      "source": "github:nixos/nixos-hardware@master",
+      "seen": [
+        {
+          "rev": "33475966110df258f52d05ec4d4cd6394637cbb9",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nixpkgs": {
+      "source": "github:nixos/nixpkgs@nixos-26.05",
+      "seen": [
+        {
+          "rev": "94c3211b0ee8ba969a3f12eb4aff8ba0f72971dd",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nixpkgs_master": {
+      "source": "github:nixos/nixpkgs",
+      "seen": [
+        {
+          "rev": "558287119d46d56834468583a76b0a34de7454f5",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nixpkgs_old": {
+      "source": "github:nixos/nixpkgs@nixos-24.11",
+      "seen": [
+        {
+          "rev": "50ab793786d9de88ee30ec4e4c24fb4236fc2674",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nixpkgs_stable": {
+      "source": "github:nixos/nixpkgs@nixos-26.05",
+      "seen": [
+        {
+          "rev": "94c3211b0ee8ba969a3f12eb4aff8ba0f72971dd",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nixpkgs_stable_darwin": {
+      "source": "github:nixos/nixpkgs@nixpkgs-25.11-darwin",
+      "seen": [
+        {
+          "rev": "0921fdb3e13e40fe25fbc52b89661a9d6d32ac68",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nixpkgs_unstable": {
+      "source": "github:nixos/nixpkgs@nixos-unstable",
+      "seen": [
+        {
+          "rev": "2786a2a72088ecf32aea5b3ec52099e6a7cff78f",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nixvirt": {
+      "source": "github:ashleyyakeley/nixvirt@v0.6.0",
+      "seen": [
+        {
+          "rev": "259ee191a15c9138bf21ed8bbd7abf367e35ff71",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "noctalia": {
+      "source": "github:noctalia-dev/noctalia-shell",
+      "seen": [
+        {
+          "rev": "30daf36c1e7729ac29fa787b48bc2af136689635",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "nur": {
+      "source": "github:nix-community/nur",
+      "seen": [
+        {
+          "rev": "d4e775271ca0e5d6a39d0dfa68582228aacbba16",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "overseer": {
+      "source": "github:alisonjenkins/overseer",
+      "seen": [
+        {
+          "rev": "d580c6a780022d22c814141256bd05f299e24170",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "pipewire-screenaudio": {
+      "source": "github:icedborn/pipewire-screenaudio",
+      "seen": [
+        {
+          "rev": "455390dcb732322ba1a52f744424c4ea81b47f88",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "plasma-manager": {
+      "source": "github:pjones/plasma-manager",
+      "seen": [
+        {
+          "rev": "a19a2a029fa180911bd89c554dca1616e10f4c1d",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "quickshell": {
+      "source": "github:quickshell-mirror/quickshell",
+      "seen": [
+        {
+          "rev": "9b0f339b19057f4731bf3b48293307d7ef241671",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "sops-nix": {
+      "source": "github:mic92/sops-nix",
+      "seen": [
+        {
+          "rev": "7c637afdccdf9bcf35c4a2d67b58a77c1fd843a4",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "steam-command-runner": {
+      "source": "github:alisonjenkins/steam-command-runner",
+      "seen": [
+        {
+          "rev": "52562cde11da54f2e0c66aa21451d95f8f3d5e6c",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "stylix": {
+      "source": "github:danth/stylix@release-25.11",
+      "seen": [
+        {
+          "rev": "45a51a8a016ac30a6ee60f719c1d5c6706c5d1f4",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "tmux-sessionizer": {
+      "source": "github:alisonjenkins/tmux-sessionizer",
+      "seen": [
+        {
+          "rev": "b9965259166c588479c01328e34f0fbc98fa03a2",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    },
+    "zen-browser": {
+      "source": "github:0xc000022070/zen-browser-flake",
+      "seen": [
+        {
+          "rev": "e2e4f8220406ce60d64395cfbf91e2189c894769",
+          "first_seen": "2026-11-23"
+        }
+      ]
+    }
+  }
+}
