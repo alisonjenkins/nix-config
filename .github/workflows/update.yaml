@@ -22,7 +22,7 @@ jobs:
     # nested `follows` serialise identically and flake.lock stops churning
     # between CI and local `nix flake update`.
     runs-on: home-nix-builder-amd64
-    timeout-minutes: 60
+    timeout-minutes: 150
     # Backstop: never run fork-PR code on the home self-hosted runner, even if
     # a `pull_request` trigger is added here by mistake. Inert for schedule and
     # dispatch events (github.event.pull_request is null → null != true → true).
@@ -114,8 +114,9 @@ jobs:
 
           # --auto only arms auto-merge and returns immediately, so without
           # this the job would report success even when flake-check fails
-          # and the PR is left open. Poll until it actually merges or closes.
-          for _ in $(seq 1 60); do
+          # and the PR is left open. Poll until it actually merges or closes:
+          # up to 2 hours, since the cve-scan check evaluates every host twice.
+          for _ in $(seq 1 240); do
             state=$(gh pr view "$pr_url" --json state -q .state)
             case "$state" in
               MERGED)

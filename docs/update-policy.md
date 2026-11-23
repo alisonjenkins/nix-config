@@ -103,7 +103,14 @@ An update auto-merges only when all of these pass:
    inputs of the input itself (its own supply chain). These are deterministic
    checks over the input's diff, not a judgement.
 4. **Scan.** No new critical or high CVE introduced, by vulnix (closures) and
-   Trivy (images).
+   Trivy (images). nix-config: the `cve-scan` job in `pr-check.yaml` runs
+   `scripts/cve-scan.sh` whenever `flake.lock` or `overlays/` change. It
+   evaluates every NixOS host on the PR's base and head (nothing is built),
+   runs vulnix from the base's nixpkgs over both, and fails when the head
+   has a (package, CVE) pair scored CVSSv3 7.0 or higher that the base did
+   not. CVEs NVD has not scored yet are listed but do not fail. A CVE that
+   is safe here can be accepted in `pins/vulnix-whitelist.toml`, with a
+   comment and an `until` date.
 
 ## Flake inputs: how the cooldown is applied
 
