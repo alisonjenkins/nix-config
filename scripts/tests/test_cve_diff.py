@@ -18,12 +18,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import cve_diff  # noqa: E402
 
 
+def drv(pname, version):
+    return f"/nix/store/x-{pname}-{version}.drv"
+
+
 def item(pname, version, cves, scores=None):
     return {
         "name": f"{pname}-{version}",
         "pname": pname,
         "version": version,
-        "derivation": f"/nix/store/x-{pname}-{version}.drv",
+        "derivation": drv(pname, version),
         "affected_by": cves,
         "whitelisted": [],
         "cvssv3_basescore": scores or {},
@@ -56,7 +60,7 @@ class CveDiffTest(unittest.TestCase):
             [item("openssl", "3.5.2", ["CVE-2026-1"], {"CVE-2026-1": 9.8})],
         )
         self.assertEqual(rc, 0)
-        self.assertIn("No new CVE scored 7.0 or higher", out)
+        self.assertIn("No new CVE fails the gate (CVSSv3 7.0+)", out)
 
     def test_new_high_cve_fails(self):
         rc, out = self.run_diff(
@@ -64,7 +68,7 @@ class CveDiffTest(unittest.TestCase):
             [item("curl", "8.20.0", ["CVE-2026-2"], {"CVE-2026-2": 7.5})],
         )
         self.assertEqual(rc, 1)
-        self.assertIn("1 new CVE(s) scored 7.0 or higher", out)
+        self.assertIn("1 new CVE(s) that fail the gate", out)
         self.assertIn("| curl | 8.20.0 | [CVE-2026-2]", out)
 
     def test_new_medium_and_unscored_warn_only(self):
@@ -78,7 +82,7 @@ class CveDiffTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertIn("New, not yet scored by NVD", out)
         self.assertIn("| expat | 2.7 | [CVE-2026-4](https://nvd.nist.gov/vuln/detail/CVE-2026-4) | unscored |", out)
-        self.assertIn("New, scored below 7.0", out)
+        self.assertIn("New, below the gate", out)
 
     def test_cve_moving_to_another_package_is_new(self):
         rc, _ = self.run_diff(
@@ -161,6 +165,119 @@ class CveDiffTest(unittest.TestCase):
         wl = self.whitelist('["openssl"]\ncve = ["CVE-2026-1"]\nuntil = "2026-12-01"\ncomment = "x"\n')
         rc, _ = self.run_diff(report, report, "--whitelist", str(wl), "--today", "2026-11-23")
         self.assertEqual(rc, 0)
+
+    def intel(self, kev=(), epss=None, error=None):
+        p = self.dir / "intel.json"
+        data = {"kev": list(kev), "epss": epss or {}}
+        if error:
+            data["error"] = error
+        p.write_text(json.dumps(data))
+        return ["--intel", str(p)]
+
+    def test_new_kev_cve_fails_whatever_its_score(self):
+        head = [item("expat", "2.7", ["CVE-2026-8"], {"CVE-2026-8": 5.3}), item("zlib", "1.3", ["CVE-2026-9"])]
+        rc, out = self.run_diff([], head, *self.intel(kev=["CVE-2026-8", "CVE-2026-9"]))
+        self.assertEqual(rc, 1)
+        self.assertIn("2 new CVE(s) that fail the gate (CVSSv3 7.0+, in CISA KEV, or EPSS 10%+)", out)
+        self.assertIn("- expat CVE-2026-8: known exploited (CISA KEV)", out)
+        self.assertIn("| zlib | 1.3 | [CVE-2026-9](https://nvd.nist.gov/vuln/detail/CVE-2026-9) | unscored | - | yes |", out)
+
+    def test_new_high_epss_cve_fails(self):
+        head = [item("expat", "2.7", ["CVE-2026-8"], {"CVE-2026-8": 4.0})]
+        rc, out = self.run_diff([], head, *self.intel(epss={"CVE-2026-8": 0.42}))
+        self.assertEqual(rc, 1)
+        self.assertIn("- expat CVE-2026-8: EPSS 42%", out)
+        self.assertEqual(self.run_diff([], head, *self.intel(epss={"CVE-2026-8": 0.42}), "--epss-threshold", "0.5")[0], 0)
+
+    def test_low_epss_medium_cve_passes(self):
+        head = [item("expat", "2.7", ["CVE-2026-8"], {"CVE-2026-8": 5.0})]
+        rc, out = self.run_diff([], head, *self.intel(epss={"CVE-2026-8": 0.01}))
+        self.assertEqual(rc, 0)
+        self.assertIn("| 1.0% |  |", out)
+
+    def test_failing_are_ordered_by_exploitation_likelihood(self):
+        head = [
+            item("a", "1", ["CVE-2026-10"], {"CVE-2026-10": 9.9}),
+            item("b", "1", ["CVE-2026-11"], {"CVE-2026-11": 7.0}),
+            item("c", "1", ["CVE-2026-12"], {"CVE-2026-12": 8.0}),
+        ]
+        _, out = self.run_diff([], head, *self.intel(kev=["CVE-2026-11"], epss={"CVE-2026-12": 0.3}))
+        self.assertLess(out.index("| b |"), out.index("| c |"))
+        self.assertLess(out.index("| c |"), out.index("| a |"))
+
+    def test_pre_existing_kev_cve_is_listed_not_failed(self):
+        report = [item("openssl", "3.5", ["CVE-2026-1"], {"CVE-2026-1": 5.0})]
+        rc, out = self.run_diff(report, report, *self.intel(kev=["CVE-2026-1"]))
+        self.assertEqual(rc, 0)
+        self.assertIn("Known exploited, already on the base and still open (1)", out)
+
+    def test_intel_outage_falls_back_to_cvss_loudly(self):
+        head = [item("expat", "2.7", ["CVE-2026-8"], {"CVE-2026-8": 5.0})]
+        err = io.StringIO()
+        with mock.patch("sys.stderr", err):
+            rc, out = self.run_diff([], head, *self.intel(error="could not fetch KEV/EPSS data (timeout)"))
+        self.assertEqual(rc, 0)
+        self.assertIn("> [!WARNING]", out)
+        self.assertIn("No new CVE fails the gate (CVSSv3 7.0+)", out)
+        self.assertIn("judging by CVSS alone", err.getvalue())
+
+    def test_fetch_intel_failure_is_an_outage_not_a_crash(self):
+        with mock.patch.object(cve_diff, "_get_json", side_effect=OSError("no route")):
+            intel = cve_diff.fetch_intel({"CVE-2026-1"})
+        self.assertIn("no route", intel.error)
+        self.assertEqual(intel.kev, set())
+
+    def test_fetch_intel_batches_epss(self):
+        cves = {f"CVE-2026-{i}" for i in range(120)} | {"not-a-cve"}
+        calls = []
+
+        def fake(url):
+            calls.append(url)
+            if url == cve_diff.KEV_URL:
+                return {"vulnerabilities": [{"cveID": "CVE-2026-3"}]}
+            asked = cve_diff.urllib.parse.parse_qs(cve_diff.urllib.parse.urlparse(url).query)["cve"][0].split(",")
+            return {"data": [{"cve": c, "epss": "0.5"} for c in asked]}
+
+        with mock.patch.object(cve_diff, "_get_json", side_effect=fake):
+            intel = cve_diff.fetch_intel(cves)
+        self.assertIsNone(intel.error)
+        self.assertEqual(intel.kev, {"CVE-2026-3"})
+        self.assertEqual(len(intel.epss), 120)
+        self.assertEqual(len(calls), 1 + 3)
+
+    def closures(self, side, hosts):
+        d = self.dir / f"closures-{side}"
+        d.mkdir()
+        for host, paths in hosts.items():
+            (d / host).write_text("\n".join(paths) + "\n")
+        return str(d)
+
+    def test_findings_are_attributed_to_hosts(self):
+        base = [item("glibc", "2.42", ["CVE-2026-6"], {"CVE-2026-6": 7.8}), item("zlib", "1.3", ["CVE-2026-3"], {"CVE-2026-3": 5.0})]
+        head = [item("curl", "8.20", ["CVE-2026-2"], {"CVE-2026-2": 7.5}), item("zlib", "1.3", ["CVE-2026-3"], {"CVE-2026-3": 5.0})]
+        rc, out = self.run_diff(
+            base,
+            head,
+            "--base-closures",
+            self.closures("base", {"desk": [drv("glibc", "2.42"), drv("zlib", "1.3")], "srv": [drv("zlib", "1.3")]}),
+            "--head-closures",
+            self.closures("head", {"desk": [drv("zlib", "1.3")], "srv": [drv("curl", "8.20"), drv("zlib", "1.3")]}),
+        )
+        self.assertEqual(rc, 1)
+        self.assertIn("Scanned 2 host(s)", out)
+        self.assertIn("| desk | 0 | 0 | 1 | 1 | 0 |", out)
+        self.assertIn("| srv | 1 | 1 | 0 | 1 | 0 |", out)
+        self.assertIn("| curl | 8.20 | [CVE-2026-2](https://nvd.nist.gov/vuln/detail/CVE-2026-2) | 7.5 | srv |", out)
+        self.assertIn("| glibc | 2.42 | [CVE-2026-6](https://nvd.nist.gov/vuln/detail/CVE-2026-6) | 7.8 | desk |", out)
+
+    def test_closures_must_come_in_pairs(self):
+        with redirect_stdout(io.StringIO()), mock.patch("sys.stderr", io.StringIO()), self.assertRaises(SystemExit):
+            cve_diff.main([str(self.write("b.json", [])), str(self.write("h.json", [])), "--head-closures", str(self.dir)])
+
+    def test_summary_can_go_to_several_files(self):
+        a, b = self.dir / "a.md", self.dir / "b.md"
+        self.run_diff([], [], "--summary", str(a), "--summary", str(b))
+        self.assertEqual(a.read_text(), b.read_text())
 
 
 if __name__ == "__main__":

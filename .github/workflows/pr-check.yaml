@@ -75,17 +75,21 @@ jobs:
       - name: PR check (modules, overlays, devShells, packages, aarch64 hosts)
         run: .github/scripts/pr-check-x86_64-linux.sh
 
-  # Gate 4 of docs/update-policy.md: no new high or critical CVE in any NixOS
-  # host. Runs on every PR so it can be a required check, but only scans when
-  # flake.lock or overlays/ change (scripts/cve-scan.sh); otherwise it passes
-  # in seconds. Evaluates every host twice (base and head), so it is a
-  # separate job with its own, longer timeout.
+  # Gate 4 of docs/update-policy.md: no new CVE in any NixOS host that is high
+  # or critical, known exploited (CISA KEV) or likely to be (EPSS). Runs on
+  # every PR so it can be a required check, but only scans when flake.lock or
+  # overlays/ change, and then only the hosts whose derivation changed
+  # (scripts/cve-scan.sh); otherwise it passes in seconds. Evaluates every
+  # host twice (base and head), so it is a separate job with its own, longer
+  # timeout.
   cve-scan:
     runs-on: home-nix-builder-amd64
     timeout-minutes: 90
     if: ${{ github.event.pull_request.head.repo.fork != true }}
     permissions:
       contents: read
+    outputs:
+      report: ${{ steps.report.outputs.report }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -102,4 +106,53 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CVE_REPORT: ${{ runner.temp }}/cve-report.md
         run: scripts/cve-scan.sh "$BASE_SHA"
+      # Passed on even when the scan fails, so the comment says why. Empty
+      # when the scan was skipped, and then no comment is posted.
+      - name: Hand the report to cve-comment
+        id: report
+        if: always() && github.event_name == 'pull_request'
+        env:
+          CVE_REPORT: ${{ runner.temp }}/cve-report.md
+        run: |
+          [ -s "$CVE_REPORT" ] || exit 0
+          eof="EOF_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+          { echo "report<<$eof"; cat "$CVE_REPORT"; echo "$eof"; } >>"$GITHUB_OUTPUT"
+
+  # One comment on the PR with the CVE report, edited in place on each push.
+  # A job of its own on a GitHub-hosted runner, so the only job holding a
+  # token that can write to the PR never checks out or runs the PR's code;
+  # the report reaches it as data, through an environment variable.
+  cve-comment:
+    needs: cve-scan
+    if: ${{ always() && github.event_name == 'pull_request' && needs.cve-scan.outputs.report != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post or update the CVE scan comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          REPORT: ${{ needs.cve-scan.outputs.report }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          marker='<!-- cve-scan:report -->'
+          body="$RUNNER_TEMP/body.md"
+          # A comment holds at most 65536 characters.
+          if [ "${#REPORT}" -gt 60000 ]; then
+            report="${REPORT:0:60000}"$'\n\n'"_Cut short; the full report is in the [job summary]($RUN_URL)._"
+          else
+            report="$REPORT"
+          fi
+          printf '%s\n%s\n\n[Scan run](%s)\n' "$marker" "$report" "$RUN_URL" >"$body"
+          id="$(gh api --paginate "repos/$REPO/issues/$PR/comments" |
+            jq -rs --arg m "$marker" 'add | map(select(.user.login == "github-actions[bot]" and (.body | startswith($m)))) | first | .id // empty')"
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$id" -F "body=@$body" >/dev/null
+          else
+            gh api -X POST "repos/$REPO/issues/$PR/comments" -F "body=@$body" >/dev/null
+          fi
