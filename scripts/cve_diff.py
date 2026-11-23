@@ -59,6 +59,13 @@ with whether it would fail the gate (`alert`).
 `--json FILE` writes the findings, with EPSS, KEV, hosts and runtime, as JSON
 for scripts/cve_track.py and scripts/cve_fix.py.
 
+`--has-expired FILE` exits 0 when an entry's `until` date has passed (and
+names them), 1 otherwise: cve-scan.sh then scans every host, since an
+expired exception can sit on a host the change does not touch.
+
+A selector `pname` covers every version of the package and `pname-version`
+only that version, as in vulnix.
+
 `--check-whitelist FILE` validates the accepted-CVE file and exits: every
 entry must name one exact package (no `*`), list its CVEs, carry a comment,
 and have an `until` date at most 90 days after today. cve-scan.sh runs it
@@ -73,6 +80,7 @@ Usage: cve_diff.py BASE.json HEAD.json [--threshold 7.0] [--epss-threshold 0.1]
        cve_diff.py --status HEAD.json [--head-closures DIR] [--runtime DIR]
                    [--fetch-intel | --intel FILE] [--json FILE] ...
        cve_diff.py --check-whitelist FILE [--today YYYY-MM-DD]
+       cve_diff.py --has-expired FILE [--today YYYY-MM-DD]
 Exit codes: 0 nothing new fails the gate, 1 something does, 2 bad input.
 """
 
@@ -281,9 +289,14 @@ def check_whitelist(path: Path, today: dt.date) -> list[str]:
     return errors
 
 
-def expired(path: Path, head: dict[Key, Finding], today: dt.date) -> list[Finding]:
-    """Head findings covered by a whitelist entry whose until date has passed."""
-    out = []
+def covers(name: str, finding: Finding) -> bool:
+    """A whitelist selector `pname` covers every version; `pname-version` only that one."""
+    return name == finding.pname or any(name == f"{finding.pname}-{v}" for v in finding.versions)
+
+
+def expired_entries(path: Path, today: dt.date) -> dict[str, set[str]]:
+    """Selector -> CVEs, for each whitelist entry whose until date has passed."""
+    out = {}
     for name, entry in read_whitelist(path).items():
         try:
             until = as_date(entry.get("until"))
@@ -292,11 +305,18 @@ def expired(path: Path, head: dict[Key, Finding], today: dt.date) -> list[Findin
         if until is None or until > today:
             continue
         cves = entry.get("cve") or []
-        cves = {cves} if isinstance(cves, str) else set(cves)
-        for (pname, cve), finding in head.items():
-            if cve in cves and (name == pname or name.startswith(pname + "-")):
-                out.append(finding)
+        out[name] = {cves} if isinstance(cves, str) else set(cves)
     return out
+
+
+def expired(path: Path, head: dict[Key, Finding], today: dt.date) -> list[Finding]:
+    """Head findings covered by a whitelist entry whose until date has passed."""
+    return [
+        finding
+        for name, cves in expired_entries(path, today).items()
+        for (_, cve), finding in head.items()
+        if cve in cves and covers(name, finding)
+    ]
 
 
 @dataclass(frozen=True)
@@ -554,6 +574,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--summary", type=Path, action="append", default=[], help="append the Markdown report here")
     ap.add_argument("--whitelist", type=Path, help="fail findings of expired exceptions")
     ap.add_argument("--check-whitelist", type=Path, help="validate this file and exit")
+    ap.add_argument("--has-expired", type=Path, help="exit 0 if this file has an expired entry, else 1")
     ap.add_argument("--head-closures", type=Path, help="per-host closure listings for the head")
     ap.add_argument("--base-closures", type=Path, help="per-host closure listings for the base")
     ap.add_argument("--runtime", type=Path, help="per-host runtime closure listings")
@@ -561,6 +582,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", type=Path, help="write the findings here as JSON")
     ap.add_argument("--today", type=dt.date.fromisoformat, default=dt.date.today())
     args = ap.parse_args(argv)
+
+    if args.has_expired:
+        try:
+            names = sorted(expired_entries(args.has_expired, args.today))
+        except (OSError, ValueError, tomllib.TOMLDecodeError) as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
+        for name in names:
+            print(f"expired: {name}")
+        return 0 if names else 1
 
     if args.check_whitelist:
         try:
