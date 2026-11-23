@@ -12,6 +12,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import cve_diff  # noqa: E402
@@ -112,6 +113,54 @@ class CveDiffTest(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             self.assertEqual(cve_diff.main([str(bad), str(good)]), 2)
             self.assertEqual(cve_diff.main([str(self.dir / "missing.json"), str(good)]), 2)
+
+    def whitelist(self, text):
+        p = self.dir / "wl.toml"
+        p.write_text(text)
+        return p
+
+    def check(self, text, today="2026-11-23"):
+        err = io.StringIO()
+        with redirect_stdout(io.StringIO()), mock.patch("sys.stderr", err):
+            rc = cve_diff.main(["--check-whitelist", str(self.whitelist(text)), "--today", today])
+        return rc, err.getvalue()
+
+    def test_valid_whitelist_passes(self):
+        rc, err = self.check(
+            '["openssl"]\ncve = ["CVE-2026-1"]\nuntil = "2027-01-15"\ncomment = "QUIC server only"\n'
+        )
+        self.assertEqual((rc, err), (0, ""))
+
+    def test_empty_whitelist_passes(self):
+        self.assertEqual(self.check("# nothing accepted\n")[0], 0)
+
+    def test_whitelist_rejects_broad_or_open_ended_entries(self):
+        rc, err = self.check(
+            '["*"]\ncve = ["CVE-2026-1"]\nuntil = "2027-01-01"\ncomment = "x"\n'
+            '["curl"]\ncomment = "all of curl"\nuntil = "2027-01-01"\n'
+            '["zlib"]\ncve = ["CVE-2026-2"]\nuntil = "2027-01-01"\n'
+            '["expat"]\ncve = ["CVE-2026-3"]\ncomment = "x"\n'
+            '["bash"]\ncve = ["CVE-2026-4"]\ncomment = "x"\nuntil = "2027-06-01"\n'
+        )
+        self.assertEqual(rc, 2)
+        self.assertIn('["*"]: must name one exact package', err)
+        self.assertIn('["curl"]: needs a non-empty cve list', err)
+        self.assertIn('["zlib"]: needs a comment', err)
+        self.assertIn('["expat"]: needs an until date', err)
+        self.assertIn('["bash"]: until 2027-06-01 is more than 90 days away', err)
+
+    def test_expired_exception_fails_even_when_base_has_it(self):
+        report = [item("openssl", "3.5", ["CVE-2026-1"], {"CVE-2026-1": 9.8})]
+        wl = self.whitelist('["openssl"]\ncve = ["CVE-2026-1"]\nuntil = "2026-11-01"\ncomment = "x"\n')
+        rc, out = self.run_diff(report, report, "--whitelist", str(wl), "--today", "2026-11-23")
+        self.assertEqual(rc, 1)
+        self.assertIn("1 accepted CVE(s) whose exception", out)
+
+    def test_exception_in_date_does_not_fail(self):
+        report = [item("openssl", "3.5", ["CVE-2026-1"], {"CVE-2026-1": 9.8})]
+        wl = self.whitelist('["openssl"]\ncve = ["CVE-2026-1"]\nuntil = "2026-12-01"\ncomment = "x"\n')
+        rc, _ = self.run_diff(report, report, "--whitelist", str(wl), "--today", "2026-11-23")
+        self.assertEqual(rc, 0)
 
 
 if __name__ == "__main__":
