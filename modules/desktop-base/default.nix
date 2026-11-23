@@ -19,6 +19,12 @@ in
       package = pkgs.unstable.gamescope;
     };
 
+    # keybase-gui 6.5.1 is marked insecure upstream (EOL vendored
+    # Electron 39.2.7). Permit this exact version only, so the exception
+    # lapses on the next keybase-gui bump instead of lingering.
+    # Unconditional: gating on pkgs here would recurse through nixpkgs.config.
+    nixpkgs.config.permittedInsecurePackages = [ "keybase-gui-6.5.1" ];
+
     services.xserver.deviceSection = ''
       Option "DRI" "3"
     '';
