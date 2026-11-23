@@ -54,6 +54,11 @@
       "matchPackageNames": ["alisonjenkins/**", "ghcr.io/alisonjenkins/**", "github.com/alisonjenkins/**"],
       "minimumReleaseAge": null,
       "automerge": true
+    },
+    {
+      "description": "containerd-prepopulate is disabled (not built; see enablePrepopulatedContainerdStore in flake-modules/ami-images.nix), so its Go modules are not updated. Remove this rule when it is turned back on, and refresh its vendorHash.",
+      "matchFileNames": ["pkgs/containerd-prepopulate/**"],
+      "enabled": false
     }
   ]
 }

@@ -3,6 +3,10 @@ let
   lib = inputs.nixpkgs.lib;
   inherit (self) outputs;
 
+  # Bake a prepopulated containerd image store (pkgs/containerd-prepopulate)
+  # into the Karpenter node image. Off while unused.
+  enablePrepopulatedContainerdStore = false;
+
   # Hetzner repart image builder (raw format, no VHD conversion)
   commonHetznerModule = self + "/lib/hetzner-repart-image.nix";
 
@@ -82,7 +86,10 @@ let
     # Reuses the same prepull image list as AWS but filters by architecture.
     # AWS-specific images (EBS/EFS CSI) are excluded via the hetzner-specific
     # prepull list if one exists, otherwise uses the shared list.
-    image.repart.partitions."10-root".contents =
+    # Disabled for now (unused); set enablePrepopulatedContainerdStore to
+    # true to bake it in again. While off, nothing builds containerd-prepopulate
+    # and Renovate leaves its Go modules alone (renovate.json).
+    image.repart.partitions."10-root".contents = lib.mkIf enablePrepopulatedContainerdStore (
       let
         prepullFile = if builtins.pathExists ./hetzner-prepull-images.json
           then ./hetzner-prepull-images.json
@@ -102,7 +109,7 @@ let
         };
       in {
         "/var/lib/rancher/k3s/agent/containerd".source = containerdStore;
-      };
+      });
 
     security.sudo.wheelNeedsPassword = lib.mkForce false;
 
