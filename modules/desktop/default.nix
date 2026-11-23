@@ -38,17 +38,22 @@ let
   # nixos-unstable's mesa expression, built with the system package set. Every
   # GUI process dlopen()s the graphics package, so it must link the system's
   # glibc; pkgs.unstable.mesa links unstable's, which breaks once the two
-  # channels differ. mesa-libclc only exists in unstable, and libgbm must match
-  # the mesa version, so both come from there too.
+  # channels differ. mesa-libclc and venus-protocol only exist in unstable,
+  # and libgbm must match the mesa version, so they come from there too.
+  # venus-protocol is passed only when unstable has it: older unstable mesa
+  # neither takes nor needs it.
   unstableNixpkgs = inputs.nixpkgs_unstable + "/pkgs";
+  venusProtocolPath = unstableNixpkgs + "/by-name/ve/venus-protocol/package.nix";
   mesaOnSystemLibc = callPackage:
     let
       mesa-libclc = callPackage (unstableNixpkgs + "/by-name/me/mesa-libclc/package.nix") { };
       libgbm = callPackage (unstableNixpkgs + "/development/libraries/mesa/gbm.nix") { };
     in
-    callPackage (unstableNixpkgs + "/development/libraries/mesa/default.nix") {
+    callPackage (unstableNixpkgs + "/development/libraries/mesa/default.nix") ({
       inherit mesa-libclc libgbm;
-    };
+    } // lib.optionalAttrs (builtins.pathExists venusProtocolPath) {
+      venus-protocol = callPackage venusProtocolPath { };
+    });
 
   # Launch-time Proton runner updater (see options.modules.desktop.gaming.protonRunners).
   protonRunnersActive = gcfg.enable && gcfg.protonRunners.enable;
