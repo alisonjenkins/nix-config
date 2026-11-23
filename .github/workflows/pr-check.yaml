@@ -37,10 +37,9 @@ name: PR check
 
 on:
   pull_request:
-  # update.yaml dispatches this on the nightly lock branch: a PR opened with
-  # the built-in GITHUB_TOKEN never starts `pull_request` workflows, but a
-  # dispatch made with that token does, and the `flake-check` check it
-  # reports on the branch head satisfies branch protection for the PR.
+  # Manual runs. update.yaml no longer needs this: it opens its PR with the
+  # flake-update App's token, so the normal pull_request run reports
+  # `flake-check` on the PR.
   workflow_dispatch:
 
 concurrency:
