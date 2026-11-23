@@ -74,3 +74,32 @@ jobs:
         run: nix run .#update-policy -- check
       - name: PR check (modules, overlays, devShells, packages, aarch64 hosts)
         run: .github/scripts/pr-check-x86_64-linux.sh
+
+  # Gate 4 of docs/update-policy.md: no new high or critical CVE in any NixOS
+  # host. Runs on every PR so it can be a required check, but only scans when
+  # flake.lock or overlays/ change (scripts/cve-scan.sh); otherwise it passes
+  # in seconds. Evaluates every host twice (base and head), so it is a
+  # separate job with its own, longer timeout.
+  cve-scan:
+    runs-on: home-nix-builder-amd64
+    timeout-minutes: 90
+    if: ${{ github.event.pull_request.head.repo.fork != true }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Configure host Nix
+        uses: ./.github/actions/setup-host-nix
+      - name: Test the scanner
+        run: >-
+          nix shell --inputs-from . nixpkgs#bats nixpkgs#python3 --command bash -c
+          "bats scripts/tests/cve-scan.bats
+          && python3 -m unittest discover -s scripts/tests -p test_cve_diff.py"
+      - name: vulnix, base against head
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: scripts/cve-scan.sh "$BASE_SHA"
