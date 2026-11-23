@@ -99,9 +99,9 @@ jobs:
         uses: ./.github/actions/setup-host-nix
       - name: Test the scanner
         run: >-
-          nix shell --inputs-from . nixpkgs#bats nixpkgs#python3 --command bash -c
+          nix shell --inputs-from . nixpkgs#bats nixpkgs#python3 nixpkgs#jq --command bash -c
           "bats scripts/tests/cve-scan.bats
-          && python3 -m unittest discover -s scripts/tests -p test_cve_diff.py"
+          && python3 -m unittest discover -s scripts/tests -p 'test_cve_*.py'"
       - name: vulnix, base against head
         if: github.event_name == 'pull_request'
         env:

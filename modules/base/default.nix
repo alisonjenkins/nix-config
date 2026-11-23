@@ -285,6 +285,7 @@ in
           outputs.overlays.tmux-sessionizer
           outputs.overlays.systemd
           outputs.overlays.unstable-packages
+          outputs.overlays.cve-fixes
         ] ++ lib.optionals cfg.enableCachyOSKernel [
           inputs.nix-cachyos-kernel.overlays.pinned
           outputs.overlays.cachyos-lto-btf
