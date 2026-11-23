@@ -36,12 +36,17 @@ USAGE
 # The 24-slot enclosure whose slots have the most disks attached. The host0
 # view of the same enclosure has 24 slots but no block devices behind them.
 find_enclosure() {
-  local best="" best_count=-1 encl slots count
+  local best="" best_count=-1 encl count
+  local -a slots disks
   for encl in "$SYS_ENCL"/*; do
     [[ -d "$encl" ]] || continue
-    slots=$(compgen -G "$encl/ArrayDevice*" | wc -l)
-    [[ "$slots" -eq "$BAYS" ]] || continue
-    count=$(compgen -G "$encl/ArrayDevice*/device/block/*" | wc -l)
+    # compgen is missing from the non-interactive bash that writeShellApplication uses.
+    shopt -s nullglob
+    slots=("$encl"/ArrayDevice*)
+    disks=("$encl"/ArrayDevice*/device/block/*)
+    shopt -u nullglob
+    ((${#slots[@]} == BAYS)) || continue
+    count=${#disks[@]}
     if ((count > best_count)); then
       best=$encl
       best_count=$count
