@@ -45,6 +45,10 @@ class FakeRunner:
             ref, attr = cmd[4].split("#")
             info = self.infos.get((ref, attr))
             return done(0, json.dumps(info)) if info else done(1)
+        if cmd[:2] == ["nix", "path-info"]:
+            ref, attr = cmd[-1].split("#")
+            info = self.infos.get((ref, attr))
+            return done(0, info["drvPath"] + "\n") if info else done(1)
         if cmd[:2] == ["nix", "shell"]:
             drv = cmd[-1]
             cves = self.flagged.get(drv, [])

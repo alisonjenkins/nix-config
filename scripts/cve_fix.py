@@ -158,7 +158,13 @@ class Finder:
             return None, None
         if info.get("version") == current.get("version"):
             return False, info  # same version: vulnix would say the same
-        flagged = self.still_flagged(info["drvPath"], c.pname, c.cves)
+        # Instantiate: vulnix needs the .drv files in the store, and the
+        # drvPath nix eval printed may have come from its cache without them.
+        drv = self.run(["nix", "path-info", "--impure", "--derivation", f"{ref}#{c.pname}"],
+                       timeout=900, env=self.env)
+        if drv.returncode != 0 or not drv.stdout.strip():
+            return None, info
+        flagged = self.still_flagged(drv.stdout.strip(), c.pname, c.cves)
         if flagged is None:
             return None, info
         return not flagged, info
