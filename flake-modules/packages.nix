@@ -33,7 +33,9 @@ in
       token-tools = (pkgsFor system).token-tools;
       rootly-cli = (pkgsFor system).rootly-cli;
       vr-foveation-bench = (pkgsFor system).vr-foveation-bench;
-      containerd-prepopulate = (pkgsFor system).callPackage (self + "/pkgs/containerd-prepopulate") { };
+      # Disabled while unused (see enablePrepopulatedContainerdStore in
+      # ami-images.nix and hetzner-images.nix); uncomment to build it again.
+      # containerd-prepopulate = (pkgsFor system).callPackage (self + "/pkgs/containerd-prepopulate") { };
     } //
       # camoufox-browser is a from-source patched-Firefox build (heavy); only
       # exposed/buildable on x86_64-linux, where CI compiles + caches it.

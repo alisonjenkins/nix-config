@@ -3,6 +3,10 @@ let
   lib = inputs.nixpkgs.lib;
   inherit (self) outputs;
 
+  # Bake a prepopulated containerd image store (pkgs/containerd-prepopulate)
+  # into the Karpenter node image. Off while unused.
+  enablePrepopulatedContainerdStore = false;
+
   # VM-free AMI image builder using systemd-repart + UKI.
   # Replaces make-disk-image.nix (requires KVM) with a fakeroot/unshare approach.
   # Works on any host including cross-compilation and non-metal EC2 instances.
@@ -143,7 +147,10 @@ let
     # must import into containerd on every boot, taking ~4 min), we run containerd
     # at nix build time with the `native` snapshotter, import the images, and bake
     # the populated store directly into the AMI. k3s boots with images ready instantly.
-    image.repart.partitions."10-root".contents =
+    # Disabled for now (unused); set enablePrepopulatedContainerdStore to
+    # true to bake it in again. While off, nothing builds containerd-prepopulate
+    # and Renovate leaves its Go modules alone (renovate.json).
+    image.repart.partitions."10-root".contents = lib.mkIf enablePrepopulatedContainerdStore (
       let
         prepullImages = builtins.fromJSON (builtins.readFile ./karpenter-prepull-images.json);
         arch = if pkgs.stdenv.hostPlatform.isAarch64 then "arm64" else "amd64";
@@ -160,7 +167,7 @@ let
         };
       in {
         "/var/lib/rancher/k3s/agent/containerd".source = containerdStore;
-      };
+      });
 
     # NixOS-native k3s agent bootstrap service.
     # Reads config from /etc/karpenter-node.conf (written by cloud-init userData).
