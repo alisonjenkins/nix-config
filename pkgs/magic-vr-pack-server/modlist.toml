@@ -397,6 +397,11 @@ modrinth = "mouse-tweaks"
 group = "qol"
 
 [[mod]]
+modrinth = "no-chat-restrictions"   # chat on accounts Microsoft has flagged (e.g. UK age checks)
+group = "qol"
+version = "8rgi2fn1"   # 1.21-1.21.11 build; 1.0.0 (Arkana's pin) did not work on NeoForge
+
+[[mod]]
 modrinth = "jei"
 group = "qol"
 

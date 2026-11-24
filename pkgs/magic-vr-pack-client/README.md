@@ -43,4 +43,14 @@ The server copies `config/` into its data volume once, when the volume has no `c
 1. Copy `overrides/config/l2configs/l2hostility-server.toml` from this zip (or from the server image's `/opt/server/config/l2configs/`) over the same path on the server's data volume, or in the instance folder for single-player.
 2. Restart the server or the game.
 
+## Chat on restricted accounts
+
+No Chat Restrictions (client only) lets accounts that Microsoft has blocked from chat, for example UK accounts without an age check, use text chat.
+
+- It turns on the account's chat, multiplayer and Realms permissions inside the game client.
+- It skips the client's name-ban check.
+- Telemetry and the Microsoft profanity filter stay off by default.
+- Blocked players and chat reporting still work as normal.
+- Change these in `config/NoChatRestrictions.json`.
+
 The list of mods is in `modlist.html`.

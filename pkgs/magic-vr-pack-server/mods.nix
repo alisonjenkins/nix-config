@@ -1381,6 +1381,23 @@
     };
   }
   {
+    slug      = "no-chat-restrictions";
+    title     = "No Chat Restrictions";
+    source    = "modrinth";
+    projectID = "z440MEwJ";
+    versionID = "8rgi2fn1";
+    version   = "NeoForge-MC1.21.11-v1.1.0";  # release
+    group     = "qol";
+    kind      = "mod";
+    side      = "client";
+    filename  = "NoChatRestrictions-NeoForge-MC1.21.11-v1.1.0.jar";
+    jar = fetchurl {
+      url    = "https://cdn.modrinth.com/data/z440MEwJ/versions/8rgi2fn1/NoChatRestrictions-NeoForge-MC1.21.11-v1.1.0.jar";
+      name   = "NoChatRestrictions-NeoForge-MC1.21.11-v1.1.0.jar";
+      sha512 = "ac324936e887c04f838c42478767510c3d61e8213c52e0b656756f22d3944cb853beb3d26157733220d5512b6998b959496d1f70da8e7ebf82b1afb5b09590b0";
+    };
+  }
+  {
     slug      = "polymorph";
     title     = "Polymorph";
     source    = "modrinth";
