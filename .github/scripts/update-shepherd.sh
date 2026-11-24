@@ -19,6 +19,8 @@
 #   RUN_URL            link to this run, put in the issue (optional)
 #   UPDATE_POLICY      update-policy binary (default: update-policy on PATH)
 #   STUCK_AFTER_HOURS  how long a PR may stay open before it is stuck (default 6)
+#   REBASE_WINDOW      HH:MM-HH:MM UTC; rebases (which re-run checks on the home
+#                      runner) only happen inside it (optional: always)
 #
 # Exit status: 0 when it ran (stuck PRs are reported through the issue, not by
 # failing every half hour), non-zero when it could not run.
@@ -41,8 +43,10 @@ if ! gh pr list --repo "$repo" --state open --author "app/$APP_SLUG" --limit 50 
   echo "::error::could not list the updater App's open PRs: $(cat "$work/err")"
   exit 1
 fi
+window_args=()
+if [ -n "${REBASE_WINDOW:-}" ]; then window_args=(--rebase-window "$REBASE_WINDOW"); fi
 if ! "$UPDATE_POLICY" shepherd --prs "$work/prs.json" \
-    --stuck-after-hours "${STUCK_AFTER_HOURS:-6}" >"$work/decisions"; then
+    --stuck-after-hours "${STUCK_AFTER_HOURS:-6}" "${window_args[@]}" >"$work/decisions"; then
   echo "::error::update-policy shepherd failed; its message is above"
   exit 1
 fi

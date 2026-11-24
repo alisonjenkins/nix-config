@@ -36,6 +36,11 @@ fn prints_one_line_per_decision() {
     assert!(o.status.success(), "{}", stderr(&o));
     assert_eq!(stdout(&o), "rebase 1070\n");
 
+    let o = run(&["--prs", f.to_str().unwrap(), "--now", NOW, "--rebase-window", "00:30-04:30"]);
+    assert_eq!(stdout(&o), "wait 1070 open 1.3h, merge state behind, no checks pending, rebase waits for 00:30-04:30 UTC\n");
+    let o = run(&["--prs", f.to_str().unwrap(), "--now", NOW, "--rebase-window", "23:30-04:30"]);
+    assert_eq!(stdout(&o), "rebase 1070\n");
+
     let o = run(&["--prs", f.to_str().unwrap(), "--now", NOW, "--stuck-after-hours", "1"]);
     assert_eq!(stdout(&o), "rebase 1070\nstuck 1070 not merged after 1.0h (open 1.3h, merge state behind, no checks pending)\n");
     fs::remove_file(f).unwrap();
@@ -70,6 +75,7 @@ fn bad_arguments_exit_2() {
         (&["--prs", "x", "--now", "soon"][..], "`--now soon` is not a number of Unix seconds"),
         (&["--prs", "x", "--stuck-after-hours", "0"][..], "`--stuck-after-hours 0` is not a positive whole number"),
         (&["--prs", "x", "--apply"][..], "unknown option `--apply`"),
+        (&["--prs", "x", "--rebase-window", "1-2"][..], "`--rebase-window 1-2` is not HH:MM-HH:MM (UTC)"),
     ] {
         let o = run(args);
         assert_eq!(o.status.code(), Some(2), "{args:?}");
@@ -79,7 +85,7 @@ fn bad_arguments_exit_2() {
 
 #[test]
 fn shepherd_options_belong_to_shepherd_only() {
-    for flag in ["--prs", "--now", "--stuck-after-hours"] {
+    for flag in ["--prs", "--now", "--stuck-after-hours", "--rebase-window"] {
         let o = Command::new(env!("CARGO_BIN_EXE_update-policy")).args(["bump", flag, "1"]).output().unwrap();
         assert_eq!(o.status.code(), Some(2), "{flag}");
         assert!(stderr(&o).contains(&format!("unknown option `{flag}`")), "{flag}: {}", stderr(&o));

@@ -2,9 +2,9 @@ name: Update and push flake lock
 
 on:
   schedule:
-    # Off the hour: GitHub's scheduler is busiest at :00 and has been
-    # starting the 02:00 run seven or more hours late.
-    - cron: "17 2 * * *"
+    # 02:00 is deliberate: the self-hosted runners are at home and power is
+    # cheap 00:30-05:30 UK time. Keep any change inside that window.
+    - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
       manual:

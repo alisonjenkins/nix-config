@@ -10,6 +10,7 @@ const USAGE: &str = "usage: update-policy check [--repo DIR] [--sources FILE] [-
        update-policy bump  [--repo DIR] [--sources FILE] [--seen FILE] [--today YYYY-MM-DD]
                            [--heads FILE] [--group auto|manual] [--summary FILE] [--apply]
        update-policy shepherd --prs FILE [--now UNIX_SECONDS] [--stuck-after-hours N]
+                              [--rebase-window HH:MM-HH:MM]
 
 check:
 Checks that every flake input in DIR/flake.lock and every GitHub Action in
@@ -28,7 +29,9 @@ shepherd: reads the open PRs (the JSON of `gh pr list --json
 number,headRefName,isDraft,createdAt,mergeStateStatus,statusCheckRollup`) and
 prints one line per nightly flake-update PR: `rebase N`, `stuck N reason` or
 `wait N detail`. A PR open --stuck-after-hours (default 6) is stuck however
-healthy it looks. The update-shepherd workflow acts on the lines.
+healthy it looks. With --rebase-window (UTC), a PR behind main is only
+rebased inside the window, since a rebase re-runs checks on the home runner.
+The update-shepherd workflow acts on the lines.
 
 Exit status: 0 success (check: warnings allowed), 1 policy errors (check),
 2 could not run.";
@@ -53,6 +56,7 @@ struct Args {
     prs: Option<PathBuf>,
     now: Option<i64>,
     stuck_after_hours: i64,
+    rebase_window: Option<shepherd::Window>,
 }
 
 fn parse_args(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
@@ -77,6 +81,7 @@ fn parse_args(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
         prs: None,
         now: None,
         stuck_after_hours: 6,
+        rebase_window: None,
     };
     while let Some(flag) = argv.next() {
         let mut value = || argv.next().ok_or_else(|| format!("`{flag}` needs a value"));
@@ -110,6 +115,12 @@ fn parse_args(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
                     .ok()
                     .filter(|h: &i64| *h > 0)
                     .ok_or_else(|| format!("`--stuck-after-hours {v}` is not a positive whole number"))?;
+            }
+            "--rebase-window" if args.cmd == Cmd::Shepherd => {
+                let v = value()?;
+                args.rebase_window = Some(
+                    shepherd::Window::parse(&v).ok_or_else(|| format!("`--rebase-window {v}` is not HH:MM-HH:MM (UTC)"))?,
+                );
             }
             "-h" | "--help" => return Err(String::new()),
             other => return Err(format!("unknown option `{other}`")),
@@ -234,7 +245,7 @@ fn run_shepherd(args: Args) -> Result<bool, String> {
     let path = args.prs.ok_or("shepherd needs `--prs FILE`")?;
     let prs = shepherd::parse_prs(&read(&path)?).map_err(|e| format!("{}: {e}", path.display()))?;
     let now = args.now.unwrap_or_else(update_policy::date::now_unix_seconds);
-    for d in shepherd::decide(&prs, now, args.stuck_after_hours * 3_600) {
+    for d in shepherd::decide(&prs, now, args.stuck_after_hours * 3_600, args.rebase_window) {
         println!("{d}");
     }
     Ok(true)

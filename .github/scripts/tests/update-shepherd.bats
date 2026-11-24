@@ -14,6 +14,7 @@ setup() {
   cat >"$WORK/bin/update-policy" <<EOF
 #!$BASH
 [ "\$1" = shepherd ] || exit 9
+echo "\$*" >>"\$WORK/policy.log"
 printf '%s' "\${STUB_DECISIONS:-}"
 exit "\${STUB_POLICY_EXIT:-0}"
 EOF
@@ -47,6 +48,15 @@ teardown() {
   grep -qF "[app] pr list --repo o/r --state open --author app/updater" "$WORK/gh.log"
   grep -qF "[issues] issue list" "$WORK/gh.log"
   ! grep -qE "issue (create|edit|close)" "$WORK/gh.log"
+}
+
+@test "the rebase window is passed through only when set" {
+  run "$BASH" "$SCRIPT"
+  grep -qF -- "--stuck-after-hours 6" "$WORK/policy.log"
+  ! grep -qF -- "--rebase-window" "$WORK/policy.log"
+  REBASE_WINDOW=00:30-04:30 STUCK_AFTER_HOURS=3 run "$BASH" "$SCRIPT"
+  [ "$status" -eq 0 ]
+  grep -qF -- "--stuck-after-hours 3 --rebase-window 00:30-04:30" "$WORK/policy.log"
 }
 
 @test "behind PR is rebased with the App token" {

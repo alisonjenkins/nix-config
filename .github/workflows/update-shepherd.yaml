@@ -8,7 +8,8 @@
 # This workflow reacts instead of waiting. On every push to main, every
 # finished PR check or nightly run, and every 30 minutes as a backstop, it
 # asks `update-policy shepherd` what each open nightly PR needs:
-#   - behind main: rebase it with the updater App token (checks re-run);
+#   - behind main: rebase it with the updater App token (checks re-run),
+#     only inside REBASE_WINDOW, because the checks run on the home runner;
 #   - failed check, conflict, or open more than STUCK_AFTER_HOURS: open or
 #     update one "Nightly flake update is stuck" issue, which is closed again
 #     automatically once nothing is stuck.
@@ -39,6 +40,10 @@ concurrency:
 
 env:
   STUCK_AFTER_HOURS: "6"
+  # A rebase re-runs the PR's checks on the home self-hosted runner, so it
+  # only happens while power is cheap (00:30-05:30 UK time). 00:30-04:30 UTC
+  # is inside that window in both GMT and BST. Outside it a behind PR waits.
+  REBASE_WINDOW: "00:30-04:30"
 
 jobs:
   shepherd:

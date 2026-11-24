@@ -149,7 +149,10 @@ needs:
 
 - **behind main**: rebase it with the updater App token, so its checks run
   again (the App cannot rebase in a main that changed a workflow; that is
-  reported instead);
+  reported instead). Only between 00:30 and 04:30 UTC (`REBASE_WINDOW`):
+  the checks run on the self-hosted runners at home, and power is cheap
+  00:30-05:30 UK time, which that UTC window stays inside in GMT and BST.
+  The nightly itself runs at 02:00 UTC for the same reason;
 - **a failed check, a conflict, or open 6 hours or more**: open or update one
   issue titled "Nightly flake update is stuck", which says why and links the
   run. It is closed automatically once nothing is stuck. A failed or

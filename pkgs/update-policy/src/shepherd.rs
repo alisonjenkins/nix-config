@@ -127,10 +127,53 @@ fn hours(secs: i64) -> String {
     format!("{:.1}h", secs as f64 / 3_600.0)
 }
 
+/// A daily time-of-day window in UTC, `HH:MM-HH:MM`. It may wrap past
+/// midnight (`23:30-04:30`). A rebase re-runs the PR's checks on the home
+/// self-hosted runner, so rebases are kept to the hours when power is cheap.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Window {
+    start: i64,
+    end: i64,
+}
+
+impl Window {
+    pub fn parse(s: &str) -> Option<Window> {
+        let (a, b) = s.split_once('-')?;
+        let start = minutes(a)?;
+        let end = minutes(b)?;
+        (start != end).then_some(Window { start, end })
+    }
+
+    pub fn contains(self, unix_seconds: i64) -> bool {
+        let m = unix_seconds.rem_euclid(86_400) / 60;
+        if self.start < self.end {
+            self.start <= m && m < self.end
+        } else {
+            m >= self.start || m < self.end
+        }
+    }
+}
+
+impl fmt::Display for Window {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:02}:{:02}-{:02}:{:02} UTC", self.start / 60, self.start % 60, self.end / 60, self.end % 60)
+    }
+}
+
+fn minutes(hhmm: &str) -> Option<i64> {
+    let (h, m) = hhmm.split_once(':')?;
+    if h.len() != 2 || m.len() != 2 || !h.bytes().chain(m.bytes()).all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    let (h, m): (i64, i64) = (h.parse().ok()?, m.parse().ok()?);
+    (h < 24 && m < 60).then_some(h * 60 + m)
+}
+
 /// What to do about each open nightly PR, oldest first. `stuck_after` is how
 /// long (seconds) a PR may stay open before a human is told, however healthy
-/// it looks.
-pub fn decide(prs: &[Pr], now: i64, stuck_after: i64) -> Vec<Decision> {
+/// it looks. With a `rebase_window`, a PR that is behind main outside the
+/// window waits for it instead of being rebased.
+pub fn decide(prs: &[Pr], now: i64, stuck_after: i64, rebase_window: Option<Window>) -> Vec<Decision> {
     let mut nightly: Vec<&Pr> = prs.iter().filter(|p| p.branch.starts_with(NIGHTLY_PREFIX)).collect();
     nightly.sort_by_key(|p| (p.created, p.number));
     let newest = nightly.last().map(|p| p.number);
@@ -157,25 +200,34 @@ pub fn decide(prs: &[Pr], now: i64, stuck_after: i64) -> Vec<Decision> {
             out.push(Decision::Stuck(n, format!("check failed: {}", failed.join(", "))));
             continue;
         }
+        let mut rebased = false;
         match pr.merge_state.as_str() {
             "DIRTY" => {
                 out.push(Decision::Stuck(n, "conflicts with main; tomorrow's nightly will replace it".into()));
                 continue;
             }
-            "BEHIND" => out.push(Decision::Rebase(n)),
+            "BEHIND" if rebase_window.is_none_or(|w| w.contains(now)) => {
+                out.push(Decision::Rebase(n));
+                rebased = true;
+            }
             _ => {}
         }
         let pending: Vec<&str> =
             pr.checks.iter().filter(|c| !c.failed() && !c.finished_ok()).map(|c| c.name.as_str()).collect();
-        let detail = format!(
+        let mut detail = format!(
             "open {}, merge state {}, {}",
             hours(age),
             pr.merge_state.to_ascii_lowercase(),
             if pending.is_empty() { "no checks pending".to_owned() } else { format!("pending: {}", pending.join(", ")) }
         );
+        if pr.merge_state == "BEHIND" && !rebased {
+            if let Some(w) = rebase_window {
+                detail.push_str(&format!(", rebase waits for {w}"));
+            }
+        }
         if age >= stuck_after {
             out.push(Decision::Stuck(n, format!("not merged after {} ({detail})", hours(stuck_after))));
-        } else if pr.merge_state != "BEHIND" {
+        } else if !rebased {
             out.push(Decision::Wait(n, detail));
         }
     }
@@ -201,7 +253,7 @@ mod tests {
     }
 
     fn lines(prs: &[Pr]) -> Vec<String> {
-        decide(prs, NOW, 6 * H).iter().map(ToString::to_string).collect()
+        decide(prs, NOW, 6 * H, None).iter().map(ToString::to_string).collect()
     }
 
     #[test]
@@ -254,6 +306,68 @@ mod tests {
         let out = lines(&[pr(3, H, "BLOCKED", &[("a\r\nb", "QUEUED")])]);
         assert_eq!(out, ["wait 3 open 1.0h, merge state blocked, pending: a\\r\\nb"]);
         assert!(out.iter().all(|l| !l.contains('\n') && !l.contains('\r')));
+    }
+
+    fn w(s: &str) -> Window {
+        Window::parse(s).unwrap()
+    }
+
+    #[test]
+    fn behind_outside_the_window_waits_and_inside_is_rebased() {
+        // NOW is 2026-11-23T02:13:20Z.
+        let prs = [pr(1, H, "BEHIND", &[("flake-check", "SUCCESS")])];
+        let at = |now: i64, win: &str| decide(&prs, now, 6 * H, Some(w(win))).iter().map(ToString::to_string).collect::<Vec<_>>();
+        assert_eq!(
+            at(NOW, "05:00-06:00"),
+            ["wait 1 open 1.0h, merge state behind, no checks pending, rebase waits for 05:00-06:00 UTC"]
+        );
+        assert_eq!(at(NOW, "02:00-03:00"), ["rebase 1"]);
+        assert_eq!(at(NOW, "02:13-02:14"), ["rebase 1"]);
+        assert!(at(NOW, "02:14-03:00")[0].starts_with("wait 1"));
+        assert_eq!(at(NOW, "23:30-02:14"), ["rebase 1"]);
+        let old = [pr(1, 7 * H, "BEHIND", &[])];
+        assert_eq!(
+            decide(&old, NOW, 6 * H, Some(w("05:00-06:00"))).iter().map(ToString::to_string).collect::<Vec<_>>(),
+            ["stuck 1 not merged after 6.0h (open 7.0h, merge state behind, no checks pending, rebase waits for 05:00-06:00 UTC)"]
+        );
+    }
+
+    #[test]
+    fn the_window_does_not_change_other_states() {
+        let prs = [pr(1, H, "BLOCKED", &[])];
+        assert_eq!(
+            decide(&prs, NOW, 6 * H, Some(w("00:30-04:30"))),
+            decide(&prs, NOW, 6 * H, None)
+        );
+    }
+
+    #[test]
+    fn window_contains() {
+        let day = 1_795_132_800; // 2026-11-20T00:00:00Z
+        let at = |h: i64, m: i64| day + h * H + m * 60;
+        let night = w("00:30-04:30");
+        assert!(!night.contains(at(0, 29)));
+        assert!(night.contains(at(0, 30)));
+        assert!(night.contains(at(4, 29)));
+        assert!(!night.contains(at(4, 30)));
+        assert!(!night.contains(at(12, 0)));
+        let wrap = w("23:30-04:30");
+        assert!(wrap.contains(at(23, 30)));
+        assert!(wrap.contains(at(0, 0)));
+        assert!(wrap.contains(at(4, 29)));
+        assert!(!wrap.contains(at(4, 30)));
+        assert!(!wrap.contains(at(23, 29)));
+        assert!(w("00:00-00:01").contains(-86_400));
+    }
+
+    #[test]
+    fn window_parse_and_display() {
+        assert_eq!(w("00:30-04:30").to_string(), "00:30-04:30 UTC");
+        assert_eq!(w("23:59-00:00").to_string(), "23:59-00:00 UTC");
+        for bad in ["", "00:30", "00:30-", "0:30-04:30", "00:30-04:3", "24:00-01:00", "00:60-02:00", "01:00-01:00",
+                    "aa:bb-01:00", "00:30-04:30-05:00", "+1:30-04:30", "00:30-04:+3"] {
+            assert_eq!(Window::parse(bad), None, "{bad}");
+        }
     }
 
     #[test]
