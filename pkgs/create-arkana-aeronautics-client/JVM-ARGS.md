@@ -40,6 +40,23 @@ matches the JDK your launcher uses:
 `-XX:+UnlockExperimentalVMOptions` is only needed before Java 21; on 21+ ZGC
 is fully supported.
 
+## Java version (security)
+
+Use **Java 21.0.13.1 or newer** (Temurin `jdk-21.0.13.1+2`, released
+2026-11-18). Every Java 17.0.6+ and 21 build before that has
+CVE-2026-114938 ("Java4Shell"), a memory-corruption bug in the Base64
+decoder on x86-64 CPUs with AVX-512 VBMI (Intel Ice Lake and later Xeons,
+AMD Zen 4 and later). The server image already runs 21.0.13.1.
+
+- **Prism / MultiMC**: Settings → Java → `Auto-detect` or download Temurin
+  21 again, and check the instance shows 21.0.13.1.
+- **CurseForge**: it bundles its own Java runtime; update the app and check
+  the version under Settings → Minecraft → Java settings.
+
+If you can't update yet, add `-XX:-UseBASE64Intrinsics` to the Java
+arguments as a stop-gap (x86-64 PCs only — leave it off Apple Silicon and
+other ARM machines). Remove it once you're on 21.0.13.1.
+
 ## Per-launcher steps
 
 ### Prism Launcher
