@@ -152,6 +152,7 @@ in
       # Linux builder.
       // {
         create-arkana-aeronautics-client = (pkgsFor system).create-arkana-aeronautics-client;
+        magic-vr-pack-client = (pkgsFor system).magic-vr-pack-client;
         # Generic Minecraft modpack tooling (currently `dep-tree`).
         # Run via `nix run .#dep-tree -- /path/to/server-tree`.
         minecraft-modpack-tools = (pkgsFor system).minecraft-modpack-tools;
