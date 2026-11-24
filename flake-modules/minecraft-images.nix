@@ -21,7 +21,8 @@ let
         overlays = lib.attrValues self.overlays;
       };
 
-      jre = pkgs.temurin-jre-bin-21;
+      # A server tree may pin its own JDK (magic-vr-pack needs >= 21.0.13.1).
+      jre = server.jre or pkgs.temurin-jre-bin-21;
 
       imageContents = [
         # Plain bash (no readline / history / etc.) is enough for the
@@ -117,6 +118,12 @@ let
       server    = pkgs.create-arkana-aeronautics-server;
       imageName = "create-arkana-aeronautics-server";
     };
+  magicVrPackImage = system:
+    mkImage system {
+      server    = (pkgsFor system).magic-vr-pack-server;
+      imageName = "magic-vr-pack-server";
+      heap      = "9g";
+    };
   # Helper: snap to one of the per-system overlay-applied nixpkgs sets so
   # the package outputs we expose match what the image consumes (single
   # source of overlays).
@@ -136,6 +143,8 @@ in
         minecraft-csc-image = cscImage system;
         minecraft-arkana-aeronautics-image = arkanaAeronauticsImage system;
         create-arkana-aeronautics-server = (pkgsFor system).create-arkana-aeronautics-server;
+        minecraft-magic-vr-pack-image = magicVrPackImage system;
+        magic-vr-pack-server = (pkgsFor system).magic-vr-pack-server;
       }
       # Cross-platform: client zip is just metadata + jar shuffling, builds
       # on Darwin too. Exposed for both linux and darwin so a Mac dev can
