@@ -3,8 +3,9 @@
 #
 # Generational ZGC: sub-millisecond pauses independent of heap size, so a
 # 20-player server on an 8-10 GiB heap never hitches on a full collection.
-# AlwaysPreTouch commits the heap at start, giving a stable RSS for the pod
-# limit. Pod limit guide: heap + ~2.5 GiB (metaspace, code cache, direct
+# No AlwaysPreTouch: touching the whole heap at start delays a scale-from-zero
+# boot while players wait. RSS still grows to the full heap, so size the pod
+# for it. Pod limit guide: heap + ~2.5 GiB (metaspace, code cache, direct
 # buffers, ZGC metadata, thread stacks), so 9g heap -> 12 GiB limit.
 #
 # -XX:-UseBASE64Intrinsics: mitigation for CVE-2026-114938 ("Java2Shell"),
@@ -12,7 +13,6 @@
 ''
   -XX:+UseZGC
   -XX:+ZGenerational
-  -XX:+AlwaysPreTouch
   -XX:+DisableExplicitGC
   -XX:+PerfDisableSharedMem
   -XX:+UseStringDeduplication
