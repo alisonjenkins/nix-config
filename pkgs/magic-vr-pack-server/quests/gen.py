@@ -997,7 +997,7 @@ def finale():
     c.q("ender_dragon", "The Ender Dragon", "k:minecraft:ender_dragon", "Slay the Ender Dragon.",
         icon="minecraft:dragon_egg", boss=True, rewards=[title_tag("Dragonsbane")])
     bosses = [
-        ("ignis", "Ignis", "Burning Arena", "cataclysm:music_disc_ignis", "Slayer of Ignis"),
+        ("ignis", "ignis", "Burning Arena", "cataclysm:music_disc_ignis", "Slayer of Ignis"),
         ("harbinger", "the_harbinger", "Ancient Factory", "cataclysm:music_disc_the_harbinger", "Bane of the Harbinger"),
         ("leviathan", "the_leviathan", "Sunken City", "cataclysm:music_disc_the_leviathan", "Leviathan's End"),
         ("ender_guardian", "ender_guardian", "Ruined Citadel", "cataclysm:music_disc_ender_guardian",
