@@ -37,7 +37,17 @@ let
   enabledEntries = lib.filter
     (m: lib.elem m.group enabledGroups && !(lib.elem m.slug disabledSlugs))
     allEntries;
-  serverMods = lib.filter (m: m.kind == "mod" && m.side != "client") enabledEntries;
+  isServerMod = m: m.kind == "mod" && m.side != "client";
+  serverMods = lib.filter isServerMod enabledEntries;
+
+  # The quest book always covers the default groups. A narrowed bisect build
+  # still checks its IDs against the default groups' jars, so it builds; the
+  # quests for the left-out mods just show missing items in game.
+  defaultGroups = lib.attrNames (lib.filterAttrs (_: g: g.enabledByDefault) groups);
+  questOnlyJars = map (m: m.jar) (lib.filter
+    (m: isServerMod m && lib.elem m.group defaultGroups
+      && !(lib.elem m.group enabledGroups) && !(lib.elem m.slug disabledSlugs))
+    allEntries);
 
   # Velocity-modern forwarding so the backend trusts mc-limbo-proxy. The fork
   # drops CrossStitch, which breaks command decoding through a transparent
@@ -127,7 +137,7 @@ stdenvNoCC.mkDerivation {
 
     python3 ${./quests}/gen.py $out
     # Server-side jars only: a quest item the server lacks never loads.
-    registry-ids extract $out/mods ${vanillaClientJar} > registry-ids.json
+    registry-ids extract $out/mods ${vanillaClientJar} ${lib.escapeShellArgs questOnlyJars} > registry-ids.json
     registry-ids check --ids registry-ids.json $out/config/ftbquests/quests
 
     install -m755 ${./entrypoint.sh} $out/entrypoint.sh
