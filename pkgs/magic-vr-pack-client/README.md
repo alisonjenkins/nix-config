@@ -24,11 +24,24 @@ Magic-focused Minecraft 1.21.1 pack on NeoForge, with VR support through Vivecra
 - Shaders start off. Turn them on in `Options` → `Video Settings` → `Shader Packs`.
 - Shaders cost a lot of frame time in VR. Try them on desktop first.
 
-## Config shipped in `overrides/config/`
+## Defaults that keep your changes
 
-- `DistantHorizons.toml`: LODs hidden behind cave ceilings.
-- `vivecraft-client-config.json`: seated-mode turning speed.
-- `colered-crosshair.json`: crosshair colours (the file name copies the mod's spelling).
+Default Options copies `config/defaultoptions/` into place on launch, but only where you have no file yet.
+Pack updates never overwrite your own settings.
+
+- `servers.dat`: the multiplayer list starts with Magic VR Pack (`magic.alison-jenkins.com`).
+- `options.txt`: render distance 8, simulation distance 6, GUI scale 3, first-run tutorial screens skipped.
+- `extra/config/iris.properties`: Complementary Reimagined selected, shaders off.
+- `extra/config/DistantHorizons.toml`: LODs hidden behind cave ceilings.
+- `extra/config/vivecraft-client-config.json`: seated-mode turning speed.
+- `extra/config/colered-crosshair.json`: crosshair colours (the file name copies the mod's spelling).
+
+To get a default back, delete your own copy of that file in the instance folder and relaunch.
+
+## Config the pack owns in `overrides/config/`
+
+Updates replace these.
+
 - `ftbquests/`: the quest book (Archmage Veyla's guide), the same one the server ships.
 - `l2configs/l2hostility-server.toml`: L2 Hostility with per-section difficulty off (`allowSectionDifficulty = false`), the same file the server ships.
 

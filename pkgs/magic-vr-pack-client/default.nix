@@ -69,12 +69,6 @@ stdenvNoCC.mkDerivation {
       install -m644 "${m.jar}" "overrides/shaderpacks/${m.filename}"
     '') shaderpacks}
 
-    # Keeps LODs behind cave ceilings.
-    install -m644 ${./DistantHorizons.toml} overrides/config/DistantHorizons.toml
-    # Faster seated-mode mouse-edge turning; partial config, GSON fills the rest.
-    install -m644 ${./vivecraft-client-config.json} overrides/config/vivecraft-client-config.json
-    # File name matches the mod's own typo ("colered").
-    install -m644 ${./colered-crosshair.json} overrides/config/colered-crosshair.json
     # Same book as the server, so single-player worlds get it too.
     cp -r ${server}/config/ftbquests overrides/config/
     chmod -R u+w overrides/config/ftbquests
@@ -91,6 +85,13 @@ stdenvNoCC.mkDerivation {
     # extra/ mirrors the game directory. Shaders cost too much frame time in
     # VR to start on, so the pack is selected but disabled.
     mkdir -p overrides/config/defaultoptions/extra/config
+    # Player-tunable client configs ride in extra/ too, so pack updates keep
+    # the player's changes. Keeps LODs behind cave ceilings.
+    install -m644 ${./DistantHorizons.toml} overrides/config/defaultoptions/extra/config/DistantHorizons.toml
+    # Faster seated-mode mouse-edge turning; partial config, GSON fills the rest.
+    install -m644 ${./vivecraft-client-config.json} overrides/config/defaultoptions/extra/config/vivecraft-client-config.json
+    # File name matches the mod's own typo ("colered").
+    install -m644 ${./colered-crosshair.json} overrides/config/defaultoptions/extra/config/colered-crosshair.json
     printf 'shaderPack=%s\nenableShaders=false\n' ${lib.escapeShellArg defaultShaderpack.filename} \
       > overrides/config/defaultoptions/extra/config/iris.properties
 
