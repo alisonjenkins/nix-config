@@ -43,7 +43,8 @@ is fully supported.
 ## Java version (security)
 
 Use **Java 21.0.13.1 or newer** (Temurin `jdk-21.0.13.1+2`, released
-2026-11-18). Every Java 17.0.6+ and 21 build before that has
+2026-11-18). On Java 25 use **25.0.5.1 or newer** (Temurin
+`jdk-25.0.5.1`). Every Java 17.0.6+, 21 and 25 build before those has
 CVE-2026-114938 ("Java4Shell"), a memory-corruption bug in the Base64
 decoder on x86-64 CPUs with AVX-512 VBMI (Intel Ice Lake and later Xeons,
 AMD Zen 4 and later). The server image already runs 21.0.13.1.
