@@ -6,7 +6,7 @@ finding: 2026-11-12-ali-desktop#3
 decision: configure
 reason: "338 screenshots a week stay in context and are re-read on every later request; take model-only screenshots at deviceScaleFactor 1, clipped to the element under test"
 metric: { question: not-pack-tracked, key: transcripts:Read:png, baseline: 338, unit: calls/week }
-acted_on: null
+acted_on: "0baf05c1"
 outcome: null
 outcome_review: null
 ---

@@ -80,6 +80,73 @@ fn top_tool_estimates_tokens_from_result_bytes() {
 }
 
 #[test]
+fn top_tool_replaces_image_bytes_with_pixel_token_estimates() {
+    let tool_results = json!({
+        "status": "success",
+        "data": {
+            "resultType": "streams",
+            "result": [
+                {
+                    "stream": {"service_name": "claude-code", "event_name": "tool_result", "tool_name": "Read", "tool_result_size_bytes": "220000", "session_id": "s1"},
+                    "values": [["1760000000000000001", "tool_result"]]
+                },
+                {
+                    "stream": {"service_name": "claude-code", "event_name": "tool_result", "tool_name": "Read", "tool_result_size_bytes": "180000", "session_id": "s1"},
+                    "values": [["1760000000000000002", "tool_result"]]
+                }
+            ]
+        }
+    })
+    .to_string();
+    let ledger_calls = json!({
+        "status": "success",
+        "data": {
+            "resultType": "streams",
+            "result": [
+                {
+                    "stream": {"service_name": "cc-obs-ledger"},
+                    "values": [[
+                        "1760000000000000001",
+                        "cc_obs_ledger.tool_call",
+                        {"structuredMetadata": {
+                            "session_id": "s1",
+                            "tool_name": "Read",
+                            "input_hash": "h1",
+                            "input_prefix_hash": "p1",
+                            "result_bytes": "380000",
+                            "result_image_count": "2",
+                            "result_image_bytes": "360000",
+                            "result_image_tokens": "3200",
+                            "turn": "1",
+                            "seq": "0"
+                        }}
+                    ]]
+                }
+            ]
+        }
+    })
+    .to_string();
+    // Ingest can deliver the same ledger record twice: it must count once.
+    let mut ledger_value: serde_json::Value = serde_json::from_str(&ledger_calls).unwrap();
+    let values = ledger_value["data"]["result"][0]["values"].as_array_mut().unwrap();
+    let duplicate = values[0].clone();
+    values.push(duplicate);
+    let ledger_calls = ledger_value.to_string();
+    let fake = serve(with_own(vec![
+        ("event_name=\"tool_result\"", tool_results),
+        ("event_name=\"cc_obs_ledger.tool_call\"", ledger_calls),
+    ]));
+    let out = cli(&fake, &["top", "tool"]).json();
+    assert_eq!(row(&out, "Read")["value"], json!(13200));
+
+    let detail = cli(&fake, &["tool", "Read"]).json();
+    assert_eq!(row(&detail, "image_calls")["value"], json!(1));
+    assert_eq!(row(&detail, "image_tokens")["value"], json!(3200));
+    assert_eq!(row(&detail, "mean_result_bytes")["value"], json!(200000));
+    assert_eq!(row(&detail, "max_result_bytes")["value"], json!(220000));
+}
+
+#[test]
 fn top_with_no_samples_is_unavailable_not_zero() {
     let fake = serve(with_own(vec![("by (model)", fixture("prom_empty.json"))]));
     let run = cli(&fake, &["top", "model"]);

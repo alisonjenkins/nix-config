@@ -1,5 +1,12 @@
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::indexing_slicing,
+    clippy::arithmetic_side_effects
+)]
 
+use cc_obs_ledger::image::{image_dimensions, image_tokens, FALLBACK_IMAGE_TOKENS};
+use cc_obs_ledger::otlp::{turn_payloads, Resource};
 use cc_obs_ledger::transcript::{parse, parse_from, read_unread, Position, ToolHasher};
 
 const FIXTURE: &str = include_str!("fixtures/transcript.jsonl");
@@ -209,4 +216,210 @@ fn reading_only_the_newest_part_starts_on_a_line_boundary_and_reports_the_skip()
     let tail = read_unread(&mut cursor, 0, 10).unwrap();
     assert_eq!(tail.bytes, b"cccc\ndddd\n");
     assert_eq!(tail.skipped, 10);
+}
+
+fn encode_base64(bytes: &[u8]) -> String {
+    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for chunk in bytes.chunks(3) {
+        let b0 = chunk[0];
+        let b1 = *chunk.get(1).unwrap_or(&0);
+        let b2 = *chunk.get(2).unwrap_or(&0);
+        out.push(TABLE[(b0 >> 2) as usize] as char);
+        out.push(TABLE[(((b0 & 0x03) << 4) | (b1 >> 4)) as usize] as char);
+        if chunk.len() > 1 {
+            out.push(TABLE[(((b1 & 0x0f) << 2) | (b2 >> 6)) as usize] as char);
+        } else {
+            out.push('=');
+        }
+        if chunk.len() > 2 {
+            out.push(TABLE[(b2 & 0x3f) as usize] as char);
+        } else {
+            out.push('=');
+        }
+    }
+    out
+}
+
+fn tiny_png(width: u32, height: u32) -> Vec<u8> {
+    let mut bytes = vec![
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // signature
+        0x00, 0x00, 0x00, 0x0D, // IHDR length (13)
+        b'I', b'H', b'D', b'R',
+    ];
+    bytes.extend_from_slice(&width.to_be_bytes());
+    bytes.extend_from_slice(&height.to_be_bytes());
+    bytes.extend_from_slice(&[8, 2, 0, 0, 0, 0, 0, 0, 0]);
+    bytes
+}
+
+fn tiny_jpeg(width: u16, height: u16) -> Vec<u8> {
+    let mut bytes = vec![
+        0xFF, 0xD8, // SOI
+        0xFF, 0xE0, 0x00, 0x04, 0x00, 0x00, // APP0 segment (length 4)
+        0xFF, 0xC4, 0x00, 0x04, 0x00, 0x00, // DHT (0xC4, must be skipped)
+        0xFF, 0xC0, 0x00, 0x0B, 0x08, // SOF0 header + precision
+    ];
+    bytes.extend_from_slice(&height.to_be_bytes());
+    bytes.extend_from_slice(&width.to_be_bytes());
+    bytes.extend_from_slice(&[0x01, 0x01, 0x11, 0x00, 0xFF, 0xD9]);
+    bytes
+}
+
+#[test]
+fn image_tokens_scales_down_within_limits_and_rounds_up() {
+    assert_eq!(image_tokens(1000, 1000), 1334);
+    assert_eq!(image_tokens(3000, 2000), 1534);
+    assert_eq!(image_tokens(10, 10), 1);
+    assert_eq!(image_tokens(0, 100), 0);
+}
+
+#[test]
+fn image_dimensions_reads_png_jpeg_gif_and_webp_headers() {
+    let png_b64 = encode_base64(&tiny_png(1280, 720));
+    assert_eq!(image_dimensions(&png_b64), Some((1280, 720)));
+
+    let jpeg_b64 = encode_base64(&tiny_jpeg(640, 480));
+    assert_eq!(image_dimensions(&jpeg_b64), Some((640, 480)));
+
+    let mut gif = b"GIF89a".to_vec();
+    gif.extend_from_slice(&320u16.to_le_bytes());
+    gif.extend_from_slice(&240u16.to_le_bytes());
+    assert_eq!(image_dimensions(&encode_base64(&gif)), Some((320, 240)));
+
+    let mut webp = Vec::new();
+    webp.extend_from_slice(b"RIFF");
+    webp.extend_from_slice(&22u32.to_le_bytes());
+    webp.extend_from_slice(b"WEBPVP8X");
+    webp.extend_from_slice(&10u32.to_le_bytes());
+    webp.extend_from_slice(&0u32.to_le_bytes());
+    // 24-bit LE width-1 (799 -> 800) and height-1 (599 -> 600)
+    webp.extend_from_slice(&[0x1F, 0x03, 0x00, 0x57, 0x02, 0x00]);
+    assert_eq!(image_dimensions(&encode_base64(&webp)), Some((800, 600)));
+}
+
+#[test]
+fn image_dimensions_returns_none_on_truncated_or_garbage_input() {
+    assert_eq!(image_dimensions(""), None);
+    assert_eq!(image_dimensions("abc"), None);
+    assert_eq!(image_dimensions("not!base64!!"), None);
+    assert_eq!(image_dimensions(&encode_base64(b"plain text file")), None);
+    assert_eq!(
+        image_dimensions(&encode_base64(&tiny_png(100, 100)[..18])),
+        None
+    );
+    assert_eq!(
+        image_dimensions(&encode_base64(&tiny_jpeg(100, 100)[..16])),
+        None
+    );
+    // Zero-length JPEG segment must not loop.
+    assert_eq!(
+        image_dimensions(&encode_base64(&[0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x00])),
+        None
+    );
+}
+
+#[test]
+fn tool_result_with_text_and_image_records_image_count_bytes_and_tokens() {
+    let png_b64 = encode_base64(&tiny_png(1000, 1000));
+    let image_item = serde_json::json!({
+        "type": "image",
+        "source": {
+            "type": "base64",
+            "media_type": "image/png",
+            "data": png_b64,
+        }
+    });
+    let expected_image_bytes = image_item.to_string().len() as u64;
+    let assistant = serde_json::json!({
+        "type": "assistant",
+        "sessionId": "s",
+        "requestId": "r-1",
+        "cwd": "/w/p",
+        "isSidechain": false,
+        "message": {
+            "id": "m-1",
+            "model": "m",
+            "content": [{"type": "tool_use", "id": "t-1", "name": "Read", "input": {"file_path": "/w/p/img.png"}}],
+            "usage": {"input_tokens": 1, "output_tokens": 1, "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0}
+        }
+    });
+    let user = serde_json::json!({
+        "type": "user",
+        "sessionId": "s",
+        "promptId": "p-1",
+        "cwd": "/w/p",
+        "message": {
+            "role": "user",
+            "content": [{
+                "type": "tool_result",
+                "tool_use_id": "t-1",
+                "content": [
+                    {"type": "text", "text": "caption"},
+                    image_item,
+                ]
+            }]
+        }
+    });
+    let text = format!("{assistant}\n{user}\n");
+    let parsed = parse(&text, &hasher());
+    assert_eq!(parsed.tool_calls.len(), 1);
+    let call = &parsed.tool_calls[0];
+    assert_eq!(call.result_image_count, 1);
+    assert_eq!(call.result_image_bytes, expected_image_bytes);
+    assert_eq!(call.result_image_tokens, 1334);
+    assert_eq!(
+        call.result_bytes,
+        Some("caption".len() as u64 + expected_image_bytes)
+    );
+
+    let payloads = turn_payloads(&Resource::new("h", &[]), &parsed);
+    let logs = payloads
+        .iter()
+        .find_map(|p| p.body.pointer("/resourceLogs/0/scopeLogs/0/logRecords/0"))
+        .unwrap();
+    let attrs = logs["attributes"].as_array().unwrap();
+    let int_attr = |key: &str| {
+        attrs
+            .iter()
+            .find(|a| a["key"] == key)
+            .and_then(|a| a["value"]["intValue"].as_str())
+    };
+    assert_eq!(int_attr("result_image_count"), Some("1"));
+    assert_eq!(
+        int_attr("result_image_bytes"),
+        Some(expected_image_bytes.to_string()).as_deref()
+    );
+    assert_eq!(int_attr("result_image_tokens"), Some("1334"));
+
+    // Non-image tool calls omit the image attributes.
+    let fixture_parsed = parse(FIXTURE, &hasher());
+    let fixture_payloads = turn_payloads(&Resource::new("h", &[]), &fixture_parsed);
+    let fixture_logs = fixture_payloads
+        .iter()
+        .find_map(|p| p.body.pointer("/resourceLogs/0/scopeLogs/0/logRecords/0"))
+        .unwrap();
+    let fixture_attrs = fixture_logs["attributes"].as_array().unwrap();
+    assert!(fixture_attrs
+        .iter()
+        .all(|a| a["key"] != "result_image_count"));
+
+    // Unknown image dimensions fall back to FALLBACK_IMAGE_TOKENS.
+    let bad_user = serde_json::json!({
+        "type": "user",
+        "sessionId": "s",
+        "message": {
+            "role": "user",
+            "content": [{
+                "type": "tool_result",
+                "tool_use_id": "t-1",
+                "content": [{"type": "image", "source": {"type": "base64", "data": "AAAA"}}]
+            }]
+        }
+    });
+    let bad_parsed = parse(&format!("{assistant}\n{bad_user}\n"), &hasher());
+    assert_eq!(
+        bad_parsed.tool_calls[0].result_image_tokens,
+        FALLBACK_IMAGE_TOKENS
+    );
 }
