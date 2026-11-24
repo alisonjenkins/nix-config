@@ -16,6 +16,8 @@ let
   cfMods = lib.filter (m: m.kind == "mod" && m.source == "curseforge") clientEntries;
   modrinthMods = lib.filter (m: m.kind == "mod" && m.source == "modrinth") clientEntries;
   shaderpacks = lib.filter (m: m.kind == "shaderpack") clientEntries;
+  defaultShaderpack = lib.findFirst (m: m.slug == "complementary-reimagined")
+    (throw "magic-vr-pack-client: complementary-reimagined shaderpack missing") shaderpacks;
 
   manifest = builtins.toJSON {
     manifestType = "minecraftModpack";
@@ -83,6 +85,14 @@ stdenvNoCC.mkDerivation {
     # the player has no file yet, so these survive pack updates.
     python3 -I ${./servers-dat.py} ${lib.escapeShellArg serverName} ${lib.escapeShellArg serverAddress} \
       overrides/config/defaultoptions/servers.dat
+    # Vanilla render distance 8 because Distant Horizons draws beyond it;
+    # VR needs the frame time. Key lines are ignored here by Default Options.
+    install -m644 ${./options.txt} overrides/config/defaultoptions/options.txt
+    # extra/ mirrors the game directory. Shaders cost too much frame time in
+    # VR to start on, so the pack is selected but disabled.
+    mkdir -p overrides/config/defaultoptions/extra/config
+    printf 'shaderPack=%s\nenableShaders=false\n' ${lib.escapeShellArg defaultShaderpack.filename} \
+      > overrides/config/defaultoptions/extra/config/iris.properties
 
     install -m644 ${./JVM-ARGS.md} JVM-ARGS.md
     install -m644 ${./README.md} README.md
