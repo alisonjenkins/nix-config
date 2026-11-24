@@ -41,16 +41,19 @@ let
   # channels differ. mesa-libclc and venus-protocol only exist in unstable,
   # and libgbm must match the mesa version, so they come from there too.
   # venus-protocol is passed only when unstable has it: older unstable mesa
-  # neither takes nor needs it.
+  # neither takes nor needs it. wayland-protocols comes from unstable too:
+  # unstable mesa can require a newer one than the system set has, and it is
+  # only XML and headers read at build time, so nothing links against it.
   unstableNixpkgs = inputs.nixpkgs_unstable + "/pkgs";
   venusProtocolPath = unstableNixpkgs + "/by-name/ve/venus-protocol/package.nix";
   mesaOnSystemLibc = callPackage:
     let
       mesa-libclc = callPackage (unstableNixpkgs + "/by-name/me/mesa-libclc/package.nix") { };
       libgbm = callPackage (unstableNixpkgs + "/development/libraries/mesa/gbm.nix") { };
+      wayland-protocols = callPackage (unstableNixpkgs + "/by-name/wa/wayland-protocols/package.nix") { };
     in
     callPackage (unstableNixpkgs + "/development/libraries/mesa/default.nix") ({
-      inherit mesa-libclc libgbm;
+      inherit mesa-libclc libgbm wayland-protocols;
     } // lib.optionalAttrs (builtins.pathExists venusProtocolPath) {
       venus-protocol = callPackage venusProtocolPath { };
     });
