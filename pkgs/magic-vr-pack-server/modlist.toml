@@ -402,6 +402,10 @@ group = "qol"
 version = "8rgi2fn1"   # 1.21-1.21.11 build; 1.0.0 (Arkana's pin) did not work on NeoForge
 
 [[mod]]
+modrinth = "default-options"   # seeds options, servers.dat and configs only where the player has none
+group = "qol"
+
+[[mod]]
 modrinth = "jei"
 group = "qol"
 

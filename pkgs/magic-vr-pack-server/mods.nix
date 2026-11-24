@@ -1279,6 +1279,23 @@
     };
   }
   {
+    slug      = "default-options";
+    title     = "Default Options";
+    source    = "modrinth";
+    projectID = "WEg59z5b";
+    versionID = "1zt17WsC";
+    version   = "21.1.8+neoforge-1.21.1";  # release
+    group     = "qol";
+    kind      = "mod";
+    side      = "client";
+    filename  = "defaultoptions-neoforge-1.21.1-21.1.8.jar";
+    jar = fetchurl {
+      url    = "https://cdn.modrinth.com/data/WEg59z5b/versions/1zt17WsC/defaultoptions-neoforge-1.21.1-21.1.8.jar";
+      name   = "defaultoptions-neoforge-1.21.1-21.1.8.jar";
+      sha512 = "29f66777068d92b1e149630d569441e5176ac40ec5cb4ee6c63c565aa7d475587a5097f59c433d69a39fd238b64902e2ba742b30c26419de901c86a3300b848e";
+    };
+  }
+  {
     slug      = "farmers-delight";
     title     = "Farmer's Delight";
     source    = "modrinth";
