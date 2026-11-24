@@ -360,6 +360,25 @@ def load_lore():
     return json.loads((HERE / "lore.json").read_text(encoding="utf-8"))
 
 
+def check_no_cycles(quests_by_slug):
+    """Reject dependency cycles across the whole book; layout() only sees one chapter."""
+    done, visiting = set(), set()
+
+    def visit(slug):
+        if slug in done:
+            return
+        if slug in visiting:
+            raise ValueError(f"dependency cycle through {slug}")
+        visiting.add(slug)
+        for dep in quests_by_slug[slug].deps:
+            visit(dep)
+        visiting.discard(slug)
+        done.add(slug)
+
+    for slug in quests_by_slug:
+        visit(slug)
+
+
 def build(out):
     lore = load_lore()
     quests_by_slug = {}
@@ -372,6 +391,7 @@ def build(out):
         for dep in q.deps:
             if dep not in quests_by_slug:
                 raise ValueError(f"{q.slug}: unknown dependency {dep}")
+    check_no_cycles(quests_by_slug)
 
     missing = [q.slug for q in quests_by_slug.values() if not lore.get(q.slug)]
     if missing:
