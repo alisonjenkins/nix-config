@@ -10,8 +10,11 @@ Magic-focused Minecraft 1.21.1 pack on NeoForge, with VR support through Vivecra
 
 ## VR
 
-- Vivecraft runs in VR when SteamVR (or another OpenXR runtime) is running at launch.
-- Without a headset, the game starts in normal desktop mode.
+1. Start SteamVR, or another OpenVR-compatible runtime, before the game.
+2. Launch the pack. It starts in desktop mode.
+3. Click the VR button on the title screen to switch to VR. Vivecraft remembers the choice.
+
+- Without a headset, the game stays in desktop mode.
 - The pack pre-sets faster seated-mode turning and a yellow crosshair that turns red on hit.
 
 ## Shaders
