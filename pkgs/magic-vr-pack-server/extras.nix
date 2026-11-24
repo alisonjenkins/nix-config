@@ -11,5 +11,14 @@
     }
   ];
 
-  disabled = [ ];
+  disabled = [
+    {
+      slug = "chunky";
+      reason = "Chunky 1.4.23 + Distant Horizons 3.3.3 crash the first world creation: DH's Chunky hook calls ChunkyProvider.get() during spawn-chunk generation, before Chunky has loaded (IllegalStateException: Chunky is not loaded). DH's own distant generation covers pre-generation.";
+    }
+    {
+      slug = "unlimitedperipheralworks";
+      reason = "UnlimitedPeripheralWorks (alpha) crashes the server tick loop once the world is up: its apprentice_magic_tome pocket upgrade rejects Ars Nouveau's apprentice_spell_book (IllegalArgumentException in CC:Tweaked UpgradeData). Advanced Peripherals and Tom's Peripherals stay.";
+    }
+  ];
 }
