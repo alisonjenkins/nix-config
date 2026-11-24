@@ -1,0 +1,496 @@
+# Curated mod list for magic-vr-pack (Minecraft 1.21.1, NeoForge).
+# Resolve with generate-mods.py into mods.nix. Groups are described in groups.nix.
+
+# --- magic ---
+[[mod]]
+modrinth = "ars-nouveau"
+group = "magic"
+
+[[mod]]
+modrinth = "ars-additions"
+group = "magic"
+
+[[mod]]
+modrinth = "irons-spells-n-spellbooks"
+group = "magic"
+
+[[mod]]
+modrinth = "occultism"
+group = "magic"
+
+[[mod]]
+modrinth = "malum"
+group = "magic"
+
+[[mod]]
+modrinth = "eidolonrepraised"
+group = "magic"
+
+[[mod]]
+modrinth = "hexerei"
+group = "magic"
+
+[[mod]]
+modrinth = "natures-aura"
+group = "magic"
+
+[[mod]]
+modrinth = "theurgy"
+group = "magic"
+
+[[mod]]
+modrinth = "goety"
+group = "magic"
+
+[[mod]]
+modrinth = "mahou-tsukai"
+group = "magic"
+
+[[mod]]
+modrinth = "enchanted-witchcraft"
+group = "magic"
+
+[[mod]]
+modrinth = "apotheosis"
+group = "magic"
+
+[[mod]]
+modrinth = "relics-mod"
+group = "magic"
+
+[[mod]]
+modrinth = "artifacts"
+group = "magic"
+
+# Ars Elemental
+[[mod]]
+curseforge = 561470
+group = "magic"
+
+# --- difficulty-bosses ---
+[[mod]]
+modrinth = "l2hostility"
+group = "difficulty-bosses"
+
+[[mod]]
+modrinth = "mowzies-mobs"
+group = "difficulty-bosses"
+
+[[mod]]
+modrinth = "bossesrise"
+group = "difficulty-bosses"
+
+[[mod]]
+modrinth = "aquamirae"
+group = "difficulty-bosses"
+
+[[mod]]
+modrinth = "l_enders-cataclysm"
+group = "difficulty-bosses"
+
+[[mod]]
+modrinth = "deeperdarker"
+group = "difficulty-bosses"
+
+[[mod]]
+modrinth = "borninchaos"
+group = "difficulty-bosses"
+
+[[mod]]
+modrinth = "in-control"
+group = "difficulty-bosses"
+
+# Twilight Forest
+[[mod]]
+curseforge = 227639
+group = "difficulty-bosses"
+
+# --- worldgen ---
+[[mod]]
+modrinth = "tectonic"
+group = "worldgen"
+
+[[mod]]
+modrinth = "terralith"
+group = "worldgen"
+
+[[mod]]
+modrinth = "yungs-better-dungeons"
+group = "worldgen"
+
+[[mod]]
+modrinth = "yungs-better-strongholds"
+group = "worldgen"
+
+[[mod]]
+modrinth = "yungs-better-mineshafts"
+group = "worldgen"
+
+[[mod]]
+modrinth = "towns-and-towers"
+group = "worldgen"
+
+[[mod]]
+modrinth = "structory"
+group = "worldgen"
+
+[[mod]]
+modrinth = "explorify"
+group = "worldgen"
+
+[[mod]]
+modrinth = "dungeons-and-taverns"
+group = "worldgen"
+
+# idas (Integrated Dungeons and Structures) left out: its NeoForge 1.21.1
+# build hard-requires Create, Quark and Supplementaries, and Create is
+# excluded from this pack. Recorded in extras.nix.
+
+[[mod]]
+modrinth = "lootr"
+group = "worldgen"
+
+[[mod]]
+modrinth = "aether"
+group = "worldgen"
+
+[[mod]]
+modrinth = "deep-aether"
+group = "worldgen"
+
+[[mod]]
+modrinth = "natures-compass"
+group = "worldgen"
+
+[[mod]]
+modrinth = "explorers-compass"
+group = "worldgen"
+
+[[mod]]
+modrinth = "waystones"
+group = "worldgen"
+
+[[mod]]
+modrinth = "distanthorizons"
+group = "worldgen"
+
+[[mod]]
+modrinth = "chunky"
+group = "worldgen"
+
+# The Undergarden
+[[mod]]
+curseforge = 379849
+group = "worldgen"
+
+# --- building ---
+[[mod]]
+modrinth = "framedblocks"
+group = "building"
+
+[[mod]]
+modrinth = "chipped"
+group = "building"
+
+[[mod]]
+modrinth = "rechiseled"
+group = "building"
+
+[[mod]]
+modrinth = "macaws-doors"
+group = "building"
+
+[[mod]]
+modrinth = "macaws-windows"
+group = "building"
+
+[[mod]]
+modrinth = "macaws-roofs"
+group = "building"
+
+[[mod]]
+modrinth = "macaws-trapdoors"
+group = "building"
+
+[[mod]]
+modrinth = "macaws-fences-and-walls"
+group = "building"
+
+[[mod]]
+modrinth = "macaws-bridges"
+group = "building"
+
+[[mod]]
+modrinth = "macaws-stairs"
+group = "building"
+
+[[mod]]
+modrinth = "macaws-paths-and-pavings"
+group = "building"
+
+[[mod]]
+modrinth = "macaws-lights-and-lamps"
+group = "building"
+
+[[mod]]
+modrinth = "macaws-furniture"
+group = "building"
+
+[[mod]]
+modrinth = "dramatic-doors"
+group = "building"
+
+[[mod]]
+modrinth = "handcrafted"
+group = "building"
+
+[[mod]]
+modrinth = "another-furniture"
+group = "building"
+
+[[mod]]
+modrinth = "supplementaries"
+group = "building"
+
+# Chisels & Bits
+[[mod]]
+curseforge = 231095
+group = "building"
+
+# Effortless Building
+[[mod]]
+curseforge = 302113
+group = "building"
+
+# Building Gadgets 2
+[[mod]]
+curseforge = 298187
+group = "building"
+
+# --- programming ---
+[[mod]]
+modrinth = "cc-tweaked"
+group = "programming"
+
+[[mod]]
+modrinth = "advancedperipherals"
+group = "programming"
+
+[[mod]]
+modrinth = "unlimitedperipheralworks"
+group = "programming"
+
+[[mod]]
+modrinth = "toms-peripherals"
+group = "programming"
+
+[[mod]]
+modrinth = "toms-storage"
+group = "programming"
+
+[[mod]]
+modrinth = "sophisticated-storage"
+group = "programming"
+
+[[mod]]
+modrinth = "sophisticated-backpacks"
+group = "programming"
+
+# --- vr-client ---
+[[mod]]
+modrinth = "vivecraft"
+group = "vr-client"
+
+[[mod]]
+modrinth = "immersivemc"
+group = "vr-client"
+
+[[mod]]
+modrinth = "vivecraft-compat"
+group = "vr-client"
+
+# --- shaders-client ---
+[[mod]]
+modrinth = "iris"
+group = "shaders-client"
+
+[[mod]]
+modrinth = "euphoria-patches"
+group = "shaders-client"
+
+# --- perf-client ---
+[[mod]]
+modrinth = "sodium"
+group = "perf-client"
+
+[[mod]]
+modrinth = "modernfix"
+group = "perf-client"
+
+[[mod]]
+modrinth = "ferrite-core"
+group = "perf-client"
+
+[[mod]]
+modrinth = "immediatelyfast"
+group = "perf-client"
+
+[[mod]]
+modrinth = "entityculling"
+group = "perf-client"
+
+[[mod]]
+modrinth = "moreculling"
+group = "perf-client"
+
+# --- perf-server ---
+[[mod]]
+modrinth = "lithium"
+group = "perf-server"
+
+[[mod]]
+modrinth = "scalablelux"
+group = "perf-server"
+
+[[mod]]
+modrinth = "servercore"
+group = "perf-server"
+side = "server"
+
+[[mod]]
+modrinth = "lmd"
+group = "perf-server"
+side = "server"
+
+[[mod]]
+modrinth = "clumps"
+group = "perf-server"
+
+[[mod]]
+modrinth = "noisium"
+group = "perf-server"
+
+[[mod]]
+modrinth = "spark"
+group = "perf-server"
+
+# --- perf-server-optional ---
+[[mod]]
+modrinth = "c2me-neoforge"
+group = "perf-server-optional"
+
+# --- qol ---
+[[mod]]
+modrinth = "kubejs"
+group = "qol"
+
+[[mod]]
+modrinth = "inventory-profiles-next"
+group = "qol"
+
+[[mod]]
+modrinth = "mouse-tweaks"
+group = "qol"
+
+[[mod]]
+modrinth = "jei"
+group = "qol"
+
+[[mod]]
+modrinth = "jade"
+group = "qol"
+
+[[mod]]
+modrinth = "appleskin"
+group = "qol"
+
+[[mod]]
+modrinth = "polymorph"
+group = "qol"
+
+[[mod]]
+modrinth = "corpse"
+group = "qol"
+
+[[mod]]
+modrinth = "travelersbackpack"
+group = "qol"
+
+[[mod]]
+modrinth = "farmers-delight"
+group = "qol"
+
+# --- quests-teams-map ---
+[[mod]]
+modrinth = "xaeros-minimap"
+group = "quests-teams-map"
+
+[[mod]]
+modrinth = "xaeros-world-map"
+group = "quests-teams-map"
+
+# FTB Quests
+[[mod]]
+curseforge = 289412
+group = "quests-teams-map"
+
+# FTB Library
+[[mod]]
+curseforge = 404465
+group = "quests-teams-map"
+
+# FTB Teams
+[[mod]]
+curseforge = 404468
+group = "quests-teams-map"
+
+# FTB Chunks
+[[mod]]
+curseforge = 314906
+group = "quests-teams-map"
+
+# FTB XMod Compat
+[[mod]]
+curseforge = 889915
+group = "quests-teams-map"
+
+# --- shaderpacks (client zip only) ---
+[[mod]]
+modrinth = "complementary-reimagined"
+group = "shaders-client"
+kind = "shaderpack"
+side = "client"
+
+# --- core-libs listed by hand ---
+# CurseForge mods carry no dependency metadata, and some Modrinth projects
+# omit a required dep or mislabel a common library as client-only.
+
+[[mod]]
+modrinth = "architectury-api"   # FTB mods (CurseForge)
+group = "core-libs"
+
+[[mod]]
+modrinth = "irons-lib"          # irons_spellbooks, undeclared on Modrinth
+group = "core-libs"
+
+[[mod]]
+modrinth = "playeranimator"     # irons_spellbooks, undeclared on Modrinth
+group = "core-libs"
+
+[[mod]]
+modrinth = "lodestonelib"       # malum, undeclared on Modrinth
+group = "core-libs"
+
+[[mod]]
+modrinth = "shatterbyte-lib"    # octolib, for relics
+group = "core-libs"
+
+[[mod]]
+modrinth = "athena-ctm"         # chipped needs it server-side too
+group = "core-libs"
+side = "both"
+
+[[mod]]
+modrinth = "fusion-connected-textures"  # rechiseled needs it server-side
+group = "core-libs"
+side = "both"
