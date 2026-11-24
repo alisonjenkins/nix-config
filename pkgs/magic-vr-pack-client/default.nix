@@ -73,6 +73,8 @@ stdenvNoCC.mkDerivation {
     # Same book as the server, so single-player worlds get it too.
     cp -r ${server}/config/ftbquests overrides/config/
     chmod -R u+w overrides/config/ftbquests
+    # Same L2 Hostility settings as the server, for single-player worlds.
+    install -Dm644 ${server}/config/l2configs/l2hostility-server.toml overrides/config/l2configs/l2hostility-server.toml
 
     install -m644 ${./JVM-ARGS.md} JVM-ARGS.md
     install -m644 ${./README.md} README.md
