@@ -29,6 +29,9 @@ let
     minecraft = {
       version = minecraftVersion;
       modLoaders = [ { id = "neoforge-${neoforgeVersion}"; primary = true; } ];
+      # MiB. Prism sets the max heap from this on a fresh import; JVM-ARGS.md
+      # has the same figure for everyone else.
+      recommendedRam = 10240;
     };
     files = map (m: { projectID = m.projectID; fileID = m.fileID; required = true; }) cfMods;
   };
