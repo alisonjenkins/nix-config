@@ -1,4 +1,4 @@
-{ stdenvNoCC, stdenv, lib, fetchurl, bash, openjdk21_headless, minecraft-modpack-tools
+{ stdenvNoCC, stdenv, lib, fetchurl, bash, python3, openjdk21_headless, minecraft-modpack-tools
 , # Groups (see groups.nix) baked into the server tree. Narrow it to bisect:
   #   .override { enabledGroups = [ "core-libs" "magic" ]; }
   enabledGroups ? lib.attrNames
@@ -16,6 +16,14 @@ let
     url = "https://maven.neoforged.net/releases/net/neoforged/neoforge/${neoforgeVersion}/neoforge-${neoforgeVersion}-installer.jar";
     name = "neoforge-${neoforgeVersion}-installer.jar";
     sha256 = "0q3yr5g2lf8xyg4z719q6gqrz3ka3v3dlfyjvz6bwni0h9pfdfr5";
+  };
+
+  # Vanilla item and advancement IDs for the quest check; the server jar
+  # only appears once the NeoForge installer runs at first boot.
+  vanillaClientJar = fetchurl {
+    url = "https://piston-data.mojang.com/v1/objects/30c73b1c5da787909b2f73340419fdf13b9def88/client.jar";
+    name = "minecraft-${minecraftVersion}-client.jar";
+    sha256 = "168ckc453daiy1fgwcyrvjd1rq86h4nhf51i1xl1cxc3s6bni7s9";
   };
 
   generated = import ./mods.nix { inherit fetchurl; };
@@ -65,7 +73,7 @@ stdenvNoCC.mkDerivation {
   dontBuild = true;
   dontFixup = true;
 
-  nativeBuildInputs = [ minecraft-modpack-tools ];
+  nativeBuildInputs = [ minecraft-modpack-tools python3 ];
 
   installPhase = ''
     runHook preInstall
@@ -100,6 +108,11 @@ stdenvNoCC.mkDerivation {
     install -m644 ${neoforgeInstaller} $out/neoforge-installer.jar
     install -Dm644 ${./fml.toml}       $out/config/fml.toml
     install -Dm644 ${./DistantHorizons.toml} $out/config/DistantHorizons.toml
+
+    python3 ${./quests}/gen.py $out
+    # Server-side jars only: a quest item the server lacks never loads.
+    registry-ids extract $out/mods ${vanillaClientJar} > registry-ids.json
+    registry-ids check --ids registry-ids.json $out/config/ftbquests/quests
 
     install -m755 ${./entrypoint.sh} $out/entrypoint.sh
     install -m644 ${./rcon.sh}       $out/rcon.sh
