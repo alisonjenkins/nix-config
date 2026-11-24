@@ -1,8 +1,11 @@
-{ stdenvNoCC, lib, zip, jq, magic-vr-pack-server }:
+{ stdenvNoCC, lib, zip, jq, python3, magic-vr-pack-server }:
 let
   server = magic-vr-pack-server;
   inherit (server) version neoforgeVersion minecraftVersion;
   extras = import ../magic-vr-pack-server/extras.nix;
+
+  serverName = "Magic VR Pack";
+  serverAddress = "magic.alison-jenkins.com";
 
   # The server's group selection and disabled list apply here too, so a mod
   # disabled for crashing the server never reaches players either.
@@ -43,7 +46,7 @@ stdenvNoCC.mkDerivation {
   dontBuild = true;
   dontFixup = true;
 
-  nativeBuildInputs = [ zip jq ];
+  nativeBuildInputs = [ zip jq python3 ];
 
   passAsFile = [ "manifest" "modlistHtml" ];
   inherit manifest modlistHtml;
@@ -51,7 +54,7 @@ stdenvNoCC.mkDerivation {
   installPhase = ''
     runHook preInstall
 
-    mkdir -p pack/overrides/mods pack/overrides/shaderpacks pack/overrides/config
+    mkdir -p pack/overrides/mods pack/overrides/shaderpacks pack/overrides/config/defaultoptions
     cd pack
 
     jq . "$manifestPath" > manifest.json
@@ -75,6 +78,11 @@ stdenvNoCC.mkDerivation {
     chmod -R u+w overrides/config/ftbquests
     # Same L2 Hostility settings as the server, for single-player worlds.
     install -Dm644 ${server}/config/l2configs/l2hostility-server.toml overrides/config/l2configs/l2hostility-server.toml
+
+    # Default Options copies config/defaultoptions/* into place only where
+    # the player has no file yet, so these survive pack updates.
+    python3 -I ${./servers-dat.py} ${lib.escapeShellArg serverName} ${lib.escapeShellArg serverAddress} \
+      overrides/config/defaultoptions/servers.dat
 
     install -m644 ${./JVM-ARGS.md} JVM-ARGS.md
     install -m644 ${./README.md} README.md
