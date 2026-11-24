@@ -1585,6 +1585,23 @@
     };
   }
   {
+    slug      = "colored-crosshair";
+    title     = "Colored Crosshair";
+    source    = "modrinth";
+    projectID = "8rCFhpfV";
+    versionID = "9ApByJVD";
+    version   = "1.0.3-neoforge";  # beta
+    group     = "vr-client";
+    kind      = "mod";
+    side      = "client";
+    filename  = "colered-crosshair-neoforge-1.0.3.jar";
+    jar = fetchurl {
+      url    = "https://cdn.modrinth.com/data/8rCFhpfV/versions/9ApByJVD/colered-crosshair-neoforge-1.0.3.jar";
+      name   = "colered-crosshair-neoforge-1.0.3.jar";
+      sha512 = "143d6de82e5544f3ff30b6ee089b81bed5e323e020b8c7dac999c792e8c0fe5f231a33d5717b582b6086f313c4b7fc7ada67541ba53b2583d562a05b479ba9dd";
+    };
+  }
+  {
     slug      = "immersivemc";
     title     = "ImmersiveMC";
     source    = "modrinth";

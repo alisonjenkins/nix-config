@@ -309,6 +309,10 @@ group = "vr-client"
 modrinth = "vivecraft-compat"
 group = "vr-client"
 
+[[mod]]
+modrinth = "colored-crosshair"   # keeps the Vivecraft 3D crosshair visible in dark caves
+group = "vr-client"
+
 # --- shaders-client ---
 [[mod]]
 modrinth = "iris"
