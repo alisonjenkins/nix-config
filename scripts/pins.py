@@ -240,7 +240,14 @@ def locked_rev(input_name: str, lock_path: Path | None = None) -> str:
     path = lock_path or REPO / "flake.lock"
     with path.open(encoding="utf-8") as handle:
         lock = json.load(handle)
-    rev: str = lock["nodes"][input_name]["locked"]["rev"]
+    # Resolve through the root node: a top-level input's lock node is often
+    # renamed (`nixpkgs` -> `nixpkgs_5`) while a transitive input takes the
+    # bare name, so indexing nodes directly can read the wrong rev.
+    root = lock["nodes"].get(lock.get("root", "root"), {}).get("inputs", {})
+    node = root.get(input_name, input_name)
+    if not isinstance(node, str):  # a `follows` path, not a node name
+        raise KeyError(input_name)
+    rev: str = lock["nodes"][node]["locked"]["rev"]
     return rev
 
 

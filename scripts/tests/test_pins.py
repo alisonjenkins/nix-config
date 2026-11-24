@@ -196,6 +196,16 @@ class ProbeTests(unittest.TestCase):
         self.assertIn("github:NixOS/nixpkgs/abcdef1234#github-copilot-cli.version", asked[0])
         self.assertIn("locked nixpkgs_unstable abcdef12", res.detail)
 
+    def test_locked_rev_resolves_renamed_root_input(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            lock = Path(tmp) / "flake.lock"
+            lock.write_text(
+                '{"root": "root", "nodes": {'
+                '"root": {"inputs": {"nixpkgs": "nixpkgs_5"}},'
+                '"nixpkgs": {"locked": {"rev": "transitive"}},'
+                '"nixpkgs_5": {"locked": {"rev": "toplevel"}}}}')
+            self.assertEqual(pins.locked_rev("nixpkgs", lock), "toplevel")
+
     def test_unknown_locked_input_is_a_failed_probe(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             lock = Path(tmp) / "flake.lock"

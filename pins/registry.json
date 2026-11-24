@@ -159,6 +159,29 @@
         "cmd": ["sh", "-c", "test \"$(nix eval --json .#nixosConfigurations.ali-desktop.pkgs.keybase-gui.meta.knownVulnerabilities)\" = '[]'"],
         "timeout": 600
       }
+    },
+    {
+      "id": "temurin-jre-21-java4shell",
+      "class": "workaround",
+      "kind": "overlay-override",
+      "site": {
+        "file": "flake-modules/minecraft-images.nix",
+        "match": "jdk-21.0.13.1%2B2"
+      },
+      "pinned": "Eclipse Temurin JRE 21.0.13.1+2 for the Minecraft server images (Arkana + Aeronautics, Create: Sky Colonies)",
+      "since": "2026-11-24",
+      "reviewed": "2026-11-24",
+      "review_by": "2027-01-08",
+      "reason": "CVE-2026-114938 (\"Java4Shell\", CVSS 8.1): memory corruption in the OpenJDK Base64 decoder intrinsic on x86-64 CPUs with AVX-512 VBMI allows pre-auth RCE where untrusted input is Base64-decoded; affects OpenJDK 17.0.6 and later. Fixed in 21.0.13.1 (Red Hat RHSA-2026:100569, Debian openjdk-21 21.0.13.1+2-1~deb13u1, Temurin jdk-21.0.13.1+2 released 2026-11-18). The locked nixos-26.05 (0dc498bf) ships temurin-jre-bin-21 21.0.11 and nixos-unstable (2786a2a7) 21.0.12.1, both vulnerable. Sources: https://www.openwall.com/lists/oss-security/2026/11/17/31 https://security-tracker.debian.org/tracker/CVE-2026-114938 https://bugzilla.redhat.com/show_bug.cgi?id=2574227",
+      "removal": "In flake-modules/minecraft-images.nix set `jre = pkgs.temurin-jre-bin-21;` again (delete the overrideAttrs block), confirm nixpkgs' pkgs/development/compilers/temurin-bin/sources.json URL for openjdk21 jre is jdk-21.0.13.1 or newer, rebuild both images and cut a new image tag.",
+      "upstream": "https://github.com/NixOS/nixpkgs/blob/nixos-26.05/pkgs/development/compilers/temurin-bin/sources.json",
+      "probe": {
+        "type": "version-at-least",
+        "input": "nixpkgs",
+        "attr": "temurin-jre-bin-21",
+        "version": "21.0.14"
+      },
+      "review_note": "Probe asks for 21.0.14 rather than 21.0.13.1 because nixpkgs reports 21.0.x.1 respins as plain 21.0.x (21.0.12.1 shows as 21.0.12), so 21.0.13 cannot tell the fixed respin from the vulnerable 21.0.13+9. Drop earlier by hand if sources.json already points at jdk-21.0.13.1."
     }
-]
+  ]
 }

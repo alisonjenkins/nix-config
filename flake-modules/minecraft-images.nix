@@ -21,8 +21,28 @@ let
         overlays = lib.attrValues self.overlays;
       };
 
-      # A server tree may pin its own JDK (magic-vr-pack needs >= 21.0.13.1).
-      jre = server.jre or pkgs.temurin-jre-bin-21;
+      # Pinned to Temurin 21.0.13.1+2 for CVE-2026-114938 ("Java4Shell":
+      # memory corruption in the Base64 decoder intrinsic on x86-64 CPUs
+      # with AVX-512 VBMI, pre-auth RCE where untrusted input is
+      # Base64-decoded; affects 17.0.6+). Fixed in 21.0.13.1 (Red Hat
+      # RHSA-2026:100569, Debian openjdk-21 21.0.13.1+2). nixos-26.05 still
+      # ships 21.0.11 and nixos-unstable 21.0.12.1, both vulnerable.
+      # Drop this override once nixpkgs' temurin-bin/sources.json points at
+      # jdk-21.0.13.1 or newer.
+      # A server tree may pin its own JDK instead (magic-vr-pack does).
+      jre = server.jre or (pkgs.temurin-jre-bin-21.overrideAttrs (_old: {
+        version = "21.0.13.1";
+        src = pkgs.fetchurl {
+          x86_64-linux = {
+            url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jre_x64_linux_hotspot_21.0.13.1_2.tar.gz";
+            sha256 = "18f44fab9065217f3ba61d0eef8a7b5f3c3713aa7293001b0d4ac10ede3850f0";
+          };
+          aarch64-linux = {
+            url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jre_aarch64_linux_hotspot_21.0.13.1_2.tar.gz";
+            sha256 = "52bc58323d9266538a6361a3cf8365fc1186dd9510d7f33f623681c4aabb7e72";
+          };
+        }.${system};
+      }));
 
       imageContents = [
         # Plain bash (no readline / history / etc.) is enough for the
