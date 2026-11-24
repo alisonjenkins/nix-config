@@ -1,14 +1,34 @@
 # Sourced by entrypoint.sh. RCON settings are re-applied on every boot because
 # the PVC copy of server.properties is only seeded on first start.
 
+# escape_property VALUE: escape VALUE for a Java .properties file, which reads
+# `\` as an escape and drops leading whitespace.
+escape_property() {
+  local v="${1//\\/\\\\}"
+  v="${v//:/\\:}"
+  v="${v//=/\\=}"
+  v="${v//#/\\#}"
+  v="${v//!/\\!}"
+  if [[ "$v" == [[:space:]]* ]]; then
+    v="\\$v"
+  fi
+  printf '%s' "$v"
+}
+
 # set_property FILE KEY VALUE: replace KEY's line, or append it. Literal
-# matching and printf keep `/ & \ |` in VALUE from being interpreted.
+# matching and printf keep `/ & |` in VALUE from being interpreted.
 set_property() {
-  local file="$1" key="$2" value="$3" tmp
+  local file="$1" key="$2" value="$3" tmp rc=0
   tmp="$(mktemp "${file}.XXXXXX")"
   # KEY is a fixed literal from this file, so only its dots need escaping.
-  grep -v -E "^${key//./\\.}=" "$file" >"$tmp" || true
-  printf '%s=%s\n' "$key" "$value" >>"$tmp"
+  # grep exits 1 when every line matched; 2 or more is a read error.
+  grep -v -E "^${key//./\\.}=" "$file" >"$tmp" || rc=$?
+  if [ "$rc" -gt 1 ]; then
+    rm -f "$tmp"
+    echo "ERROR: could not read $file to set $key (grep exit $rc)" >&2
+    return 1
+  fi
+  printf '%s=%s\n' "$key" "$(escape_property "$value")" >>"$tmp"
   # mv, not in-place write: the first-boot copy of the store file is read-only.
   chmod 644 "$tmp"
   mv -f "$tmp" "$file"
