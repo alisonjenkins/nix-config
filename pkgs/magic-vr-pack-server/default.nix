@@ -134,7 +134,8 @@ stdenvNoCC.mkDerivation {
     install -m644 ${./rcon.sh}       $out/rcon.sh
     substituteInPlace $out/entrypoint.sh \
       --replace-fail '#!/usr/bin/env bash' '#!${bash}/bin/bash' \
-      --replace-fail '@libstdcxxLib@'      '${stdenv.cc.cc.lib}/lib'
+      --replace-fail '@libstdcxxLib@'      '${stdenv.cc.cc.lib}/lib' \
+      --replace-fail '@neoforgeVersion@'   '${neoforgeVersion}'
 
     echo "[deps-check] running dep-tree on $out ..."
     if dep-tree --neoforge-version ${neoforgeVersion} "$out" > deps-check.log 2>&1; then

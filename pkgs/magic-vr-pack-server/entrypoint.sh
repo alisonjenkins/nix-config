@@ -9,9 +9,14 @@ set -euo pipefail
 
 cd /data
 
-if [ ! -d /data/libraries ]; then
-  echo "[entrypoint] First boot: running NeoForge installer..."
+# The marker is written only after a successful install, so an interrupted
+# first boot retries; it holds the version, so a NeoForge bump reinstalls.
+NEOFORGE_VERSION=@neoforgeVersion@
+INSTALL_MARKER=/data/.neoforge-installed
+if [ "$(cat "$INSTALL_MARKER" 2>/dev/null || true)" != "$NEOFORGE_VERSION" ]; then
+  echo "[entrypoint] Running NeoForge $NEOFORGE_VERSION installer..."
   java -jar /opt/server/neoforge-installer.jar --installServer /data
+  printf '%s\n' "$NEOFORGE_VERSION" >"$INSTALL_MARKER"
 fi
 
 # JVM flags are image-owned (they carry the CVE-2026-114938 mitigation), so
@@ -64,11 +69,9 @@ mkdir -p logs
 
 mapfile -t JVM_TUNING < <(grep -v '^[[:space:]]*#' /data/user_jvm_args.txt | grep -v '^[[:space:]]*$')
 
-shopt -s nullglob
-NEOFORGE_ARGS=( /data/libraries/net/neoforged/neoforge/*/unix_args.txt )
-if [ ${#NEOFORGE_ARGS[@]} -ne 1 ]; then
-  echo "ERROR: expected exactly one NeoForge unix_args.txt under /data/libraries/net/neoforged/neoforge/, found ${#NEOFORGE_ARGS[@]}" >&2
-  printf '  %s\n' "${NEOFORGE_ARGS[@]}" >&2
+NEOFORGE_ARGS="/data/libraries/net/neoforged/neoforge/$NEOFORGE_VERSION/unix_args.txt"
+if [ ! -f "$NEOFORGE_ARGS" ]; then
+  echo "ERROR: $NEOFORGE_ARGS is missing; delete $INSTALL_MARKER to rerun the installer" >&2
   exit 1
 fi
 
@@ -76,5 +79,5 @@ exec java \
   -Xms"$HEAP" -Xmx"$HEAP" \
   -Xlog:gc*:file=logs/gc.log:time,uptime:filecount=5,filesize=10M \
   "${JVM_TUNING[@]}" \
-  "@${NEOFORGE_ARGS[0]}" \
+  "@$NEOFORGE_ARGS" \
   nogui
