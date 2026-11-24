@@ -6,5 +6,6 @@ pub mod date;
 pub mod files;
 pub mod lock;
 pub mod pattern;
+pub mod shepherd;
 pub mod sources;
 pub mod workflows;

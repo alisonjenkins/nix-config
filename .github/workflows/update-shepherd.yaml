@@ -1,0 +1,76 @@
+# Follow the nightly flake-update PR until it merges.
+#
+# update.yaml opens the nightly PR, arms auto-merge and exits. It used to wait
+# for the merge on the self-hosted runner, which held the runner flake-check
+# needed and left whatever happened after its timeout unhandled (2026-11-23:
+# #1070 passed after the job gave up, then sat BEHIND main all night).
+#
+# This workflow reacts instead of waiting. On every push to main, every
+# finished PR check or nightly run, and every 30 minutes as a backstop, it
+# asks `update-policy shepherd` what each open nightly PR needs:
+#   - behind main: rebase it with the updater App token (checks re-run);
+#   - failed check, conflict, or open more than STUCK_AFTER_HOURS: open or
+#     update one "Nightly flake update is stuck" issue, which is closed again
+#     automatically once nothing is stuck.
+# Logic: pkgs/update-policy/src/shepherd.rs (unit tested) and
+# .github/scripts/update-shepherd.sh (bats tested).
+#
+# It runs on a GitHub-hosted runner so it never queues behind the work it is
+# following, and it only ever checks out main: no PR code runs here, which is
+# what makes the workflow_run trigger and the App token safe to combine.
+
+name: Update shepherd
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["PR check", "Update and push flake lock"]
+    types: [completed]
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: update-shepherd
+  cancel-in-progress: false
+
+env:
+  STUCK_AFTER_HOURS: "6"
+
+jobs:
+  shepherd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Always main, whatever event started the run.
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Build update-policy
+        run: cargo build --release --locked --manifest-path pkgs/update-policy/Cargo.toml
+      - name: Get the updater App token
+        id: app-token
+        # Its rebase pushes start the PR's checks again; GITHUB_TOKEN's would
+        # not. Contents and pull requests only, no workflows permission.
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          app-id: ${{ secrets.UPDATER_APP_ID }}
+          private-key: ${{ secrets.UPDATER_APP_PRIVATE_KEY }}
+          repositories: nix-config
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Follow the nightly PR
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          ISSUE_TOKEN: ${{ github.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          UPDATE_POLICY: pkgs/update-policy/target/release/update-policy
+        run: .github/scripts/update-shepherd.sh

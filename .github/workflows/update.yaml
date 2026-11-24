@@ -2,7 +2,9 @@ name: Update and push flake lock
 
 on:
   schedule:
-    - cron: "0 2 * * *"
+    # Off the hour: GitHub's scheduler is busiest at :00 and has been
+    # starting the 02:00 run seven or more hours late.
+    - cron: "17 2 * * *"
   workflow_dispatch:
     inputs:
       manual:
@@ -111,40 +113,18 @@ jobs:
           # The App opened the PR, so pr-check (flake-check) and
           # adr-repo-claims start on their own as pull_request runs.
           gh pr merge --rebase --auto --delete-branch "$pr_url"
-
-          # --auto only arms auto-merge and returns immediately, so without
-          # this the job would report success even when flake-check fails
-          # and the PR is left open. Poll until it actually merges or closes.
-          for _ in $(seq 1 60); do
-            state=$(gh pr view "$pr_url" --json state -q .state)
-            case "$state" in
-              MERGED)
-                echo "::notice::$pr_url merged"
-                exit 0
-                ;;
-              CLOSED)
-                echo "::error::$pr_url closed without merging"
-                exit 1
-                ;;
-            esac
-            # main requires an up-to-date branch; a push to main while the
-            # check runs leaves the PR BEHIND and auto-merge waits forever.
-            # The App pushes the rebase, so the checks start again on their
-            # own. A main that changed a workflow cannot be rebased in
-            # without the workflows permission the App deliberately lacks;
-            # then tomorrow's run supersedes this PR.
-            if [ "$(gh pr view "$pr_url" --json mergeStateStatus -q .mergeStateStatus)" = BEHIND ]; then
-              gh pr update-branch --rebase "$pr_url" \
-                || echo "::warning::could not rebase $pr_url onto main"
-            fi
-            sleep 30
-          done
-          echo "::error::$pr_url did not merge within timeout"
-          exit 1
+          # Do not wait here for the merge. flake-check runs on this same
+          # self-hosted runner, so a job that waits holds the runner the check
+          # needs, and anything that happens after a timeout goes unhandled
+          # (2026-11-23: #1070 passed after the job gave up, then sat BEHIND
+          # main). update-shepherd.yaml takes over from here: it rebases the
+          # PR when main moves and opens an issue when it fails or stalls.
+          echo "::notice::auto-merge armed on $pr_url; update-shepherd.yaml follows it from here"
 
   # Inputs whose tier does not auto-merge (sensitive, individual-code) are
   # bumped weekly into one PR for a human to read. Runs after the nightly job
-  # so it starts from the main that job merged into.
+  # has opened its PR (it no longer waits for the merge), so this PR may need
+  # "Update branch" once the nightly merges.
   review:
     needs: build
     if: ${{ always() && github.event.pull_request.head.repo.fork != true && (inputs.manual || github.event_name == 'schedule') }}

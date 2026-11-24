@@ -140,6 +140,25 @@ still open. Only the nightly PR writes `pins/flake-seen.json`, so the two
 PRs never conflict over it. `workflow_dispatch` with `manual: true` opens the
 review PR on any day. `update-policy bump` with no `--apply` is a dry run.
 
+The nightly job opens its PR, arms auto-merge and exits; it does not wait for
+the merge. `update-shepherd.yaml` follows the PR from there, on a
+GitHub-hosted runner so it never queues behind the checks it is waiting for.
+It runs on every push to main, every finished PR check or nightly run, and
+every 30 minutes, and asks `update-policy shepherd` what the open nightly PR
+needs:
+
+- **behind main**: rebase it with the updater App token, so its checks run
+  again (the App cannot rebase in a main that changed a workflow; that is
+  reported instead);
+- **a failed check, a conflict, or open 6 hours or more**: open or update one
+  issue titled "Nightly flake update is stuck", which says why and links the
+  run. It is closed automatically once nothing is stuck. A failed or
+  conflicting PR is not retried; the next night's PR supersedes it.
+
+`update-policy shepherd --prs FILE` takes the JSON of `gh pr list --json
+number,headRefName,isDraft,createdAt,mergeStateStatus,statusCheckRollup` and
+prints the decisions, so a stuck PR can be diagnosed locally.
+
 ## What is implemented
 
 | Piece | Where | State |
@@ -148,6 +167,7 @@ review PR on any day. `update-policy bump` with no `--apply` is a dry run.
 | `update-policy check` | `pkgs/update-policy` (Rust) | done: runs in the PR check and as a pre-commit hook |
 | Renovate rules per tier | `renovate.json` | done (#1015) |
 | `update-policy bump` cooldowns | `pkgs/update-policy`, `update.yaml` | done |
+| Nightly PR follow-up | `update-policy shepherd`, `update-shepherd.yaml` | done |
 | home-cluster checks | home-cluster | planned |
 
 `update-policy check` fails when a flake input (direct or transitive) or a

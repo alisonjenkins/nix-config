@@ -27,11 +27,7 @@ impl Date {
     }
 
     pub fn today() -> Date {
-        let secs = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs() as i64)
-            .unwrap_or(0);
-        Date::from_unix_seconds(secs)
+        Date::from_unix_seconds(now_unix_seconds())
     }
 
     pub fn plus_days(self, n: u32) -> Date {
@@ -41,6 +37,36 @@ impl Date {
     pub fn days_until(self, later: Date) -> i64 {
         later.days - self.days
     }
+}
+
+/// Seconds since the Unix epoch for a UTC RFC 3339 timestamp as GitHub writes
+/// it (`2026-11-23T22:39:57Z`, optionally with fractional seconds). Offsets
+/// other than `Z` are rejected rather than guessed at.
+pub fn parse_utc_timestamp(s: &str) -> Option<i64> {
+    let s = s.strip_suffix('Z')?;
+    let (date, time) = s.split_once('T')?;
+    let date = Date::parse(date)?;
+    let time = time.split_once('.').map_or(time, |(whole, frac)| {
+        if !frac.is_empty() && frac.bytes().all(|b| b.is_ascii_digit()) { whole } else { "" }
+    });
+    let mut it = time.split(':');
+    let (h, m, sec) = (it.next()?, it.next()?, it.next()?);
+    if it.next().is_some() || [h, m, sec].iter().any(|p| p.len() != 2 || !p.bytes().all(|b| b.is_ascii_digit())) {
+        return None;
+    }
+    let (h, m, sec): (i64, i64, i64) = (h.parse().ok()?, m.parse().ok()?, sec.parse().ok()?);
+    if h > 23 || m > 59 || sec > 60 {
+        return None;
+    }
+    Some(date.days * 86_400 + h * 3_600 + m * 60 + sec)
+}
+
+/// Seconds since the Unix epoch now.
+pub fn now_unix_seconds() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
 }
 
 fn is_leap(y: i64) -> bool {
@@ -143,6 +169,30 @@ mod tests {
         assert!(a < b);
         assert_eq!(a.plus_days(11), b);
         assert_eq!(a.plus_days(0), a);
+    }
+
+    #[test]
+    fn parses_github_timestamps() {
+        assert_eq!(parse_utc_timestamp("1970-01-01T00:00:00Z"), Some(0));
+        assert_eq!(parse_utc_timestamp("1970-01-02T01:02:03Z"), Some(86_400 + 3_723));
+        assert_eq!(parse_utc_timestamp("2026-11-23T22:39:57Z"), Some(1_795_132_800 + 3 * 86_400 + 81_597));
+        assert_eq!(parse_utc_timestamp("2026-11-23T22:39:57.123Z"), parse_utc_timestamp("2026-11-23T22:39:57Z"));
+        assert_eq!(parse_utc_timestamp("2026-11-23T23:59:60Z"), Some(1_795_132_800 + 4 * 86_400));
+    }
+
+    #[test]
+    fn rejects_bad_timestamps() {
+        for bad in ["2026-11-23T22:39:57", "2026-11-23T22:39:57+01:00", "2026-11-23 22:39:57Z", "2026-11-23T24:00:00Z",
+                    "2026-11-23T22:60:00Z", "2026-11-23T22:39:61Z", "2026-11-23T2:39:57Z", "2026-11-23T22:39Z",
+                    "2026-11-23T22:39:57:00Z", "2026-11-23T22:39:57.Z", "2026-11-23T22:39:57.1aZ", "2026-02-30T00:00:00Z",
+                    "2026-11-23T+1:39:57Z", ""] {
+            assert_eq!(parse_utc_timestamp(bad), None, "{bad}");
+        }
+    }
+
+    #[test]
+    fn now_is_after_this_code_was_written() {
+        assert!(now_unix_seconds() > 1_795_000_000);
     }
 
     #[test]
