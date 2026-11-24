@@ -7,7 +7,7 @@
   jre ? openjdk21_headless
 }:
 let
-  version = "0.2.1";
+  version = "0.2.2";
   minecraftVersion = "1.21.1";
   neoforgeVersion = "21.1.267";
   minJavaVersion = "21.0.13.1";
