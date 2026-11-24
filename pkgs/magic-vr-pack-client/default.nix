@@ -64,7 +64,7 @@ stdenvNoCC.mkDerivation {
       install -m644 "${m.jar}" "overrides/shaderpacks/${m.filename}"
     '') shaderpacks}
 
-    # glUploadMode=DATA for Apple GL 4.1, and LODs kept behind cave ceilings.
+    # Keeps LODs behind cave ceilings.
     install -m644 ${./DistantHorizons.toml} overrides/config/DistantHorizons.toml
     # Faster seated-mode mouse-edge turning; partial config, GSON fills the rest.
     install -m644 ${./vivecraft-client-config.json} overrides/config/vivecraft-client-config.json
