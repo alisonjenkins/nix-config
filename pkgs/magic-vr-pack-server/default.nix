@@ -66,7 +66,7 @@ let
   serverProperties = builtins.toFile "server.properties" ''
     server-port=25565
     max-players=20
-    view-distance=10
+    view-distance=8
     simulation-distance=6
     motd=magic-vr-pack ${version}
     # Behind mc-limbo-proxy, which does the Mojang auth and forwards the
