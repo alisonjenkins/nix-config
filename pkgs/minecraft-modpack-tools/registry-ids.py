@@ -86,10 +86,10 @@ def extract(paths):
 
 # FTB Quests keys whose string value is a registry ID, by registry.
 SNBT_REFS = {
-    "items": re.compile(r'\bid:\s*"([a-z0-9_.-]+:[a-z0-9_./-]+)"'),
-    "entities": re.compile(r'\bentity:\s*"([a-z0-9_.-]+:[a-z0-9_./-]+)"'),
-    "dimensions": re.compile(r'\bdimension:\s*"([a-z0-9_.-]+:[a-z0-9_./-]+)"'),
-    "advancements": re.compile(r'\badvancement:\s*"([a-z0-9_.-]+:[a-z0-9_./-]+)"'),
+    "items": re.compile(r'\bid:\s*"([A-Za-z0-9_.-]+:[A-Za-z0-9_./-]+)"'),
+    "entities": re.compile(r'\bentity:\s*"([A-Za-z0-9_.-]+:[A-Za-z0-9_./-]+)"'),
+    "dimensions": re.compile(r'\bdimension:\s*"([A-Za-z0-9_.-]+:[A-Za-z0-9_./-]+)"'),
+    "advancements": re.compile(r'\badvancement:\s*"([A-Za-z0-9_.-]+:[A-Za-z0-9_./-]+)"'),
 }
 
 
