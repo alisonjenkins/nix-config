@@ -27,5 +27,20 @@ Magic-focused Minecraft 1.21.1 pack on NeoForge, with VR support through Vivecra
 - `vivecraft-client-config.json`: seated-mode turning speed.
 - `colered-crosshair.json`: crosshair colours (the file name copies the mod's spelling).
 - `ftbquests/`: the quest book (Archmage Veyla's guide), the same one the server ships.
+- `l2configs/l2hostility-server.toml`: L2 Hostility with per-section difficulty off (`allowSectionDifficulty = false`), the same file the server ships.
+
+## L2 Hostility difficulty
+
+- Mob level still grows with your own kills, distance from spawn and the dimension.
+- Killing many mobs in one area no longer makes that area harder.
+- A Hostility Orb still clears the sections around it, and cleared sections stay safe.
+
+### Existing worlds and servers
+
+The file only reaches new installs.
+The server copies `config/` into its data volume once, when the volume has no `config/` yet, so a running server keeps its old file.
+
+1. Copy `overrides/config/l2configs/l2hostility-server.toml` from this zip (or from the server image's `/opt/server/config/l2configs/`) over the same path on the server's data volume, or in the instance folder for single-player.
+2. Restart the server or the game.
 
 The list of mods is in `modlist.html`.
