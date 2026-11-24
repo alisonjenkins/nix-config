@@ -49,9 +49,17 @@ fi
 # Image-owned, overwritten every boot. fml.toml must keep
 # disableConfigWatcher=true (inotify budget with ~150 mods);
 # neovelocity-common.toml must keep reading the mounted forwarding secret.
-for f in fml.toml neovelocity-common.toml; do
+for f in fml.toml neovelocity-common.toml l2configs/l2hostility-server.toml; do
+  mkdir -p "config/${f%/*}"
   cp -f "/opt/server/config/$f" "config/$f"
 done
+
+# The quest book is pack-owned too: a stale copy on the volume once held an
+# entity id FTB Quests cannot parse and kicked every player on join.
+# Player progress lives in the world save, not here.
+rm -rf config/ftbquests
+cp -r /opt/server/config/ftbquests config/ftbquests
+chmod -R u+w config/ftbquests
 
 # NeoVelocity reads the proxy's shared secret from /data/forwarding.secret,
 # mounted from a k8s Secret. Without it no player can log in.

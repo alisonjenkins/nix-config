@@ -53,11 +53,9 @@ Updates replace these.
 
 ### Existing worlds and servers
 
-The file only reaches new installs.
-The server copies `config/` into its data volume once, when the volume has no `config/` yet, so a running server keeps its old file.
+The server overwrites this file and the quest book on its data volume at every start, so a server update applies them.
 
-1. Copy `overrides/config/l2configs/l2hostility-server.toml` from this zip (or from the server image's `/opt/server/config/l2configs/`) over the same path on the server's data volume, or in the instance folder for single-player.
-2. Restart the server or the game.
+For an existing single-player world, copy `overrides/config/l2configs/l2hostility-server.toml` from this zip over the same path in the instance folder, then restart the game.
 
 ## Chat on restricted accounts
 
