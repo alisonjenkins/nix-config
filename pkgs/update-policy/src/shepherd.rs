@@ -107,12 +107,18 @@ pub enum Decision {
     Wait(u64, String),
 }
 
+/// Each decision must stay one line for the shell consumer, whatever a check
+/// name contains.
+fn one_line(text: &str) -> String {
+    text.replace('\r', "\\r").replace('\n', "\\n")
+}
+
 impl fmt::Display for Decision {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Decision::Rebase(n) => write!(f, "rebase {n}"),
-            Decision::Stuck(n, why) => write!(f, "stuck {n} {why}"),
-            Decision::Wait(n, why) => write!(f, "wait {n} {why}"),
+            Decision::Stuck(n, why) => write!(f, "stuck {n} {}", one_line(why)),
+            Decision::Wait(n, why) => write!(f, "wait {n} {}", one_line(why)),
         }
     }
 }
@@ -239,6 +245,15 @@ mod tests {
             lines(&[pr(3, H, "BLOCKED", &[("a", "FAILURE"), ("b", "TIMED_OUT")])]),
             ["stuck 3 check failed: a failure, b timed_out"]
         );
+    }
+
+    #[test]
+    fn line_breaks_in_check_names_stay_on_one_line() {
+        let out = lines(&[pr(3, H, "BLOCKED", &[("lint\nunit", "FAILURE")])]);
+        assert_eq!(out, ["stuck 3 check failed: lint\\nunit failure"]);
+        let out = lines(&[pr(3, H, "BLOCKED", &[("a\r\nb", "QUEUED")])]);
+        assert_eq!(out, ["wait 3 open 1.0h, merge state blocked, pending: a\\r\\nb"]);
+        assert!(out.iter().all(|l| !l.contains('\n') && !l.contains('\r')));
     }
 
     #[test]
