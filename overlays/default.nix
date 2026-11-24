@@ -306,6 +306,9 @@ in
         '';
       })
       else prev.fish;
+
+    # Electron 43 renders Obsidian blank (webFrame API removed); 44 works.
+    obsidian = prev.obsidian.override { electron = final.electron_44-bin; };
   };
 
   # When applied, the stable nixpkgs set (declared in the flake inputs) will
