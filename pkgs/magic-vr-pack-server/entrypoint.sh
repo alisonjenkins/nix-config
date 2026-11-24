@@ -41,9 +41,18 @@ if [ ! -e config ] && [ -e /opt/server/config ]; then
   chmod -R u+w config
 fi
 
-# fml.toml must keep disableConfigWatcher=true (inotify budget with ~150
-# mods), so it is overwritten from the image on every boot.
-cp -f /opt/server/config/fml.toml config/fml.toml
+# Image-owned, overwritten every boot. fml.toml must keep
+# disableConfigWatcher=true (inotify budget with ~150 mods);
+# neovelocity-common.toml must keep reading the mounted forwarding secret.
+for f in fml.toml neovelocity-common.toml; do
+  cp -f "/opt/server/config/$f" "config/$f"
+done
+
+# NeoVelocity reads the proxy's shared secret from /data/forwarding.secret,
+# mounted from a k8s Secret. Without it no player can log in.
+if [ ! -s /data/forwarding.secret ]; then
+  echo "[entrypoint] WARNING: /data/forwarding.secret missing or empty; proxy logins will fail" >&2
+fi
 
 # spark's async-profiler dlopens libstdc++; dockerTools images have no /lib.
 export LD_LIBRARY_PATH="@libstdcxxLib@${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"

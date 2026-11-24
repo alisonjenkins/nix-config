@@ -39,6 +39,16 @@ let
     allEntries;
   serverMods = lib.filter (m: m.kind == "mod" && m.side != "client") enabledEntries;
 
+  # Velocity-modern forwarding so the backend trusts mc-limbo-proxy. The fork
+  # drops CrossStitch, which breaks command decoding through a transparent
+  # proxy. Server only, and not on Modrinth/CurseForge, so it lives here rather
+  # than in modlist.toml. Same jar as create-arkana-aeronautics-server.
+  neoVelocity = fetchurl {
+    url = "https://github.com/alisonjenkins/NeoVelocity/releases/download/fork-v1.2.6-nocrossstitch.1/neovelocity-1.2.6%2B1.21.1-1.21.5.jar";
+    name = "neovelocity-1.2.6-nocrossstitch.jar";
+    sha256 = "1vk2rli76v5bcxp7y7kdqay2xjfls1m81iynyn69ac5nzgl9sy4a";
+  };
+
   eulaFile = builtins.toFile "eula.txt" "eula=true\n";
   jvmArgsFile = builtins.toFile "user_jvm_args.txt" (import ./jvm-args.nix);
 
@@ -49,7 +59,9 @@ let
     view-distance=10
     simulation-distance=6
     motd=magic-vr-pack ${version}
-    online-mode=true
+    # Behind mc-limbo-proxy, which does the Mojang auth and forwards the
+    # verified identity. Never expose this port directly.
+    online-mode=false
     # RCON serves backup hooks; entrypoint.sh writes the password from
     # $RCON_PASSWORD and refuses to start without one. Restrict port 25575
     # with a NetworkPolicy.
@@ -101,6 +113,7 @@ stdenvNoCC.mkDerivation {
     ${lib.concatMapStrings (m: ''
       ln -s "${m.jar}" "$out/mods/${m.filename}"
     '') serverMods}
+    ln -s "${neoVelocity}" "$out/mods/neovelocity-1.2.6-nocrossstitch.jar"
 
     install -m644 ${eulaFile}          $out/eula.txt
     install -m644 ${jvmArgsFile}       $out/user_jvm_args.txt
@@ -108,6 +121,7 @@ stdenvNoCC.mkDerivation {
     install -m644 ${neoforgeInstaller} $out/neoforge-installer.jar
     install -Dm644 ${./fml.toml}       $out/config/fml.toml
     install -Dm644 ${./DistantHorizons.toml} $out/config/DistantHorizons.toml
+    install -Dm644 ${./neovelocity-common.toml} $out/config/neovelocity-common.toml
     # Per-section difficulty off: kills no longer raise an area's level.
     install -Dm644 ${./l2hostility-server.toml} $out/config/l2configs/l2hostility-server.toml
 
