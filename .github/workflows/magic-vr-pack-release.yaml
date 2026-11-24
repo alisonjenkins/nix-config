@@ -57,7 +57,14 @@ jobs:
         id: build
         run: |
           set -euo pipefail
-          nix build --no-link --print-out-paths \
+          # Root the outputs so a GC between build and publish can't take
+          # them. The tools- prefix keeps the niks3 <runid>-* sweep off it.
+          root=(--no-link)
+          mkdir -p /nix/var/nix/gcroots/gha 2>/dev/null || true
+          if [ -w /nix/var/nix/gcroots/gha ]; then
+            root=(--out-link "/nix/var/nix/gcroots/gha/tools-${GITHUB_RUN_ID:-manual}-magic-vr-pack")
+          fi
+          nix build "${root[@]}" --print-out-paths \
             ".#packages.x86_64-linux.minecraft-magic-vr-pack-image" \
             ".#packages.x86_64-linux.magic-vr-pack-client" \
             > build-out.txt
