@@ -165,6 +165,9 @@ in
         create-arkana-aeronautics-server = (pkgsFor system).create-arkana-aeronautics-server;
         minecraft-magic-vr-pack-image = magicVrPackImage system;
         magic-vr-pack-server = (pkgsFor system).magic-vr-pack-server;
+        # Linux-only: the client embeds the server's quest book, and the
+        # server's pinned JDK has no Darwin build.
+        magic-vr-pack-client = (pkgsFor system).magic-vr-pack-client;
       }
       # Cross-platform: client zip is just metadata + jar shuffling, builds
       # on Darwin too. Exposed for both linux and darwin so a Mac dev can
@@ -172,7 +175,6 @@ in
       # Linux builder.
       // {
         create-arkana-aeronautics-client = (pkgsFor system).create-arkana-aeronautics-client;
-        magic-vr-pack-client = (pkgsFor system).magic-vr-pack-client;
         # Generic Minecraft modpack tooling (currently `dep-tree`).
         # Run via `nix run .#dep-tree -- /path/to/server-tree`.
         minecraft-modpack-tools = (pkgsFor system).minecraft-modpack-tools;
