@@ -70,6 +70,9 @@ stdenvNoCC.mkDerivation {
     install -m644 ${./vivecraft-client-config.json} overrides/config/vivecraft-client-config.json
     # File name matches the mod's own typo ("colered").
     install -m644 ${./colered-crosshair.json} overrides/config/colered-crosshair.json
+    # Same book as the server, so single-player worlds get it too.
+    cp -r ${server}/config/ftbquests overrides/config/
+    chmod -R u+w overrides/config/ftbquests
 
     install -m644 ${./JVM-ARGS.md} JVM-ARGS.md
     install -m644 ${./README.md} README.md

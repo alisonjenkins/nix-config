@@ -26,5 +26,6 @@ Magic-focused Minecraft 1.21.1 pack on NeoForge, with VR support through Vivecra
 - `DistantHorizons.toml`: GPU upload mode that works on Apple Silicon; LODs hidden behind cave ceilings.
 - `vivecraft-client-config.json`: seated-mode turning speed.
 - `colered-crosshair.json`: crosshair colours (the file name copies the mod's spelling).
+- `ftbquests/`: the quest book (Archmage Veyla's guide), the same one the server ships.
 
 The list of mods is in `modlist.html`.
