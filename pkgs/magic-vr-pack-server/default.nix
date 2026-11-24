@@ -108,6 +108,8 @@ stdenvNoCC.mkDerivation {
     install -m644 ${neoforgeInstaller} $out/neoforge-installer.jar
     install -Dm644 ${./fml.toml}       $out/config/fml.toml
     install -Dm644 ${./DistantHorizons.toml} $out/config/DistantHorizons.toml
+    # Per-section difficulty off: kills no longer raise an area's level.
+    install -Dm644 ${./l2hostility-server.toml} $out/config/l2configs/l2hostility-server.toml
 
     python3 ${./quests}/gen.py $out
     # Server-side jars only: a quest item the server lacks never loads.
