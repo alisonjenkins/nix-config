@@ -12,6 +12,10 @@
         {
           "rev": "e1eb596123bb18acff3d7363cc49eb8f61f0d696",
           "first_seen": "2026-11-24"
+        },
+        {
+          "rev": "cbc557b1a565f7bad47cb5197cf364788867cf30",
+          "first_seen": "2026-11-25"
         }
       ]
     },
@@ -61,6 +65,10 @@
         {
           "rev": "ceca54d1de1c8d7c3b2ecd9fd8c3ff24ba057cee",
           "first_seen": "2026-11-24"
+        },
+        {
+          "rev": "c0e82cad53833b053f4e1ec2c596cb3b18f00cbf",
+          "first_seen": "2026-11-25"
         }
       ]
     },
@@ -115,6 +123,10 @@
         {
           "rev": "1069ce1dcac046b565cae5c0b2e5c5596a15c709",
           "first_seen": "2026-11-23"
+        },
+        {
+          "rev": "6ec148e9963a8f870c25e2b0057aafed1f662886",
+          "first_seen": "2026-11-25"
         }
       ]
     },
@@ -164,6 +176,10 @@
         {
           "rev": "2da4b28a0ab36a7dc8ad7ac317733acac2229598",
           "first_seen": "2026-11-24"
+        },
+        {
+          "rev": "6072f67d9fe0f1c1182f72cc5d4f2ca5f047bf9e",
+          "first_seen": "2026-11-25"
         }
       ]
     },
@@ -222,6 +238,10 @@
         {
           "rev": "ff49dbf39553717ac8e0f4d5085fa0ca10c1031f",
           "first_seen": "2026-11-24"
+        },
+        {
+          "rev": "97a30ee0974b815496bec7b136af6b945bd65aef",
+          "first_seen": "2026-11-25"
         }
       ]
     },
@@ -248,6 +268,10 @@
         {
           "rev": "38d27836fdac5014b200bdc81a3413e07c1e31fe",
           "first_seen": "2026-11-24"
+        },
+        {
+          "rev": "350f2fb7f213c405e7406128606a1ed8fdea9b4b",
+          "first_seen": "2026-11-25"
         }
       ]
     },
@@ -310,6 +334,10 @@
         {
           "rev": "b912cad300073bc9bc49a5f9747a69896aa5101a",
           "first_seen": "2026-11-24"
+        },
+        {
+          "rev": "9ef3714b2daabc415640ed711eb4400a7b86674d",
+          "first_seen": "2026-11-25"
         }
       ]
     },
@@ -323,6 +351,10 @@
         {
           "rev": "f22325c8caa974e867876771e7d3ac7536581fa3",
           "first_seen": "2026-11-24"
+        },
+        {
+          "rev": "a161441c3dbb3affd4936018a470f7dd34439c8b",
+          "first_seen": "2026-11-25"
         }
       ]
     },
@@ -416,6 +448,10 @@
         {
           "rev": "21385ea8b9e0c32b0962029b0836af2b621b7800",
           "first_seen": "2026-11-24"
+        },
+        {
+          "rev": "6c4d107744ba0760c5176a3993115b9842c19249",
+          "first_seen": "2026-11-25"
         }
       ]
     }
