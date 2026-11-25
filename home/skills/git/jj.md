@@ -14,11 +14,19 @@ test -d "$(git rev-parse --show-toplevel)/.jj" && jj --version
 ```
 
 - No `.jj/`: use git. Do not colocate a repo unless the user asked.
+- **No identity, use git.** `jj config get user.email` must print an
+  address. Work machines take git's email from a sops include that jj does
+  not read, so jj has none there.
+- **Codeberg remote, use git.** git swaps in the Codeberg noreply address by
+  remote URL (`includeIf hasconfig:remote`); jj has no such rule and would
+  commit with the personal address.
 - **Inside a git worktree, use git.** jj looks for `.jj/` by walking up, so in
   `.claude/worktrees/<name>/` it finds the *main* checkout's repo and rewrites
   that working copy, not the worktree. For isolated work in a jj repo use
-  `jj workspace add ../<repo>-<feature>` instead; it has no `.git`, so run
-  `gh` there with `-R owner/repo` and `--head <bookmark>`.
+  `jj workspace add ../<repo>-<feature>` instead, which has its own `.jj/`.
+  From jj 0.46 that workspace is colocated too (it gets a `.git` and `gh`
+  works in it); before 0.46 it has no `.git`, so run `gh` there with
+  `-R owner/repo` and `--head <bookmark>`.
 
 ## The model in four lines
 
@@ -74,9 +82,12 @@ an editor or a TUI. Always pass `-m` and paths so nothing is interactive.
 - **No git hooks run.** jj never calls `pre-commit` or `commit-msg`. Run them
   yourself before pushing. prek takes git refs, not revsets, so pass commit
   ids: `prek run --from-ref "$(jj log -r 'trunk()' --no-graph -T commit_id)" --to-ref "$(jj log -r @- --no-graph -T commit_id)"`.
-- **Signing** happens on push (`git.sign-on-push`), so local commits are
-  unsigned until then. Never turn it off; `scripts/verify-signed.sh` checks
-  the pushed range as it does for git.
+- **Signing** happens on push (`git.sign-on-push`), and only for your own
+  commits (`mine()`). A rewrite drops the signature of anyone else's commit
+  on the branch, and push does not restore it. Before pushing such a branch,
+  `jj sign -r 'trunk()..@- & ~mine()'`, then check with
+  `scripts/verify-signed.sh origin/<default>..<bookmark>` after the push.
+  Never turn signing off.
 - **Conflicts do not stop the command.** A rebase that conflicts succeeds and
   marks changes with `×` in the log. Check `jj st` after every rebase; fix by
   `jj new <conflicted>`, editing the files, then `jj squash`. Never push a
@@ -91,7 +102,8 @@ an editor or a TUI. Always pass `-m` and paths so nothing is interactive.
   never the answer.
 - **Fixups while a PR is open:** make the fix a separate change described
   `fixup! <target subject>` so reviewers see it. Before merge, fold it with
-  `jj squash --from <fixup> --into <target>`, then `jj git push -b <name>`.
+  `jj squash --from <fixup> --into <target> --use-destination-message`
+  (without it jj opens an editor to merge the two descriptions), then `jj git push -b <name>`.
   `scripts/check-no-fixups.sh` still gates the merge.
 
 ## Compact output
