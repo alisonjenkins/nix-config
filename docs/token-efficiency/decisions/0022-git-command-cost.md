@@ -5,7 +5,7 @@ date: 2026-11-25T11:30:00Z
 finding: manual-2026-11-25-ali-desktop#git
 decision: configure
 reason: "git and gh are 7.8% of Bash script-candidate cost over 7 days ($6.55 of $83.51) and 11% over 30 days ($38.33 of $353.0); diff and show output is most of it and difftastic inflates git diff, so trim output in the git skill and pilot jj for the call count"
-metric: { question: script-candidates, key: "shape:git*|gh*", baseline: 6.55, unit: usd/week }
+metric: { question: script-candidates, key: "sum:git-and-gh-shapes", baseline: 6.55, unit: usd/week }
 acted_on: null
 outcome: null
 outcome_review: null
@@ -38,5 +38,8 @@ Time is not answerable: tool-call records carry no duration by command shape. Fo
 the largest Bash-adjacent item is large-then-narrow Read at $67.58 over 30 days, about
 twice all of git.
 
-The next review compares `script-candidates` for `git*|gh*` plus `jj*` against this
-baseline over 7 days, and checks that `git diff [cd]` and `git diff | head` fall.
+The baseline is a hand-summed aggregate: no single `automate` row carries it, so the
+`sum:` key matches nothing and `compare` reports it unavailable. Re-sum it by hand: the
+`est_usd` of every 7-day shape row whose label mentions `git` or `gh` (sequences, $0.83 at
+baseline, are left out). The next review compares that sum, plus the same for `jj`, against
+this baseline, and checks that `git diff [cd]` and `git diff | head` fall.
