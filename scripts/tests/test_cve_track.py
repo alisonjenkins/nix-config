@@ -11,6 +11,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -41,8 +42,9 @@ class TrackTest(unittest.TestCase):
         (self.dir / "status.json").write_text(json.dumps(st))
         args = ["--status", str(self.dir / "status.json"), "--today", today,
                 "--body", str(self.dir / "body.md"), "--alert", str(self.dir / "alert.md"),
+                "--announced-body", str(self.dir / "announced.md"),
                 "--digest-out", str(self.dir / "digest.md"), *extra]
-        for name in ("alert.md", "digest.md"):
+        for name in ("alert.md", "announced.md", "digest.md"):
             (self.dir / name).unlink(missing_ok=True)
         if previous is not None:
             (self.dir / "prev.md").write_text(previous)
@@ -54,6 +56,8 @@ class TrackTest(unittest.TestCase):
             rc = cve_track.main(args)
         self.assertEqual(rc, 0)
         read = lambda n: (self.dir / n).read_text() if (self.dir / n).exists() else None  # noqa: E731
+        self.announced = read("announced.md")
+        self.assertEqual(self.announced is None, read("alert.md") is None)
         return read("body.md"), read("alert.md"), read("digest.md")
 
     def test_first_run_makes_a_body_and_no_alert(self):
@@ -73,8 +77,27 @@ class TrackTest(unittest.TestCase):
         self.assertIn("| zlib |", alert)
         self.assertNotIn("| curl |", alert)
         self.assertEqual(cve_track.read_state(body2)["alerts"]["curl|CVE-1"], "2026-11-23")
-        _, alert3, _ = self.run_track(st, previous=body2, today="2026-11-25")
+        # Posted: the workflow writes the announced body.
+        _, alert3, _ = self.run_track(st, previous=self.announced, today="2026-11-25")
         self.assertIsNone(alert3)
+
+    def test_alert_that_could_not_be_posted_is_sent_again(self):
+        body, _, _ = self.run_track(status(), today="2026-11-23")
+        st = status(finding("zlib", "CVE-2", alert=True))
+        body2, alert, _ = self.run_track(st, previous=body)
+        self.assertIn("| zlib |", alert)
+        self.assertEqual(cve_track.read_state(self.announced)["announced"], ["zlib|CVE-2"])
+        # The comment failed, so the workflow kept body2, which has not announced it.
+        self.assertEqual(cve_track.read_state(body2)["announced"], [])
+        _, again, _ = self.run_track(st, previous=body2, today="2026-11-25")
+        self.assertIn("| zlib |", again)
+
+    def test_alert_and_announced_body_go_together(self):
+        (self.dir / "status.json").write_text(json.dumps(status()))
+        with mock.patch("sys.stderr", io.StringIO()):
+            rc = cve_track.main(["--status", str(self.dir / "status.json"), "--body", str(self.dir / "b.md"),
+                                 "--alert", str(self.dir / "a.md")])
+        self.assertEqual(rc, 2)
 
     def test_old_finding_that_becomes_exploited_alerts(self):
         body, _, _ = self.run_track(status(finding("curl", "CVE-1", score=5.0)), today="2026-11-23")
@@ -120,6 +143,19 @@ class TrackTest(unittest.TestCase):
         self.assertIn("more not shown", body)
         self.assertEqual(len(cve_track.read_state(body)["open"]), 2000)
 
+    def test_many_alerts_stay_under_the_limit(self):
+        many = [finding(f"pkg{i}", f"CVE-2026-{i}", alert=True) for i in range(2000)]
+        body, _, _ = self.run_track(status(*many, finding("curl", "CVE-1")))
+        self.assertLessEqual(len(body), cve_track.BODY_LIMIT)
+        self.assertIn("### Alerts (2000)", body)
+        self.assertIn("more not shown", body)
+        self.assertEqual(len(cve_track.read_state(body)["alerts"]), 2000)
+        _, alert, _ = self.run_track(status(*many), previous=self.run_track(status(), today="2026-11-23")[0])
+        self.assertLessEqual(len(alert), cve_track.BODY_LIMIT)
+        self.assertIn("**2000 new alert(s) on main.**", alert)
+        self.assertIn("more not shown", alert)
+        self.assertLessEqual(len(self.announced), cve_track.BODY_LIMIT)
+
     def test_intel_outage_is_shown(self):
         body, _, _ = self.run_track(status(error="could not fetch KEV/EPSS data (x)"))
         self.assertIn("> [!WARNING]", body)
@@ -127,7 +163,7 @@ class TrackTest(unittest.TestCase):
 
     def test_unreadable_state_counts_as_first_run(self):
         self.assertIsNone(cve_track.read_state("<!-- cve-state:v2 bm90IHpsaWI= -->"))
-        self.assertEqual(cve_track.next_state(None, [], dt.date(2026, 1, 1)), {"open": {}, "alerts": {}, "fixed": {}})
+        self.assertEqual(cve_track.next_state(None, [], dt.date(2026, 1, 1)), {"open": {}, "alerts": {}, "announced": [], "fixed": {}})
 
 
 if __name__ == "__main__":

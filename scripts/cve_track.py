@@ -20,8 +20,12 @@ issue itself. Pure: reads files, writes files, calls nothing.
 
 Usage: cve_track.py --status status.json [--previous body.md] [--fixes fixes.json]
                     [--commit SHA] [--run-url URL] [--today YYYY-MM-DD] [--digest]
-                    --body OUT [--alert OUT] [--digest-out OUT]
+                    --body OUT [--alert OUT --announced-body OUT] [--digest-out OUT]
 --alert and --digest-out are only written when there is something to say.
+With --alert, --body records the new alerts as not yet announced, and
+--announced-body (written with the alert) records them as announced: the
+workflow writes that one only once the alert comment is posted, so an alert
+that could not be posted is sent again the next day.
 """
 
 from __future__ import annotations
@@ -34,12 +38,13 @@ import json
 import re
 import sys
 import zlib
+from collections.abc import Callable
 from pathlib import Path
 
 MARKER = "<!-- cve-status:tracking -->"
 TITLE = "CVE status of main"
 STATE = re.compile(r"<!-- cve-state:v2 ([A-Za-z0-9+/=]+) -->")
-BODY_LIMIT = 65000  # GitHub allows 65536 characters
+BODY_LIMIT = 65000  # GitHub allows 65536 characters in an issue body or comment
 FIXED_KEEP_DAYS = 8
 DIGEST_TOP = 10
 
@@ -81,11 +86,34 @@ def next_state(prev: dict | None, findings: list[dict], today: dt.date) -> dict:
         if k not in now_open and (today - dt.date.fromisoformat(v)).days <= FIXED_KEEP_DAYS
     }
     fixed.update({k: d for k in p_open.keys() - now_open})
+    # The first run has nothing to compare against; the new issue is the alert.
+    announced = now_alert if not prev else now_alert & set(prev.get("announced", []))
     return {
         "open": {k: p_open.get(k, d) for k in sorted(now_open)},
         "alerts": {k: p_alert.get(k, d) for k in sorted(now_alert)},
+        "announced": sorted(announced),
         "fixed": dict(sorted(fixed.items())),
     }
+
+
+def fit(render: Callable[[int], str], n: int, limit: int = BODY_LIMIT) -> int:
+    """The most of n rows for which render(rows) is at most limit long, by bisection."""
+    if len(render(n)) <= limit:
+        return n
+    lo, hi = 0, n
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if len(render(mid)) <= limit:
+            lo = mid
+        else:
+            hi = mid - 1
+    return lo
+
+
+def more(shown: int, total: int) -> list[str]:
+    if shown >= total:
+        return []
+    return ["", f"_{total - shown} more not shown; the run's job summary has them all._"]
 
 
 def fmt_pct(v) -> str:
@@ -167,47 +195,40 @@ def render_body(status, state, fixes, today, commit="", run_url="") -> str:
     if status.get("intel_error"):
         head += [f"> [!WARNING]\n> {status['intel_error']}. Judged by CVSS alone today.", ""]
     head += [*host_table(findings, all_hosts), ""]
-    if alerts:
-        head += [f"### Alerts ({len(alerts)})", "", *table(alerts, state, fixes, all_hosts), ""]
-    else:
-        head += ["### Alerts (0)", "", "Nothing open would fail the PR gate.", ""]
     tail = [
         f"{len(build)} more finding(s) are in packages that only build, not run, and are not listed.",
         "",
         encode_state(state),
     ]
 
-    def build(shown: int) -> str:
-        middle = []
+    def render(n_alerts: int, n_others: int) -> str:
+        middle = [f"### Alerts ({len(alerts)})", ""]
+        if alerts:
+            middle += [*table(alerts[:n_alerts], state, fixes, all_hosts), *more(n_alerts, len(alerts)), ""]
+        else:
+            middle += ["Nothing open would fail the PR gate.", ""]
         if others:
-            middle = [f"### Other open findings that run on a host ({len(others)})", ""]
-            middle += table(others[:shown], state, fixes, all_hosts)
-            if shown < len(others):
-                middle += ["", f"_{len(others) - shown} more not shown; the run's job summary has them all._"]
-            middle.append("")
+            middle += [f"### Other open findings that run on a host ({len(others)})", ""]
+            middle += [*table(others[:n_others], state, fixes, all_hosts), *more(n_others, len(others)), ""]
         return "\n".join(head + middle + tail)
 
-    # The most rows that fit, by bisection.
-    lo, hi = 0, len(others)
-    if len(build(hi)) <= BODY_LIMIT:
-        return build(hi)
-    while lo < hi:
-        mid = (lo + hi + 1) // 2
-        if len(build(mid)) <= BODY_LIMIT:
-            lo = mid
-        else:
-            hi = mid - 1
-    return build(lo)
+    # Alerts first, then as many other findings as still fit.
+    n_alerts = fit(lambda n: render(n, 0), len(alerts))
+    return render(n_alerts, fit(lambda n: render(n_alerts, n), len(others) if n_alerts == len(alerts) else 0))
 
 
 def render_alert(new_alerts: list[dict], state, fixes, all_hosts) -> str:
-    return "\n".join([
-        f"**{len(new_alerts)} new alert(s) on main.** Each would fail the PR gate and runs on a "
-        "host, or is known exploited. A fix PR is opened by itself when nixos-unstable or "
-        "master has one that rebuilds little; otherwise the Fix column says what is waited on.",
-        "",
-        *table(new_alerts, state, fixes, all_hosts),
-    ])
+    def render(n: int) -> str:
+        return "\n".join([
+            f"**{len(new_alerts)} new alert(s) on main.** Each would fail the PR gate and runs on a "
+            "host, or is known exploited. A fix PR is opened by itself when nixos-unstable or "
+            "master has one that rebuilds little; otherwise the Fix column says what is waited on.",
+            "",
+            *table(new_alerts[:n], state, fixes, all_hosts),
+            *more(n, len(new_alerts)),
+        ])
+
+    return render(fit(render, len(new_alerts)))
 
 
 def render_digest(status, state, fixes, today) -> str:
@@ -246,6 +267,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--digest", action="store_true", help="write the digest even if it is not Monday")
     ap.add_argument("--body", type=Path, required=True)
     ap.add_argument("--alert", type=Path)
+    ap.add_argument("--announced-body", type=Path)
     ap.add_argument("--digest-out", type=Path)
     args = ap.parse_args(argv)
     try:
@@ -258,11 +280,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     prev = read_state(prev_body)
     state = next_state(prev, findings, args.today)
+    if bool(args.alert) != bool(args.announced_body):
+        print("error: --alert and --announced-body go together", file=sys.stderr)
+        return 2
     args.body.write_text(render_body(status, state, fixes, args.today, args.commit, args.run_url) + "\n")
-    # The first run has nothing to compare against; the new issue is the alert.
-    new_alerts = [f for f in findings if f.get("alert") and prev is not None and key(f) not in prev.get("alerts", {})]
+    new_alerts = [f for f in findings if f.get("alert") and key(f) not in state["announced"]]
     if args.alert and new_alerts:
         args.alert.write_text(render_alert(new_alerts, state, fixes, status.get("hosts", [])) + "\n")
+        sent = {**state, "announced": sorted(state["alerts"])}
+        args.announced_body.write_text(render_body(status, sent, fixes, args.today, args.commit, args.run_url) + "\n")
     if args.digest_out and (args.digest or args.today.weekday() == 0) and prev is not None:
         args.digest_out.write_text(render_digest(status, state, fixes, args.today) + "\n")
     print(f"{len(findings)} finding(s), {len(state['alerts'])} alert(s), {len(new_alerts)} new alert(s)")
