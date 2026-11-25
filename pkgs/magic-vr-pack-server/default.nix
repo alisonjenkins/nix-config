@@ -80,6 +80,10 @@ let
     spawn-protection=0
     allow-flight=true
     sync-chunk-writes=false
+    # mc-limbo-proxy's limbo never sends the client SetCompression, so it
+    # re-frames backend packets uncompressed; large NeoForge sync packets
+    # then pass the 2 MiB frame limit. Seed only: a live volume keeps its copy.
+    network-compression-threshold=-1
   '';
 in
 assert lib.assertMsg (unknownGroups == [ ])
