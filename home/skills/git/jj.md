@@ -87,7 +87,8 @@ an editor or a TUI. Always pass `-m` and paths so nothing is interactive.
   commits (`mine()`). A rewrite drops the signature of anyone else's commit
   on the branch, and push does not restore it; signing your own commit at
   push time also rewrites, and so unsigns, anyone else's commit above it.
-  Before pushing such a branch, sign the whole range at once:
+  Until the pilot has tested this, use git for a branch with anyone else's
+  commits. Once tested, sign the whole range at once before pushing:
   `jj sign -r 'trunk()..<bookmark>'` (confirm first if it is already
   pushed), then check with `scripts/verify-signed.sh origin/<default>..<bookmark>`.
   Never turn signing off.
