@@ -1,0 +1,8 @@
+version:3955
+renderDistance:8
+simulationDistance:6
+guiScale:3
+tutorialStep:none
+onboardAccessibility:false
+skipMultiplayerWarning:true
+joinedFirstServer:true

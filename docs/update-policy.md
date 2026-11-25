@@ -102,8 +102,30 @@ An update auto-merges only when all of these pass:
    setuid or systemd units running as root, and no change to `flake.nix`
    inputs of the input itself (its own supply chain). These are deterministic
    checks over the input's diff, not a judgement.
-4. **Scan.** No new critical or high CVE introduced, by vulnix (closures) and
-   Trivy (images).
+4. **Scan.** No new CVE that is high or critical, or known or likely to be
+   exploited, introduced, by vulnix (closures) and Trivy (images).
+   nix-config: the `cve-scan` job in `pr-check.yaml` runs
+   `scripts/cve-scan.sh` whenever `flake.lock` or `overlays/` change. It
+   evaluates every NixOS host on the PR's base and head (nothing is built),
+   leaves out each host whose derivation is the same on both sides, and runs
+   vulnix from the base's nixpkgs over the rest. A (package, CVE) pair the
+   head has and the base did not fails when any of these hold:
+   - its CVSSv3 score is 7.0 or higher;
+   - it is in CISA's Known Exploited Vulnerabilities catalog, whatever its
+     score and whether or not NVD has scored it yet;
+   - its EPSS score (the chance it is exploited within 30 days) is 10% or
+     higher.
+
+   CVSS alone says how bad a CVE would be, not how likely it is to be used,
+   and NVD often takes weeks to score one; KEV and EPSS cover both gaps. If
+   the KEV/EPSS data cannot be fetched, the run judges by CVSS alone and says
+   so at the top of its report. The report attributes each finding to the
+   hosts that contain it, counts new, fixed and still-open findings per
+   host, and lists the known-exploited CVEs already on the base. The
+   `cve-comment` job posts it as one PR comment, edited on each push, from a
+   GitHub-hosted runner that never runs the PR's code. A CVE that is safe
+   here can be accepted in `pins/vulnix-whitelist.toml`, with a comment and
+   an `until` date at most 90 days away.
 
 ## Flake inputs: how the cooldown is applied
 

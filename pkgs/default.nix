@@ -50,6 +50,10 @@
     minecraft-modpack-tools = pkgs.callPackage ./minecraft-modpack-tools {};
   };
   create-arkana-aeronautics-client = pkgs.callPackage ./create-arkana-aeronautics-client {};
+  magic-vr-pack-server = pkgs.callPackage ./magic-vr-pack-server {
+    minecraft-modpack-tools = pkgs.callPackage ./minecraft-modpack-tools {};
+  };
+  magic-vr-pack-client = pkgs.callPackage ./magic-vr-pack-client { inherit magic-vr-pack-server; };
   beatsaber-mods = pkgs.callPackage ./beatsaber-mods {};
   nbt-studio = pkgs.callPackage ./nbt-studio {};
   claude-desktop = pkgs.callPackage ./claude-desktop {};

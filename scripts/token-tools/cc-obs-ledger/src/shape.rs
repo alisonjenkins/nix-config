@@ -14,6 +14,7 @@ const PROGRAMS: &[&str] = &[
     "cargo",
     "git",
     "gh",
+    "jj",
     "nix",
     "nix-shell",
     "nixos-rebuild",
@@ -131,6 +132,41 @@ const SUBCOMMANDS: &[(&str, &[&str])] = &[
         ],
     ),
     (
+        "jj",
+        &[
+            "status",
+            "st",
+            "log",
+            "diff",
+            "show",
+            "new",
+            "commit",
+            "describe",
+            "desc",
+            "squash",
+            "split",
+            "absorb",
+            "rebase",
+            "abandon",
+            "edit",
+            "restore",
+            "undo",
+            "op",
+            "git",
+            "bookmark",
+            "b",
+            "workspace",
+            "file",
+            "resolve",
+            "evolog",
+            "interdiff",
+            "duplicate",
+            "next",
+            "prev",
+            "config",
+        ],
+    ),
+    (
         "nix",
         &[
             "build",
@@ -197,6 +233,59 @@ const SUBCOMMANDS: &[(&str, &[&str])] = &[
         ],
     ),
 ];
+
+/// jj subcommands that group further subcommands, and the second words kept for each.
+const JJ_GROUPS: &[(&str, &[&str])] = &[
+    (
+        "git",
+        &[
+            "push", "fetch", "init", "clone", "import", "export", "remote",
+        ],
+    ),
+    (
+        "bookmark",
+        &[
+            "create", "set", "move", "list", "delete", "forget", "track", "untrack", "rename",
+        ],
+    ),
+    ("b", &["c", "s", "m", "l", "d", "t"]),
+    ("op", &["log", "restore", "undo", "show", "diff", "revert"]),
+    (
+        "workspace",
+        &["add", "list", "forget", "update-stale", "root"],
+    ),
+    ("file", &["list", "show", "track", "untrack", "annotate"]),
+];
+
+/// Flags of `git` and `jj` whose value is a separate word, which must not be read as
+/// the subcommand.
+fn takes_value(program: &str, arg: &str) -> bool {
+    match program {
+        "git" => arg == "-C" || arg == "-c",
+        "jj" => matches!(
+            arg,
+            "-R" | "--repository"
+                | "--at-op"
+                | "--at-operation"
+                | "--config"
+                | "--config-file"
+                | "--color"
+        ),
+        _ => false,
+    }
+}
+
+/// The next word that is not a flag or a flag's separate value.
+fn next_word<'a>(program: &str, args: &mut impl Iterator<Item = &'a String>) -> Option<&'a String> {
+    while let Some(arg) = args.next() {
+        if takes_value(program, arg) {
+            args.next();
+        } else if !arg.starts_with('-') {
+            return Some(arg);
+        }
+    }
+    None
+}
 
 /// Wrappers that run the next word as the real command.
 const PREFIX_WRAPPERS: &[&str] = &["env", "time", "nohup", "command", "sudo", "nice"];
@@ -534,17 +623,18 @@ fn label(program: &str, rest: &[String]) -> String {
         return (*known).to_owned();
     };
     let mut args = rest.iter().skip(1);
-    let mut subcommand = None;
-    while let Some(arg) = args.next() {
-        if *known == "git" && (arg == "-C" || arg == "-c") {
-            args.next();
-        } else if !arg.starts_with('-') {
-            subcommand = Some(arg);
-            break;
-        }
-    }
-    match subcommand {
-        Some(sub) if allowed.contains(&sub.as_str()) => format!("{known} {sub}"),
-        _ => (*known).to_owned(),
+    let subcommand = next_word(known, &mut args);
+    let Some(sub) = subcommand.filter(|sub| allowed.contains(&sub.as_str())) else {
+        return (*known).to_owned();
+    };
+    let second = (*known == "jj")
+        .then(|| JJ_GROUPS.iter().find(|(group, _)| group == sub))
+        .flatten()
+        .and_then(|(_, words)| {
+            next_word(known, &mut args).filter(|arg| words.contains(&arg.as_str()))
+        });
+    match second {
+        Some(word) => format!("{known} {sub} {word}"),
+        None => format!("{known} {sub}"),
     }
 }
