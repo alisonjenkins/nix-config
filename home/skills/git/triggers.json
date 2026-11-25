@@ -5,6 +5,7 @@
     "resolve the merge conflict",
     "my pull request has review comments to respond to",
     "rebase onto main and push",
-    "split this into atomic commits"
+    "split this into atomic commits",
+    "push this change with jj"
   ]
 }

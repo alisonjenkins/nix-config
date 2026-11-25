@@ -1,9 +1,9 @@
 ---
 name: git
 description: >-
-  Use when committing, amending, splitting or reordering changes, opening/updating/merging a PR, merge strategy, branching, or worktree setup ("commit this", "push it", "open a PR"). Also: responding to review on your PR (threads, resolve, Copilot re-review, auto-merge), ship this, fixup commits, merge/rebase conflicts, .gitignore vs .git/info/exclude. Not for judging someone else's diff or PR (see review).
+  Use when committing, amending, splitting or reordering changes, opening/updating/merging a PR, merge strategy, branching, or worktree setup ("commit this", "push it", "open a PR"). Also: responding to review on your PR (threads, resolve, Copilot re-review, auto-merge), ship this, fixup commits, merge/rebase conflicts, .gitignore vs .git/info/exclude, jj (Jujutsu) in a colocated repo. Not for judging someone else's diff or PR (see review).
 metadata:
-  summary: "Use for commit, push, PR, merge, rebase, branches, worktrees, review threads on your PR, .gitignore, fixup commits."
+  summary: "Use for commit, push, PR, merge, rebase, branches, worktrees, review threads on your PR, .gitignore, fixup commits, jj."
 ---
 
 # Git
@@ -44,9 +44,30 @@ skill suggests.
   rewriting published history is irreversible for anyone who pulled it.
 - Use the `gh` CLI for anything GitHub-side (PRs, issues, API), not the web UI
   and not raw REST where `gh` has a subcommand.
+- Repo root has a `.jj/` directory: use jj, per [jj.md](jj.md). Inside a git
+  worktree, always git.
 - Ignore entries go in the checked-in `.gitignore` by default, so everyone
   gets them. Reserve `.git/info/exclude` for genuinely personal files (a local
   work queue, scratch notes) or when the user asks for a local-only exclude.
+
+## Compact output
+
+Measured (decision 0022): `git diff` and `git show` are most of git's token
+cost, and add-then-commit is most of its calls.
+
+- `git diff --stat` (or `--name-only`) first; then `git diff --no-ext-diff -- <path>` for the
+  one file you need. Never `git diff | head`: it pays for a cut you then redo.
+- `git show --stat <sha>` before `git show <sha> -- <path>`; not
+  `git show <sha> | sed -n`.
+- `git status -sb`, `git log --oneline -n 10`.
+- One call for add and commit: `git commit -m "<msg>" -- <paths>` for
+  already-tracked files, or `git add <paths> && git commit -F - <<'EOF'` with
+  the message once. Do not follow a commit with `git log` or `git status` to
+  confirm; its own output says what landed.
+- `git diff --no-ext-diff`: where `diff.external` is set (difftastic here),
+  plain `git diff` runs it, and its side-by-side output was 1.1x to 11.7x the
+  size of the patch on 8 of 10 recent commits, and is not a patch. `git show`
+  and `git log -p` do not run it.
 
 ## Routing
 
@@ -59,4 +80,5 @@ skill suggests.
 | Running commit → branch → PR → review loop → auto-merge unattended | [auto-ship.md](auto-ship.md) |
 | Isolating feature work from the current checkout | [worktrees.md](worktrees.md) |
 | Resolving a merge or rebase conflict | [merge-conflicts.md](merge-conflicts.md) |
+| Working in a repo with `.jj/`, or colocating one | [jj.md](jj.md) |
 | Keeping a fix to someone else's project on your fork and building from it | [carry-a-patch.md](carry-a-patch.md) |
