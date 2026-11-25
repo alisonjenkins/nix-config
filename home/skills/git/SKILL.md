@@ -45,8 +45,8 @@ skill suggests.
 - Use the `gh` CLI for anything GitHub-side (PRs, issues, API), not the web UI
   and not raw REST where `gh` has a subcommand.
 - Repo root has a `.jj/` directory: use jj, per [jj.md](jj.md), once its
-  checks pass (jj has an email, the remote is not Codeberg). Inside a git
-  worktree, always git.
+  checks pass (jj has an email, the remote is not Codeberg). Inside a plain
+  git worktree (no `.jj/` of its own), always git.
 - Ignore entries go in the checked-in `.gitignore` by default, so everyone
   gets them. Reserve `.git/info/exclude` for genuinely personal files (a local
   work queue, scratch notes) or when the user asks for a local-only exclude.
