@@ -322,7 +322,10 @@ def main():
     ap.add_argument("server_pkg", help="path to built server pkg (has mods/ dir)")
     ap.add_argument("--tree", help="show transitive required deps under modId")
     ap.add_argument("--dependents", help="show mods that hard-require modId")
+    ap.add_argument("--neoforge-version", default=RUNTIME_PROVIDED["neoforge"],
+                    help="NeoForge loader version the pack ships (default %(default)s)")
     args = ap.parse_args()
+    RUNTIME_PROVIDED["neoforge"] = RUNTIME_PROVIDED["forge"] = args.neoforge_version
 
     mods_dir = Path(args.server_pkg) / "mods"
     if not mods_dir.is_dir():

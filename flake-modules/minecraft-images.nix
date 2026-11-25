@@ -21,7 +21,28 @@ let
         overlays = lib.attrValues self.overlays;
       };
 
-      jre = pkgs.temurin-jre-bin-21;
+      # Pinned to Temurin 21.0.13.1+2 for CVE-2026-114938 ("Java4Shell":
+      # memory corruption in the Base64 decoder intrinsic on x86-64 CPUs
+      # with AVX-512 VBMI, pre-auth RCE where untrusted input is
+      # Base64-decoded; affects 17.0.6+). Fixed in 21.0.13.1 (Red Hat
+      # RHSA-2026:100569, Debian openjdk-21 21.0.13.1+2). nixos-26.05 still
+      # ships 21.0.11 and nixos-unstable 21.0.12.1, both vulnerable.
+      # Drop this override once nixpkgs' temurin-bin/sources.json points at
+      # jdk-21.0.13.1 or newer.
+      # A server tree may pin its own JDK instead (magic-vr-pack does).
+      jre = server.jre or (pkgs.temurin-jre-bin-21.overrideAttrs (_old: {
+        version = "21.0.13.1";
+        src = pkgs.fetchurl {
+          x86_64-linux = {
+            url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jre_x64_linux_hotspot_21.0.13.1_2.tar.gz";
+            sha256 = "18f44fab9065217f3ba61d0eef8a7b5f3c3713aa7293001b0d4ac10ede3850f0";
+          };
+          aarch64-linux = {
+            url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/OpenJDK21U-jre_aarch64_linux_hotspot_21.0.13.1_2.tar.gz";
+            sha256 = "52bc58323d9266538a6361a3cf8365fc1186dd9510d7f33f623681c4aabb7e72";
+          };
+        }.${system};
+      }));
 
       imageContents = [
         # Plain bash (no readline / history / etc.) is enough for the
@@ -117,6 +138,12 @@ let
       server    = pkgs.create-arkana-aeronautics-server;
       imageName = "create-arkana-aeronautics-server";
     };
+  magicVrPackImage = system:
+    mkImage system {
+      server    = (pkgsFor system).magic-vr-pack-server;
+      imageName = "magic-vr-pack-server";
+      heap      = "9g";
+    };
   # Helper: snap to one of the per-system overlay-applied nixpkgs sets so
   # the package outputs we expose match what the image consumes (single
   # source of overlays).
@@ -136,6 +163,11 @@ in
         minecraft-csc-image = cscImage system;
         minecraft-arkana-aeronautics-image = arkanaAeronauticsImage system;
         create-arkana-aeronautics-server = (pkgsFor system).create-arkana-aeronautics-server;
+        minecraft-magic-vr-pack-image = magicVrPackImage system;
+        magic-vr-pack-server = (pkgsFor system).magic-vr-pack-server;
+        # Linux-only: the client embeds the server's quest book, and the
+        # server's pinned JDK has no Darwin build.
+        magic-vr-pack-client = (pkgsFor system).magic-vr-pack-client;
       }
       # Cross-platform: client zip is just metadata + jar shuffling, builds
       # on Darwin too. Exposed for both linux and darwin so a Mac dev can

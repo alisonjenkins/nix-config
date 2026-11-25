@@ -89,6 +89,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import datetime as dt
+import http.client
 import json
 import re
 import sys
@@ -228,8 +229,9 @@ def fetch_intel(cves: set[str]) -> Intel:
             query = urllib.parse.urlencode({"cve": ",".join(batch), "limit": len(batch)})
             for row in _get_json(f"{EPSS_URL}?{query}")["data"]:
                 intel.epss[row["cve"]] = float(row["epss"])
-    except (OSError, ValueError, KeyError, TypeError) as e:
-        return Intel(error=f"could not fetch KEV/EPSS data ({e})", used=True)
+    # HTTPException: a response cut short (IncompleteRead) is not an OSError.
+    except (OSError, http.client.HTTPException, ValueError, KeyError, TypeError) as e:
+        return Intel(error=f"could not fetch KEV/EPSS data ({e!r})", used=True)
     return intel
 
 

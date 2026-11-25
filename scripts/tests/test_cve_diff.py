@@ -5,6 +5,7 @@ Run: python3 -m unittest discover -s scripts/tests -p 'test_cve_diff.py'
 
 from __future__ import annotations
 
+import http.client
 import io
 import json
 import sys
@@ -243,6 +244,13 @@ class CveDiffTest(unittest.TestCase):
             intel = cve_diff.fetch_intel({"CVE-2026-1"})
         self.assertIn("no route", intel.error)
         self.assertEqual(intel.kev, set())
+
+    def test_fetch_intel_cut_short_response_is_an_outage(self):
+        cut = http.client.IncompleteRead(b"{", 100)
+        with mock.patch.object(cve_diff, "_get_json", side_effect=cut):
+            intel = cve_diff.fetch_intel({"CVE-2026-1"})
+        self.assertIn("IncompleteRead", intel.error)
+        self.assertEqual(intel.epss, {})
 
     def test_fetch_intel_batches_epss(self):
         cves = {f"CVE-2026-{i}" for i in range(120)} | {"not-a-cve"}
