@@ -1,0 +1,10 @@
+# NeoVelocity (fork without CrossStitch): Velocity-modern forwarding.
+# The HMAC secret is a file mounted at /data/forwarding.secret (k8s Secret);
+# it must match mc-limbo-proxy's FORWARDING_SECRET_FILE.
+[forwarding]
+forwarding-secret = "forwarding.secret"
+forwarding-secret-type = "FILE"
+
+[compatibility]
+# mc-limbo-proxy sends only velocity:player_info at login, so this is safe.
+login-custom-packet-catchall = true

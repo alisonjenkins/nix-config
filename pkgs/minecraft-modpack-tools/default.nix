@@ -11,6 +11,11 @@
 #   2. As an interactive tool (`nix run .#dep-tree -- /path/to/server`)
 #      when iterating on a new modpack composition.
 #
+# `registry-ids` collects item, entity, dimension and advancement IDs
+# from a pack's jars, and checks every ID an FTB Quests book references
+# against them. A pack runs it in installPhase so a typo'd ID fails the
+# build instead of showing up as a missing item in game.
+#
 # `find-mod-bumps` walks the dep graph leaf-first to find the latest
 # CurseForge/Modrinth release/beta of each pack mod compatible with both
 # its own declared deps and existing dependents' version ranges. Output
@@ -54,6 +59,8 @@ stdenvNoCC.mkDerivation {
     # `dep-tree` still requires python (3.11+ for tomllib); pin the
     # interpreter so PATH-environment changes can't subvert it.
     wrapProgram $out/bin/dep-tree --set PATH ${lib.makeBinPath [ python3 ]}
+    install -Dm755 registry-ids.py $out/bin/registry-ids
+    wrapProgram $out/bin/registry-ids --set PATH ${lib.makeBinPath [ python3 ]}
     # find-mod-bumps is a standalone Rust binary — just expose it.
     ln -s ${find-mod-bumps}/bin/find-mod-bumps $out/bin/find-mod-bumps
     runHook postInstall
