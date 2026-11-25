@@ -39,7 +39,8 @@ the largest Bash-adjacent item is large-then-narrow Read at $67.58 over 30 days,
 twice all of git.
 
 The baseline is a hand-summed aggregate: no single `automate` row carries it, so the
-`sum:` key matches nothing and `compare` reports it unavailable. Re-sum it by hand: the
+`sum:` key matches nothing: the digest reports the metric absent and `compare` emits no
+row for it. Re-sum it by hand: the
 `est_usd` of every 7-day shape row whose label mentions `git` or `gh` (sequences, $0.83 at
 baseline, are left out). The next review compares that sum, plus the same for `jj`, against
 this baseline, and checks that `git diff [cd]` and `git diff | head` fall.
