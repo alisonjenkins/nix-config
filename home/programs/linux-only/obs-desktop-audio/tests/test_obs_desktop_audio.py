@@ -156,6 +156,23 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(g.nodes[5]["media.name"], "new")
         self.assertEqual(g.nodes[5]["application.name"], "Zen")
 
+    def test_an_id_reused_as_another_type_drops_the_old_entry(self):
+        # pw-dump can coalesce a removal with the re-add of a recycled id, so
+        # the new object arrives with no removal first.
+        g = base_graph(*playing(5))
+        g.apply([link(501, 7, 701, 8, 801)])
+        self.assertNotIn(501, g.ports)
+        g.apply([node(502, **{"node.name": "other"})])
+        self.assertNotIn(502, g.ports)
+        g.apply([port(503, 7, "output", "FL")])
+        self.assertNotIn(503, g.links)
+
+    def test_a_recycled_link_id_is_not_deleted(self):
+        g = base_graph(*playing(5), link(900, 5, 500, 1, 10))
+        g.apply([stream(5, "Element Call")])
+        g.apply([node(900, **{"node.name": "ee_sie_rnnoise"})])
+        self.assertEqual(oda.plan(g, SINK, [ELEMENT]).remove, ())
+
 
 class JsonStreamTests(unittest.TestCase):
     def test_each_pretty_printed_array_is_yielded_when_it_closes(self):

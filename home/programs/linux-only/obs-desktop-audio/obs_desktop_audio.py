@@ -81,6 +81,15 @@ class Graph:
         if info is None:
             self._apply_removed(oid, kind)
             return
+        # pw-dump can coalesce a removal with the re-add of a recycled id, so
+        # an entry of another type under this id is stale. Left in place, it
+        # makes us link or delete whatever now owns the id.
+        if not kind.endswith(":Node"):
+            self.nodes.pop(oid, None)
+        if not kind.endswith(":Port"):
+            self.ports.pop(oid, None)
+        if not kind.endswith(":Link"):
+            self.links.pop(oid, None)
         if kind.endswith(":Node"):
             props = info.get("props", {})
             # An update carries only changed props; merge over what we hold.
