@@ -20,12 +20,13 @@ test -d "$(git rev-parse --show-toplevel)/.jj" && jj --version
 - **Codeberg remote, use git.** git swaps in the Codeberg noreply address by
   remote URL (`includeIf hasconfig:remote`); jj has no such rule and would
   commit with the personal address.
-- **Inside a git worktree, use git.** jj looks for `.jj/` by walking up, so in
+- **Inside a plain git worktree (no `.jj/` of its own), use git.** jj looks for `.jj/` by walking up, so in
   `.claude/worktrees/<name>/` it finds the *main* checkout's repo and rewrites
   that working copy, not the worktree. For isolated work in a jj repo use
   `jj workspace add ../<repo>-<feature>` instead, which has its own `.jj/`.
-  From jj 0.46 that workspace is colocated too (it gets a `.git` and `gh`
-  works in it); before 0.46 it has no `.git`, so run `gh` there with
+  From jj 0.46, with `git.colocate` true (the default), that workspace is
+  colocated too (it gets a `.git` and `gh` works in it); otherwise it has no
+  `.git`, so run `gh` there with
   `-R owner/repo` and `--head <bookmark>`.
 
 ## The model in four lines
