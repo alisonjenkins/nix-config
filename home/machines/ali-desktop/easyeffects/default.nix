@@ -41,6 +41,15 @@ in {
       --group EffectsPipelines --key processAllOutputs false
   '';
 
+  # Element Call in Zen records easyeffects_source, yet EasyEffects decides no
+  # app wants it and its inactivity timer unlinks the mic chain seconds later,
+  # so friends hear nothing (2026-11-25). Read only at start, as above.
+  home.activation.easyeffectsKeepMicChain = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    run ${pkgs.kdePackages.kconfig}/bin/kwriteconfig6 \
+      --file "${config.xdg.configHome}/easyeffects/db/easyeffectsrc" \
+      --group EffectsPipelines --key inactivityTimerEnable false
+  '';
+
   home.file =
     profileFileAttrs
     // {
