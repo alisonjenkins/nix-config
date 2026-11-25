@@ -264,10 +264,27 @@ fn takes_value(program: &str, arg: &str) -> bool {
         "git" => arg == "-C" || arg == "-c",
         "jj" => matches!(
             arg,
-            "-R" | "--repository" | "--at-op" | "--at-operation" | "--config"
+            "-R" | "--repository"
+                | "--at-op"
+                | "--at-operation"
+                | "--config"
+                | "--config-file"
+                | "--color"
         ),
         _ => false,
     }
+}
+
+/// The next word that is not a flag or a flag's separate value.
+fn next_word<'a>(program: &str, args: &mut impl Iterator<Item = &'a String>) -> Option<&'a String> {
+    while let Some(arg) = args.next() {
+        if takes_value(program, arg) {
+            args.next();
+        } else if !arg.starts_with('-') {
+            return Some(arg);
+        }
+    }
+    None
 }
 
 /// Wrappers that run the next word as the real command.
@@ -606,15 +623,7 @@ fn label(program: &str, rest: &[String]) -> String {
         return (*known).to_owned();
     };
     let mut args = rest.iter().skip(1);
-    let mut subcommand = None;
-    while let Some(arg) = args.next() {
-        if takes_value(known, arg) {
-            args.next();
-        } else if !arg.starts_with('-') {
-            subcommand = Some(arg);
-            break;
-        }
-    }
+    let subcommand = next_word(known, &mut args);
     let Some(sub) = subcommand.filter(|sub| allowed.contains(&sub.as_str())) else {
         return (*known).to_owned();
     };
@@ -622,8 +631,7 @@ fn label(program: &str, rest: &[String]) -> String {
         .then(|| JJ_GROUPS.iter().find(|(group, _)| group == sub))
         .flatten()
         .and_then(|(_, words)| {
-            args.find(|arg| !arg.starts_with('-'))
-                .filter(|arg| words.contains(&arg.as_str()))
+            next_word(known, &mut args).filter(|arg| words.contains(&arg.as_str()))
         });
     match second {
         Some(word) => format!("{known} {sub} {word}"),
