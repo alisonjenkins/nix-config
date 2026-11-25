@@ -169,16 +169,6 @@ def read_closures(directory: Path) -> dict[str, set[str]]:
     }
 
 
-def attribute(findings: dict[Key, Finding], closures: dict[str, set[str]]) -> dict[Key, Finding]:
-    """Set each finding's hosts: those whose closure holds one of its derivations."""
-    return {
-        key: dataclasses.replace(
-            f, hosts=tuple(h for h, paths in closures.items() if any(d in paths for d in f.drvs))
-        )
-        for key, f in findings.items()
-    }
-
-
 STORE_NAME = re.compile(r"^/nix/store/[0-9a-z]{32}-(.+)$")
 
 
@@ -188,6 +178,30 @@ def read_runtime(directory: Path) -> dict[str, set[str]]:
     for host, paths in read_closures(directory).items():
         out[host] = {m.group(1) for m in map(STORE_NAME.match, paths) if m}
     return out
+
+
+def attribute(findings: dict[Key, Finding], closures: dict[str, set[str]]) -> dict[Key, Finding]:
+    """Set each finding's hosts: those whose closure holds one of its derivations.
+
+    vulnix counts derivations with the same name and patches as one and keeps
+    the path of the first it loads, so a host whose closure holds an equal
+    derivation at another store path would be missed. A host also matches on
+    the derivation's name (its path minus the hash). That can name a host
+    whose same-named derivation carries a patch for the CVE; reporting an
+    extra host is the safe way to be wrong.
+    """
+    names = {h: {m.group(1) for m in map(STORE_NAME.match, paths) if m} for h, paths in closures.items()}
+
+    def holds(host: str, drv: str) -> bool:
+        if drv in closures[host]:
+            return True
+        m = STORE_NAME.match(drv)
+        return bool(m) and m.group(1) in names[host]
+
+    return {
+        key: dataclasses.replace(f, hosts=tuple(h for h in closures if any(holds(h, d) for d in f.drvs)))
+        for key, f in findings.items()
+    }
 
 
 def in_runtime(pname: str, names: set[str]) -> bool:

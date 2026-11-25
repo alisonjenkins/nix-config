@@ -295,6 +295,14 @@ class CveDiffTest(unittest.TestCase):
         self.assertIn("| curl | 8.20 | [CVE-2026-2](https://nvd.nist.gov/vuln/detail/CVE-2026-2) | 7.5 | srv |", out)
         self.assertIn("| glibc | 2.42 | [CVE-2026-6](https://nvd.nist.gov/vuln/detail/CVE-2026-6) | 7.8 | desk |", out)
 
+    def test_equal_derivations_at_other_paths_are_attributed(self):
+        # vulnix keeps one path for derivations with the same name and patches.
+        kept, other = "/nix/store/" + "a" * 32 + "-zlib-1.3.drv", "/nix/store/" + "b" * 32 + "-zlib-1.3.drv"
+        f = cve_diff.Finding("zlib", "CVE-2026-3", 5.0, ("1.3",), drvs=(kept,))
+        closures = {"desk": {kept}, "srv": {other}, "vm": {"/nix/store/" + "c" * 32 + "-zlib-1.4.drv"}}
+        out = cve_diff.attribute({("zlib", "CVE-2026-3"): f}, closures)
+        self.assertEqual(out[("zlib", "CVE-2026-3")].hosts, ("desk", "srv"))
+
     def test_closures_must_come_in_pairs(self):
         with redirect_stdout(io.StringIO()), mock.patch("sys.stderr", io.StringIO()), self.assertRaises(SystemExit):
             cve_diff.main([str(self.write("b.json", [])), str(self.write("h.json", [])), "--head-closures", str(self.dir)])
