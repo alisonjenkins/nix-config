@@ -50,7 +50,8 @@ fi
 # disableConfigWatcher=true (inotify budget with ~150 mods);
 # neovelocity-common.toml must keep reading the mounted forwarding secret.
 for f in fml.toml neovelocity-common.toml l2configs/l2hostility-server.toml; do
-  mkdir -p "config/${f%/*}"
+  dest="config/$f"
+  mkdir -p "${dest%/*}"
   cp -f "/opt/server/config/$f" "config/$f"
 done
 
