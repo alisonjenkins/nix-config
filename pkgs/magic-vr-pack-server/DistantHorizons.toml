@@ -1,0 +1,47 @@
+# Pre-baked Distant Horizons config for the dedicated server. Only the
+# `[common.*]` sections matter — `[client.*]` keys are no-ops on a
+# headless server because there is no renderer. DH merges values in this
+# file with its defaults on first run, so a partial config is safe.
+#
+# Server's role with these settings: actively walk the world in
+# background, generate LOD data for chunks beyond loaded simulation
+# range, persist into
+#   /data/Distant_Horizons_server_data/<world>/DistantHorizons.sqlite
+# and stream the cache to clients on join. Players see populated distant
+# terrain immediately on connect without having to walk into it first,
+# and clients running the same area share the server's cache instead of
+# each generating independently.
+[common.worldGenerator]
+# Whether DH should slowly generate LODs outside the vanilla render
+# distance in the background. ON: the source of truth for the shared
+# LOD cache lives server-side. OFF: server is only a passive mirror of
+# client-uploaded LODs, players who join an area first do all the gen.
+enableDistantGeneration = true
+
+# How detailed should LODs be?
+#   SURFACE   – terrain surface only. Cheapest. Loses tree/structure
+#               detail in the distance but keeps the silhouette right.
+#   FEATURES  – +trees +structures. Heavier; can collide with worldgen
+#               mod mixins (see CLAUDE.md modpack bumping caveats).
+#   INTERNAL_SERVER – single-player only; ignored here.
+# SURFACE keeps the dedicated-server pod (4 GiB RAM, shared vCPU) from
+# starving the main tick loop while still giving players a believable
+# horizon. Bump to FEATURES if the pod ends up with idle CPU budget.
+distantGeneratorMode = "SURFACE"
+
+[common.multiThreading]
+# Cap the DH thread pool so the LOD generator can't starve the main
+# server tick + dimension worker threads. The k3s pod runs on shared
+# CPU; aggressive DH gen would push MSPT past 50 ms and cause player-
+# visible lag spikes.
+numberOfThreads = 2
+
+# Fraction of each thread's time slice the LOD generator may use before
+# yielding. 0.5 = generator threads run half the time, sleep half. Pairs
+# with numberOfThreads to give DH ~1 vCPU worth of average load.
+threadRunTimeRatio = "0.5"
+
+# Java thread priority for DH's pool. 3 = below the default 5; means
+# the OS scheduler prefers MC's main tick + worldgen threads under
+# contention. Safe choice on a shared-CPU host.
+threadPriority = 3
