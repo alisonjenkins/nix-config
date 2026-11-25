@@ -1,0 +1,12 @@
+# CVEs accepted by hand, read by scripts/cve-scan.sh (gate 4 of
+# docs/update-policy.md). vulnix leaves these out of its findings, so they
+# never fail a PR.
+#
+# Every entry needs a comment saying why it is safe here, and an `until`
+# date (at most 90 days ahead) after which it stops applying and the CVE
+# fails again. Match on the package and the CVE, never a CVE alone:
+#
+# ["openssl"]
+# cve = ["CVE-2026-12345"]
+# until = "2027-02-01"
+# comment = "Only reachable through the QUIC server API, which no host uses."

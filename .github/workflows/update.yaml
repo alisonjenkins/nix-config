@@ -22,13 +22,14 @@ jobs:
     # nested `follows` serialise identically and flake.lock stops churning
     # between CI and local `nix flake update`.
     runs-on: home-nix-builder-amd64
-    timeout-minutes: 60
+    timeout-minutes: 180
     # Backstop: never run fork-PR code on the home self-hosted runner, even if
     # a `pull_request` trigger is added here by mistake. Inert for schedule and
     # dispatch events (github.event.pull_request is null → null != true → true).
     if: ${{ github.event.pull_request.head.repo.fork != true }}
     permissions:
       contents: read
+      pull-requests: read # the merge poll reads the PR with GITHUB_TOKEN
       id-token: write
     steps:
       - name: Get the updater App token
@@ -62,6 +63,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          READ_TOKEN: ${{ github.token }}
           # Unauthenticated github: input fetches share the runner's IP and
           # hit GitHub's unauth API rate limit (60/hr) fast with ~15+ inputs
           # -> "API rate limit exceeded" 403s. Authenticate nix's own fetcher.
@@ -114,8 +116,14 @@ jobs:
 
           # --auto only arms auto-merge and returns immediately, so without
           # this the job would report success even when flake-check fails
-          # and the PR is left open. Poll until it actually merges or closes.
-          for _ in $(seq 1 60); do
+          # and the PR is left open. Poll until it actually merges or closes:
+          # up to 2 hours, since the cve-scan check evaluates every host twice.
+          # The App token expires after an hour, so the poll reads the PR
+          # with the job's read-only GITHUB_TOKEN. Only the rebase below
+          # needs the App, and it is best effort once the token has expired.
+          app_token="$GH_TOKEN"
+          export GH_TOKEN="$READ_TOKEN"
+          for _ in $(seq 1 240); do
             state=$(gh pr view "$pr_url" --json state -q .state)
             case "$state" in
               MERGED)
@@ -134,7 +142,7 @@ jobs:
             # without the workflows permission the App deliberately lacks;
             # then tomorrow's run supersedes this PR.
             if [ "$(gh pr view "$pr_url" --json mergeStateStatus -q .mergeStateStatus)" = BEHIND ]; then
-              gh pr update-branch --rebase "$pr_url" \
+              GH_TOKEN="$app_token" gh pr update-branch --rebase "$pr_url" \
                 || echo "::warning::could not rebase $pr_url onto main"
             fi
             sleep 30
