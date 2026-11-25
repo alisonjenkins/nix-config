@@ -203,6 +203,31 @@ in
       claude-wt-list
     ];
 
+  # jj (Jujutsu), for colocated repos (home/skills/git/jj.md). Same identity
+  # and SSH signing key as git. Commits are signed when pushed rather than on
+  # every rewrite: jj rewrites commits constantly, and signing each one would
+  # ask 1Password for every snapshot.
+  programs.jujutsu = {
+    enable = true;
+    settings = {
+      user = lib.filterAttrs (_: v: v != null) {
+        email = gitEmail;
+        name = gitUserName;
+      };
+      git.sign-on-push = gpgSign;
+      # A plain patch, not jj's default colour-words view: readable by tools
+      # and agents, and the same shape as `git diff --no-ext-diff`.
+      ui.diff-formatter = ":git";
+    } // lib.optionalAttrs gpgSign {
+      signing = {
+        behavior = "drop";
+        backend = "ssh";
+        key = builtins.replaceStrings [ "~" ] [ config.home.homeDirectory ] gitGPGSigningKey;
+        backends.ssh.program = gpgSigningProgram;
+      };
+    };
+  };
+
   programs.difftastic = {
     enable = enableDifftastic;
     git.enable = enableDifftastic;
