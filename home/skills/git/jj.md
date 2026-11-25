@@ -85,9 +85,11 @@ an editor or a TUI. Always pass `-m` and paths so nothing is interactive.
   ids: `prek run --from-ref "$(jj log -r 'trunk()' --no-graph -T commit_id)" --to-ref "$(jj log -r @- --no-graph -T commit_id)"`.
 - **Signing** happens on push (`git.sign-on-push`), and only for your own
   commits (`mine()`). A rewrite drops the signature of anyone else's commit
-  on the branch, and push does not restore it. Before pushing such a branch,
-  `jj sign -r 'trunk()..@- & ~mine()'`, then check with
-  `scripts/verify-signed.sh origin/<default>..<bookmark>` after the push.
+  on the branch, and push does not restore it; signing your own commit at
+  push time also rewrites, and so unsigns, anyone else's commit above it.
+  Before pushing such a branch, sign the whole range at once:
+  `jj sign -r 'trunk()..<bookmark>'` (confirm first if it is already
+  pushed), then check with `scripts/verify-signed.sh origin/<default>..<bookmark>`.
   Never turn signing off.
 - **Conflicts do not stop the command.** A rebase that conflicts succeeds and
   marks changes with `×` in the log. Check `jj st` after every rebase; fix by
