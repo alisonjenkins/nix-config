@@ -1,5 +1,6 @@
 { config, lib, pkgs, inputs, ... }: {
   imports = [
+    ./audio-mode
     ./easyeffects
     ./pipewire-camera-bridges
     ../../programs/linux-only/obs-desktop-audio
