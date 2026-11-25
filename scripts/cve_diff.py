@@ -575,6 +575,17 @@ def status_summary(open_: list[Finding], gate: Gate, all_hosts: list[str]) -> st
     ]
     if alerts:
         out += table(alerts, gate, all_hosts) + [""]
+    # The tracking issue lists as many of these as fit and points here for the rest.
+    others = [f for f in open_ if not gate.fails(f) and f.runtime != "build"]
+    if others:
+        out += [
+            f"<details><summary>{len(others)} other open finding(s) that run on a host, or may</summary>",
+            "",
+            *table(others, gate, all_hosts),
+            "",
+            "</details>",
+            "",
+        ]
     return "\n".join(out)
 
 

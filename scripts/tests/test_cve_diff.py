@@ -386,6 +386,16 @@ class CveDiffTest(unittest.TestCase):
         self.assertTrue(data["open"][0]["alert"])
         self.assertNotIn("failing", data)
 
+    def test_status_summary_lists_the_other_findings_too(self):
+        # The tracking issue cuts its tables to fit and points to this summary.
+        report = self.write("status-in.json", [item("curl", "8", ["CVE-2026-2"], {"CVE-2026-2": 9.8}),
+                                               item("zlib", "1", ["CVE-2026-3"], {"CVE-2026-3": 5.0})])
+        out = io.StringIO()
+        with redirect_stdout(out):
+            cve_diff.main(["--status", str(report)])
+        self.assertIn("1 other open finding(s) that run on a host, or may", out.getvalue())
+        self.assertIn("| zlib | 1 |", out.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()
