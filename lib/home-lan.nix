@@ -51,6 +51,8 @@ let
     dns1 = { ip = "192.168.1.246"; aliases = [ "dns" ]; };
     dns2 = { ip = "192.168.1.247"; };
     ingress = { ip = "192.168.1.240"; };
+    # Own LB IP (Cilium LB-IPAM), the target of the WAN 25565 forward.
+    magic-vr-pack-proxy = { ip = "192.168.1.249"; };
   };
 
   rawHosts = {
