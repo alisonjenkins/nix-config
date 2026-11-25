@@ -12,6 +12,7 @@
   firefox-addons = pkgs.callPackage ./firefox-addons {};
   detect-location = pkgs.callPackage ./detect-location { inherit pkgs; };
   audio-context-volume = pkgs.callPackage ./audio-context-volume { inherit pkgs; };
+  audio-mode = pkgs.callPackage ./audio-mode { inherit pkgs; };
   bluetooth-connect = pkgs.callPackage ./bluetooth-connect { inherit pkgs; };
   btfs-bridge = pkgs.callPackage ./btfs-bridge { inherit pkgs; };
   tiny4linux = pkgs.callPackage ./tiny4linux { inherit pkgs; };
