@@ -492,8 +492,8 @@ in
         zswapOff = lib.mkDefault config.zramSwap.enable;
         zswapOn = lib.mkDefault (!config.zramSwap.enable && config.swapDevices != [ ]);
         zswapShrinker = lib.mkDefault config.modules.kernelTuning.zswapOn;
-        swappinessZram = lib.mkDefault config.zramSwap.enable;
-        swappinessDisk = lib.mkDefault (!config.zramSwap.enable);
+        swappinessCompressed = lib.mkDefault (config.zramSwap.enable || config.modules.kernelTuning.zswapOn);
+        swappinessDisk = lib.mkDefault (!config.modules.kernelTuning.swappinessCompressed);
         pageClusterZero = lib.mkDefault config.zramSwap.enable;
         dirtyRatioLow = lib.mkDefault true;
         dirtyBackgroundRatioLow = lib.mkDefault true;
