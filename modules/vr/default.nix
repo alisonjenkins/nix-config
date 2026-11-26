@@ -156,6 +156,11 @@ in
 {
   options.modules.vr = {
     enable = lib.mkEnableOption "VR support";
+    frameControl.enable = lib.mkEnableOption ''
+      Frame Control (pkgs/frame-control), which manages and sideloads to a
+      Steam Frame over SSH, and its framedrop:// handler, so "Install with
+      FrameDrop" links (FrameDrop itself is Windows-only) open in it
+    '';
     enableOpenSourceVR = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -368,6 +373,17 @@ in
         };
       };
     };
+  })
+
+  (lib.mkIf (cfg.enable && cfg.frameControl.enable) {
+    environment.systemPackages = [ pkgs.frame-control ];
+
+    # Written to /etc/xdg/mimeapps.list, which GIO and xdg-open read after
+    # the user's own file, so nothing per-user has to be seeded. The
+    # [Added Associations] entry is what makes xdg-desktop-portal skip its
+    # chooser for a custom scheme (see the vrmonitor note in home/modules/vr).
+    xdg.mime.defaultApplications."x-scheme-handler/framedrop" = "framedrop-handler.desktop";
+    xdg.mime.addedAssociations."x-scheme-handler/framedrop" = "framedrop-handler.desktop";
   })
   ];
 }

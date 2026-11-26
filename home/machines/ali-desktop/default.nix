@@ -54,8 +54,6 @@
   };
 
   modules.vr.enableOpenSourceVR = true;
-  # Steam Frame sideloading from Linux, incl. "Install with FrameDrop" links.
-  modules.vr.frameControl.enable = true;
   modules.vr.steamvrSettings = {
     driver_vrlink = {
       # SteamVR's own default is false for both -- re-enabled here because
