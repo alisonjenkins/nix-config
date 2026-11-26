@@ -144,15 +144,15 @@ works, how to enable it, and the benchmark results.
 
 ## Skills
 
-Why a rule in a skill under `home/skills/` is the way it is. The skill
-states the rule and cites the record as "(decision NNNN)"; the reasoning
-lives here. Read the record before changing the rule. ADRs about the
-skill machinery (listing, retrieval, delegation) are under Claude Code
-context.
+Decisions about the skills collection under `home/skills/` as a whole.
+Per-skill decisions live in [`docs/skills/`](../skills/README.md). A skill
+cites a record here as "(decision NNNN)"; read it before changing the
+rule. ADRs about the skill machinery (listing, retrieval, delegation) are
+under Claude Code context.
 
 | # | Decision | Status |
 |---|---|---|
-| [0064](0064-merge-by-rebasing-locally-and-pushing.md) | Merge by rebasing locally and pushing, not with GitHub's rebase | Accepted |
+| [0064](0064-keep-skill-adrs-at-two-levels.md) | Keep skill ADRs at two levels, outside the skill files | Accepted |
 
 ## Token efficiency and observability
 
