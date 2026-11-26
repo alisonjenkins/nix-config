@@ -104,8 +104,9 @@ say plainly it's superseded and why; never leave it presented as live.
   (`testing`) rather than restating their content.
 - Never duplicate what another skill owns. A pointer that costs one line beats
   a paragraph that will drift out of sync.
-- Keep the why of a non-obvious rule out of the skill. Record it as an ADR
-  in `docs/adr/`, list it under Skills in that folder's README, and cite it
-  in the skill as "(decision NNNN)". Before changing a rule that cites one,
-  read the record; if the reason no longer holds, supersede it with a new
-  record rather than editing the old one.
+- Keep the why of a non-obvious rule out of the skill (decision 0064).
+  A decision for the whole collection goes in `docs/adr/`, cited as
+  "(decision NNNN)". One for a single skill goes in
+  `docs/skills/<skill>/adr/`, cited as "(decision <skill>/NNNN)". Read the
+  record before changing a rule that cites it; if the reason no longer
+  holds, supersede it with a new record rather than editing the old one.
