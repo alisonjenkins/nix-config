@@ -4,5 +4,9 @@
     "look over my pull request before I merge",
     "is this change safe to ship",
     "audit this code for problems"
+  ],
+  "not_fire": [
+    "open a PR for this branch",
+    "reply to the review comments on my PR"
   ]
 }

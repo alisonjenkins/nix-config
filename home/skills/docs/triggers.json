@@ -9,5 +9,9 @@
     "keep AGENTS.md and the README from duplicating each other",
     "add a diagram and screenshots to the README",
     "write runbooks and Terraform docs for this module"
+  ],
+  "not_fire": [
+    "check the docs for broken links",
+    "are the docs in this repo in good shape"
   ]
 }

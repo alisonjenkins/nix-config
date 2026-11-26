@@ -4,5 +4,9 @@
     "check the README for problems",
     "are the docs in good shape",
     "find broken links and orphan docs"
+  ],
+  "not_fire": [
+    "write a README for this project",
+    "add an install section to the README"
   ]
 }

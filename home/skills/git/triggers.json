@@ -7,5 +7,9 @@
     "rebase onto main and push",
     "split this into atomic commits",
     "push this change with jj"
+  ],
+  "not_fire": [
+    "review this diff before I merge it",
+    "is this change safe to ship"
   ]
 }
