@@ -71,6 +71,7 @@ in {
       self.nixosModules.desktop-wm-plasma6
       self.nixosModules.audio-context-suspend
       self.nixosModules.tpm-resume-rebind
+      self.nixosModules.wifi-regdom-from-timezone
       self.nixosModules.audio-usb-reconnect-heal
       self.nixosModules.base
       self.nixosModules.camera-resume
@@ -364,6 +365,11 @@ in {
         # driving reclaim churn during builds.
         zramSwap.memoryPercent = 50;
         modules.uresourced.enable = true;
+        # The Steam Frame's USB Wi-Fi dongle (rtw89_8852cu) joins the headset's
+        # hidden network. On the world regdomain (no AP on this wired desktop
+        # to learn the country from) every 5 GHz channel is passive-scan only
+        # and 6 GHz is off; pinning GB from the timezone opens them.
+        modules.wifiRegdomFromTimezone.enable = true;
         modules.base = {
           enable = true;
           enableImpermanence = true;

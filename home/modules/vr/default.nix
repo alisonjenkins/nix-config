@@ -14,6 +14,10 @@ let
         # The portal ignores the default for custom schemes and only skips
         # its chooser when exactly one app is recommended, so this lists one.
         ("[Added Associations]", "valve-vrmonitor.desktop;"),
+        # An update-desktop-database run (any app install) lists both handler
+        # files in mimeinfo.cache, making both recommended and bringing the
+        # chooser back; removing the stale one keeps exactly one.
+        ("[Removed Associations]", "valve-URI-vrmonitor.desktop;"),
     ]
 
 
