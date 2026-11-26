@@ -75,3 +75,4 @@ covers that case.
 | TypeScript / JavaScript | [languages/typescript.md](languages/typescript.md) |
 | Shell scripts (`bats`, fixture-driven fake CLIs) | [languages/shell.md](languages/shell.md) |
 | Go (`go test`, `go test -race`) | [languages/go.md](languages/go.md) |
+| Running tests in CI: caching, path filters, affected tests, mutation testing per PR | the `ci` skill |
