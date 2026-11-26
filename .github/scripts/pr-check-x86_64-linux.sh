@@ -392,6 +392,17 @@ build_check() {
 
 section_copilot_bats() { build_check copilot-cli-bats; }
 section_delegation_bats() { build_check delegation-bats; }
+section_skills() {
+    build_check skills-lint
+    build_check skills-triggers
+    build_check git-skill-bats
+    build_check skills-project-management
+    build_check skills-time-management
+    build_check skills-repo-audit
+    build_check skills-docs-audit
+    build_check skills-local-llm-setup
+    build_check skills-behaviour-evals
+}
 section_hetzner_bats() { build_check hetzner-volume-verify-bats; }
 section_pr_check_bats() { build_check pr-check-bats; }
 section_rea_ghidra() { build_check rea-ghidra; }
@@ -440,6 +451,7 @@ want "nixosModules, homeModules, overlays, devShells.${TARGET_SYSTEM}" section_m
 want "packages.${TARGET_SYSTEM} (evaluated; changed ones built)" section_packages needs_packages
 want "copilot-cli script tests (bats)" section_copilot_bats touches home/programs/copilot-cli/
 want "delegation script tests (bats)" section_delegation_bats touches home/skills/delegation/
+want "shared skills (lint, triggers, script tests)" section_skills touches home/skills/
 want "hetzner-volume-verify script tests (bats)" section_hetzner_bats touches scripts/hetzner-volume-verify/
 want "pr-check script tests (bats)" section_pr_check_bats touches .github/scripts/
 want "REA with the pinned Ghidra and JDK" section_rea_ghidra touches home/programs/rea/ pkgs/rea/
