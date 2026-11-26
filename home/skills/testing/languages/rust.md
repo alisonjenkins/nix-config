@@ -26,6 +26,24 @@ the survivor (`#[mutants::skip]` with a reason; needs the `mutants` crate as a
 dependency). Only a clean run supports
 "tests cover this". See `../property-based.md` (saboteurs) for the manual form.
 
+### `cap_lints` silently drops config rustflags: lld/mold ignored, links use far more memory (decision testing/0001)
+`cap_lints = true` in `mutants.toml` (or `--cap-lints=true`) makes
+cargo-mutants set `CARGO_ENCODED_RUSTFLAGS`. Cargo uses only the first
+rustflags source it finds, so every `rustflags` in `.cargo/config.toml` is
+silently dropped. A linker choice such as `-C link-arg=-fuse-ld=lld` (or
+mold) falls back to the default linker, usually `ld.bfd`: slower, and far
+more memory per link, times `--jobs`.
+- **Detect:** `grep encoded_rustflags mutants.out/debug.log` shows only
+  `--cap-lints=warn`. Or a test binary built during the run lacks `Linker:
+  LLD` in `readelf -p .comment`.
+- **Fix:** choose the linker with `linker`, which is not a rustflag. Commit a
+  wrapper that execs the driver the config already uses (`cc`, or `clang` if
+  `linker = "clang"`) plus the `-fuse-ld=` that was in rustflags, e.g.
+  `tools/cc-lld` containing `exec "${CC:-cc}" -fuse-ld=lld "$@"`, and set
+  `[target.<triple>] linker = "tools/cc-lld"` (relative to the directory
+  holding `.cargo/`). Other flags you must keep go in `RUSTFLAGS` for the run;
+  cargo-mutants appends to it, splitting on spaces.
+
 ## Traps
 - Tests that share a global (env vars, static state, a fixed port) fail only
   under parallelism. Scope the state or serialise those tests explicitly.
