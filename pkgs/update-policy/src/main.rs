@@ -11,6 +11,7 @@ const USAGE: &str = "usage: update-policy check [--repo DIR] [--sources FILE] [-
                            [--heads FILE] [--group auto|manual] [--summary FILE] [--apply]
        update-policy shepherd --prs FILE [--now UNIX_SECONDS] [--stuck-after-hours N]
                               [--rebase-window HH:MM-HH:MM]
+                              [--last-nightly TIMESTAMP|none] [--max-nightly-gap-hours N]
 
 check:
 Checks that every flake input in DIR/flake.lock and every GitHub Action in
@@ -31,6 +32,8 @@ prints one line per nightly flake-update PR: `rebase N`, `stuck N reason` or
 `wait N detail`. A PR open --stuck-after-hours (default 6) is stuck however
 healthy it looks. With --rebase-window (UTC), a PR behind main is only
 rebased inside the window, since a rebase re-runs checks on the home runner.
+With --last-nightly (when the nightly workflow last started), it also prints
+`missed reason` once that is --max-nightly-gap-hours (default 26) ago.
 The update-shepherd workflow acts on the lines.
 
 Exit status: 0 success (check: warnings allowed), 1 policy errors (check),
@@ -57,6 +60,9 @@ struct Args {
     now: Option<i64>,
     stuck_after_hours: i64,
     rebase_window: Option<shepherd::Window>,
+    /// Some(None) means `--last-nightly none`.
+    last_nightly: Option<Option<i64>>,
+    max_nightly_gap_hours: i64,
 }
 
 fn parse_args(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
@@ -82,6 +88,8 @@ fn parse_args(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
         now: None,
         stuck_after_hours: 6,
         rebase_window: None,
+        last_nightly: None,
+        max_nightly_gap_hours: 26,
     };
     while let Some(flag) = argv.next() {
         let mut value = || argv.next().ok_or_else(|| format!("`{flag}` needs a value"));
@@ -121,6 +129,24 @@ fn parse_args(mut argv: impl Iterator<Item = String>) -> Result<Args, String> {
                 args.rebase_window = Some(
                     shepherd::Window::parse(&v).ok_or_else(|| format!("`--rebase-window {v}` is not HH:MM-HH:MM (UTC)"))?,
                 );
+            }
+            "--last-nightly" if args.cmd == Cmd::Shepherd => {
+                let v = value()?;
+                args.last_nightly = Some(if v == "none" {
+                    None
+                } else {
+                    Some(update_policy::date::parse_utc_timestamp(&v).ok_or_else(|| {
+                        format!("`--last-nightly {v}` is not a UTC timestamp (YYYY-MM-DDTHH:MM:SSZ) or `none`")
+                    })?)
+                });
+            }
+            "--max-nightly-gap-hours" if args.cmd == Cmd::Shepherd => {
+                let v = value()?;
+                args.max_nightly_gap_hours = v
+                    .parse()
+                    .ok()
+                    .filter(|h: &i64| *h > 0)
+                    .ok_or_else(|| format!("`--max-nightly-gap-hours {v}` is not a positive whole number"))?;
             }
             "-h" | "--help" => return Err(String::new()),
             other => return Err(format!("unknown option `{other}`")),
@@ -247,6 +273,11 @@ fn run_shepherd(args: Args) -> Result<bool, String> {
     let now = args.now.unwrap_or_else(update_policy::date::now_unix_seconds);
     for d in shepherd::decide(&prs, now, args.stuck_after_hours * 3_600, args.rebase_window) {
         println!("{d}");
+    }
+    if let Some(last) = args.last_nightly {
+        if let Some(why) = shepherd::missed_nightly(last, now, args.max_nightly_gap_hours * 3_600) {
+            println!("missed {why}");
+        }
     }
     Ok(true)
 }

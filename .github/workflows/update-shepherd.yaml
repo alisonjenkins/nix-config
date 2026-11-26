@@ -10,7 +10,8 @@
 # asks `update-policy shepherd` what each open nightly PR needs:
 #   - behind main: rebase it with the updater App token (checks re-run),
 #     only inside REBASE_WINDOW, because the checks run on the home runner;
-#   - failed check, conflict, or open more than STUCK_AFTER_HOURS: open or
+#   - failed check, conflict, open more than STUCK_AFTER_HOURS, or no nightly
+#     started for 26 hours (the home timer, host or its token is broken): open or
 #     update one "Nightly flake update is stuck" issue, which is closed again
 #     automatically once nothing is stuck.
 # Logic: pkgs/update-policy/src/shepherd.rs (unit tested) and
@@ -50,6 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
+      # actions: read is for the nightly's last run, to report a missed night.
+      actions: read
       contents: read
       issues: write
     steps:

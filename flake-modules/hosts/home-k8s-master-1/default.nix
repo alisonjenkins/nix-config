@@ -18,6 +18,7 @@ in {
       self.nixosModules.home-lan-hosts
       self.nixosModules.k8s-dns-vip
       self.nixosModules.nohang
+      self.nixosModules.nightly-update-trigger
       self.nixosModules.home-k8s-master-1-hardware
       self.nixosModules.home-k8s-master-1-disko-config
 
@@ -37,6 +38,11 @@ in {
           extraProtectedProcesses = [ "k3s" "containerd" ];
         };
         modules.homeLanHosts.enable = true;
+        # Starts the nightly flake update at 02:00 UK time, in the cheap-power
+        # window for the home runners this host serves (GitHub's cron ran it
+        # hours late). Token: nightly-dispatch-token in
+        # secrets/home-k8s-master-1/secrets.yaml.
+        modules.nightlyUpdateTrigger.enable = true;
         modules.k8sDnsVip = {
           enable = true;
           interface = "enp1s0";

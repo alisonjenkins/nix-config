@@ -1,10 +1,11 @@
 name: Update and push flake lock
 
 on:
-  schedule:
-    # 02:00 is deliberate: the self-hosted runners are at home and power is
-    # cheap 00:30-05:30 UK time. Keep any change inside that window.
-    - cron: "0 2 * * *"
+  # No GitHub cron: it started the 02:00 run 7-10 hours late, on daytime
+  # power. The nightly-update-trigger timer on home-k8s-master-1
+  # (modules/nightly-update-trigger) dispatches this at 02:00 UK time, inside
+  # the 00:30-05:30 cheap-power window of the home runners that do the work.
+  # update-shepherd.yaml reports a missed night.
   workflow_dispatch:
     inputs:
       manual:
@@ -128,7 +129,8 @@ jobs:
   # "Update branch" once the nightly merges.
   review:
     needs: build
-    if: ${{ always() && github.event.pull_request.head.repo.fork != true && (inputs.manual || github.event_name == 'schedule') }}
+    # The step itself only opens the PR on Mondays unless `manual` is set.
+    if: ${{ always() && github.event.pull_request.head.repo.fork != true && github.event_name == 'workflow_dispatch' }}
     runs-on: home-nix-builder-amd64
     timeout-minutes: 30
     permissions:
