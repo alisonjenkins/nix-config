@@ -64,3 +64,9 @@ convention. Common patterns:
 See the `testing` skill's `languages/nix.md` for the eval/build/activation/VM
 ladder, and the `infra` skill's `nix.md` for deploy commands; check for a
 project-local workflow skill for host/module/secret scaffolding conventions.
+
+## Inputs
+
+Bumping, adding or pinning a flake or tack input is the `nix-inputs`
+skill's job. Run its `detect-inputs.sh` before touching `flake.lock` or
+`.tack/`.

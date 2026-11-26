@@ -93,7 +93,7 @@ until = "2027-01-20"
 ## 3. Patch (cheapest first)
 
 1. **Update the input** and rescan: `nix flake update nixpkgs` (or the repo's
-   update recipe). Often the whole fix. If it changes nothing, see the EOL
+   update recipe; `tack update nixpkgs` in a tack repo, see `nix-inputs`). Often the whole fix. If it changes nothing, see the EOL
    bullet above.
 2. **Take the package from a newer channel** at the place that installs it:
    `pkgs.unstable.<pkg>` or `pkgs.master.<pkg>`. Confirm the newer channel's
