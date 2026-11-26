@@ -163,6 +163,17 @@
     conflictsWith = [ "zswapOff" ];
   };
 
+  # Without the shrinker zswap writes back only when its pool is full; with it,
+  # cold pages move to the disk swap device under memory pressure.
+  zswapShrinker = {
+    category = "performance";
+    params = [ "zswap.shrinker_enabled=1" ];
+    minKernel = "6.8"; # shrinker_enabled was added in v6.8
+    cost = "low";
+    breaks = "cold pages are written to disk sooner, so a later swap-in reads disk instead of RAM";
+    conflictsWith = [ "zswapOff" ];
+  };
+
   # The knobs below were the gaming sysctl block in modules/desktop. minKernel
   # is the first mainline release that has the setting; the fleet runs 6.18+.
   # vm.page-cluster is not here: modules/base sets it whenever zram is on.
