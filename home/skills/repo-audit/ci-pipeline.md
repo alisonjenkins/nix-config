@@ -2,6 +2,10 @@
 
 Run via `scripts/checks/ci-pipeline.sh <target>`.
 
+This check covers repo hygiene only. Pipeline design (how tests run,
+flakes, caching, scoping) lives in the `ci` skill; `/ci-audit` audits
+against it.
+
 ## Criteria
 
 - Every required branch-protection status check (see `branch-protection.md`)
