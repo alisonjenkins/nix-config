@@ -16,6 +16,10 @@
         {
           "rev": "cbc557b1a565f7bad47cb5197cf364788867cf30",
           "first_seen": "2026-11-25"
+        },
+        {
+          "rev": "55e47f364e57c9bf0a69e6e8f62f7e7221c6c7d0",
+          "first_seen": "2026-11-26"
         }
       ]
     },
@@ -69,6 +73,10 @@
         {
           "rev": "c0e82cad53833b053f4e1ec2c596cb3b18f00cbf",
           "first_seen": "2026-11-25"
+        },
+        {
+          "rev": "150d4c13da6ad34adadb46a0314287d61a9d56f1",
+          "first_seen": "2026-11-26"
         }
       ]
     },
@@ -127,6 +135,10 @@
         {
           "rev": "6ec148e9963a8f870c25e2b0057aafed1f662886",
           "first_seen": "2026-11-25"
+        },
+        {
+          "rev": "c9aecfa765338150c5bc8cc4f6578055327a9437",
+          "first_seen": "2026-11-26"
         }
       ]
     },
@@ -225,6 +237,10 @@
         {
           "rev": "22142b67aff1bf0ada5c384974f05524f3980b14",
           "first_seen": "2026-11-23"
+        },
+        {
+          "rev": "193fc37ecc8793da8b6bb5dd6d16a1746c9c44ac",
+          "first_seen": "2026-11-26"
         }
       ]
     },
@@ -272,6 +288,10 @@
         {
           "rev": "350f2fb7f213c405e7406128606a1ed8fdea9b4b",
           "first_seen": "2026-11-25"
+        },
+        {
+          "rev": "ec365315271625126f33b2aae892c4c01bb4ba20",
+          "first_seen": "2026-11-26"
         }
       ]
     },
@@ -338,6 +358,10 @@
         {
           "rev": "9ef3714b2daabc415640ed711eb4400a7b86674d",
           "first_seen": "2026-11-25"
+        },
+        {
+          "rev": "3b0a6f1fd8ffdb6bb2f9b981d1297215b7f961df",
+          "first_seen": "2026-11-26"
         }
       ]
     },
@@ -355,6 +379,10 @@
         {
           "rev": "a161441c3dbb3affd4936018a470f7dd34439c8b",
           "first_seen": "2026-11-25"
+        },
+        {
+          "rev": "c3f4f513b4eb26de326b38f7c89b16bbc639164a",
+          "first_seen": "2026-11-26"
         }
       ]
     },
@@ -452,6 +480,10 @@
         {
           "rev": "6c4d107744ba0760c5176a3993115b9842c19249",
           "first_seen": "2026-11-25"
+        },
+        {
+          "rev": "abbd61739b1d73fe0c2c4413143efb9ccafea59e",
+          "first_seen": "2026-11-26"
         }
       ]
     }
