@@ -490,6 +490,8 @@ in
       # zswap in front of zram would keep pages out of it.
       modules.kernelTuning = {
         zswapOff = lib.mkDefault config.zramSwap.enable;
+        zswapOn = lib.mkDefault (!config.zramSwap.enable && config.swapDevices != [ ]);
+        zswapShrinker = lib.mkDefault config.modules.kernelTuning.zswapOn;
         swappinessZram = lib.mkDefault config.zramSwap.enable;
         swappinessDisk = lib.mkDefault (!config.zramSwap.enable);
         pageClusterZero = lib.mkDefault config.zramSwap.enable;
@@ -522,7 +524,10 @@ in
       };
 
       zramSwap = {
-        enable = true;
+        # Hosts with disk swap get zswap instead: zram has no writeback here,
+        # so cold pages would sit in RAM while newer ones overflow to disk.
+        # 900 outranks Jovian's mkDefault true on the Steam Deck.
+        enable = lib.mkOverride 900 (config.swapDevices == [ ]);
         algorithm = "zstd";
         # mkDefault so memory-heavy hosts (e.g. compile boxes with a real disk
         # swap) can lower this — zram-compressed pages stay resident in RAM, so
