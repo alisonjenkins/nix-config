@@ -2,16 +2,23 @@
 let
   cfg = config.modules.vr;
 
-  # Seeds one x-scheme-handler key into the live, still-mutable
-  # mimeapps.list. `seeds` is a Python list literal of (section, value)
-  # pairs; see seedVrMonitorMimeDefault below for why it is seeded rather
-  # than owned by home-manager.
-  mkSchemeSeedScript = { name, key, seeds }: pkgs.writeText "${name}.py" ''
+  seedVrMonitorMimeDefaultScript = pkgs.writeText "seed-vrmonitor-mime-default.py" ''
     import os
 
     path = "${config.xdg.configHome}/mimeapps.list"
-    key = "${key}"
-    seeds = ${seeds}
+    key = "x-scheme-handler/vrmonitor"
+    seeds = [
+        # Steam names the handler after whichever SteamVR install it last
+        # launched; list both so xdg-open has a candidate either way.
+        ("[Default Applications]", "valve-vrmonitor.desktop;valve-URI-vrmonitor.desktop;"),
+        # The portal ignores the default for custom schemes and only skips
+        # its chooser when exactly one app is recommended, so this lists one.
+        ("[Added Associations]", "valve-vrmonitor.desktop;"),
+        # An update-desktop-database run (any app install) lists both handler
+        # files in mimeinfo.cache, making both recommended and bringing the
+        # chooser back; removing the stale one keeps exactly one.
+        ("[Removed Associations]", "valve-URI-vrmonitor.desktop;"),
+    ]
 
 
     def mtime():
@@ -89,48 +96,13 @@ let
             break
         os.remove(tmp_path)
     else:
-        raise SystemExit("${name}: gave up after 5 concurrent-write retries")
+        raise SystemExit("seed-vrmonitor-mime-default: gave up after 5 concurrent-write retries")
   '';
-
-  seedVrMonitorMimeDefaultScript = mkSchemeSeedScript {
-    name = "seed-vrmonitor-mime-default";
-    key = "x-scheme-handler/vrmonitor";
-    seeds = ''
-      [
-          # Steam names the handler after whichever SteamVR install it last
-          # launched; list both so xdg-open has a candidate either way.
-          ("[Default Applications]", "valve-vrmonitor.desktop;valve-URI-vrmonitor.desktop;"),
-          # The portal ignores the default for custom schemes and only skips
-          # its chooser when exactly one app is recommended, so this lists one.
-          ("[Added Associations]", "valve-vrmonitor.desktop;"),
-          # An update-desktop-database run (any app install) lists both handler
-          # files in mimeinfo.cache, making both recommended and bringing the
-          # chooser back; removing the stale one keeps exactly one.
-          ("[Removed Associations]", "valve-URI-vrmonitor.desktop;"),
-      ]'';
-  };
-
-  # "Install with FrameDrop" buttons open framedrop:// links; FrameDrop is
-  # Windows-only, so pkgs/frame-control's framedrop-handler takes them.
-  seedFramedropMimeDefaultScript = mkSchemeSeedScript {
-    name = "seed-framedrop-mime-default";
-    key = "x-scheme-handler/framedrop";
-    seeds = ''
-      [
-          ("[Default Applications]", "framedrop-handler.desktop;"),
-          ("[Added Associations]", "framedrop-handler.desktop;"),
-      ]'';
-  };
 in
 {
   imports = [ ./vr-runtime.nix ./steamvr-settings.nix ];
 
   options.modules.vr = {
-    frameControl.enable = lib.mkEnableOption ''
-      Frame Control (pkgs/frame-control), a Linux app that manages and
-      sideloads to a Steam Frame over SSH, plus its framedrop:// handler so
-      "Install with FrameDrop" links open in it
-    '';
     enableOpenSourceVR = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -148,7 +120,7 @@ in
     };
   };
 
-  config = lib.mkIf pkgs.stdenv.isLinux (lib.mkMerge [ {
+  config = lib.mkIf pkgs.stdenv.isLinux {
     # Seeds the runtime selection only when nothing has chosen one yet.
     # Deliberately not xdg.configFile: that produces read-only store symlinks,
     # which is what left the live state inconsistent — OpenXR resolved to
@@ -200,16 +172,5 @@ in
     home.activation.seedVrMonitorMimeDefault = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       run ${pkgs.python3}/bin/python3 ${seedVrMonitorMimeDefaultScript} || true
     '';
-  }
-
-  (lib.mkIf cfg.frameControl.enable {
-    home.packages = [ pkgs.frame-control ];
-
-    # Same reasoning as seedVrMonitorMimeDefault: the portal only skips its
-    # chooser for a custom scheme with an [Added Associations] entry.
-    home.activation.seedFramedropMimeDefault = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run ${pkgs.python3}/bin/python3 ${seedFramedropMimeDefaultScript} || true
-    '';
-  })
-  ]);
+  };
 }
