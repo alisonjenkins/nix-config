@@ -1,0 +1,18 @@
+{
+  "fire": [
+    "bump nixpkgs in this flake",
+    "update the home-manager input to the latest commit",
+    "should we switch this repo to tack",
+    "tack update says the patched tree is not in the store",
+    "we have three copies of nixpkgs in flake.lock, collapse them",
+    "pin this flake input to a specific commit",
+    "convert flake.nix inputs to tack pins",
+    "add a new input to the flake"
+  ],
+  "not_fire": [
+    "write a NixOS module for this service",
+    "deploy the new config to the server with deploy-rs",
+    "audit the closure of this package for vulnerabilities",
+    "fix this nix eval error in my module"
+  ]
+}

@@ -2621,6 +2621,14 @@
         }
       ]
     },
+    "nix-inputs/scripts/detect-inputs.sh": {
+      "hash": "52c57fe213c2d07845f6b927c1502f31b0a33c90c5e26fda5c06852057ed1a6c",
+      "killed": 19,
+      "mutants": 19,
+      "ran_at": "2026-11-26T23:03:34Z",
+      "status": "tested",
+      "survivors": []
+    },
     "project-management/scripts/backends/github/_gh.sh": {
       "hash": "b36c3354b33b200c4b98a1bfe0d8fd807f11cb3b63464f7ab10188255e3a3d1d",
       "killed": 3,
