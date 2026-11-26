@@ -63,7 +63,7 @@ just check
 nix flake show
 
 # Update specific input
-nix flake lock --update-input <input-name>
+nix flake update <input-name>
 ```
 
 ## Architecture
