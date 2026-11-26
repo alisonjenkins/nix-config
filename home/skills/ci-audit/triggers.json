@@ -1,0 +1,12 @@
+{
+  "fire": [
+    "audit the CI in this repo",
+    "audit our CI pipeline and propose fixes",
+    "review this repo's GitHub Actions setup against the CI rules",
+    "why is our CI slow and flaky, audit it"
+  ],
+  "not_fire": [
+    "set up CI for this repo",
+    "audit the docs in this repo"
+  ]
+}
