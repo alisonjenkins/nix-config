@@ -189,12 +189,6 @@ in {
           };
         };
 
-        # Cap zram at 50% of RAM (base sets 100%). zram is RAM-backed, so an
-        # oversized zram could consume the RAM it is meant to relieve. Pinned guests
-        # hold 216 of 251 GiB, so only download-server-1 (8 GiB) swaps into it;
-        # 50% is a safe ceiling, not a throughput limit.
-        zramSwap.memoryPercent = lib.mkForce 50;
-
         # This host is on 24/7 hosting passthrough VMs, so idle draw dominates
         # its power bill. schedutil ramps with load instead of pinning a fixed
         # frequency, so burst workloads (transcode, storage IOPS) still get

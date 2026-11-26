@@ -359,11 +359,6 @@ in {
           };
         };
 
-        # Halve zram (base default 100%) — with a real 64G disk swap present,
-        # a smaller zram lets large compile working sets overflow to disk (which
-        # frees physical RAM) instead of compressing into RAM-resident zram and
-        # driving reclaim churn during builds.
-        zramSwap.memoryPercent = 50;
         modules.uresourced.enable = true;
         # The Steam Frame's USB Wi-Fi dongle (rtw89_8852cu) joins the headset's
         # hidden network. On the world regdomain (no AP on this wired desktop

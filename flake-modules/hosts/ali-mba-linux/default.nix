@@ -300,8 +300,6 @@ in {
           };
         };
 
-        zramSwap.memoryPercent = lib.mkForce 50;
-
         # Tune VM for zram-first paging: kernel resists swapping by default
         # (vm.swappiness=10 in modules/base), which keeps cold JVM heap pages
         # resident and triggers OOM under memory pressure (e.g. heavy Minecraft

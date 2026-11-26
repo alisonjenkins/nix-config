@@ -331,9 +331,6 @@ in {
 
         security.rtkit.enable = true;
 
-        # Reduce ZRAM for faster hibernation (less data to serialize)
-        zramSwap.memoryPercent = lib.mkForce 50;
-
         services = {
           pulseaudio = {
             enable = false;
