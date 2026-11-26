@@ -226,13 +226,14 @@
   # The vm.* block below was set directly in modules/base. Base turns these on
   # for every host; the mkDefault-priority ones (sysctlPriority 1000) keep the
   # priority base used so a host's mkForce or mkOverride still wins.
-  # With zram as swap, swapping cold anon pages is cheap and frees RAM for cache.
-  swappinessZram = {
+  # With compressed swap (zram, or zswap in front of disk), swapping cold anon
+  # pages is cheap and frees RAM for cache.
+  swappinessCompressed = {
     category = "performance";
     sysctls."vm.swappiness" = 100;
     sysctlPriority = 1000;
     cost = "low";
-    breaks = "anonymous pages are swapped out eagerly; wrong on a disk swap device";
+    breaks = "anonymous pages are swapped out eagerly; wrong on bare disk swap";
     conflictsWith = [ "swappinessDisk" ];
   };
 
@@ -242,7 +243,7 @@
     sysctlPriority = 1000;
     cost = "low";
     breaks = "cold anonymous pages stay resident until memory pressure";
-    conflictsWith = [ "swappinessZram" ];
+    conflictsWith = [ "swappinessCompressed" ];
   };
 
   # zram is random-access RAM: swap-in readahead only wastes work.
