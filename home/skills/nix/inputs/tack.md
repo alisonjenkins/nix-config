@@ -16,6 +16,11 @@ outputs = args: let
 in { ... };
 ```
 
+Downstream tack projects reach these pins through `tackOverrides` only
+when `pins.toml` sets `[tack] recomposable = true`. `tack init` sets it when
+`flake.nix` already threads `tackOverrides`; after rewiring by hand, set it
+yourself. A flake nobody overrides can leave it off.
+
 Its `flake.lock` stays at the root node only. Do not run
 `nix flake update` to bump a tack pin. It rewrites nothing useful.
 
