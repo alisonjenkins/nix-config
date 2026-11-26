@@ -1579,7 +1579,7 @@ in
         portaudio
         posting
         powertop
-        master.signal-desktop
+        unstable.signal-desktop
         shortwave
         suspendScripts
         television
