@@ -3,7 +3,7 @@ name: docs
 description: >-
   Use when writing, restructuring or auditing a repository's documentation: README.md, quickstart, install and usage sections, the docs/ layout, ADRs, changelog, monorepo or polyrepo docs, AGENTS.md and CLAUDE.md versus human docs, README diagrams, screenshots and logos, API doc comments, Terraform and Helm docs, runbooks; "write a README", "document this project", "the docs are stale", "what should the README say", "how should I structure the docs". Not for polishing prose (see writing) or .docx/.pdf/.pptx deliverables (see documents).
 metadata:
-  summary: "Use when writing, restructuring or auditing a repo's docs: README, docs/ layout, ADRs, agent files, code and infra docs."
+  summary: "Use when writing, restructuring or auditing a repo's docs: README, quickstart and install sections, docs/ layout, ADRs, agent files, code and infra docs."
 ---
 
 # Docs

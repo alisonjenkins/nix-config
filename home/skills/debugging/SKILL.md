@@ -3,7 +3,7 @@ name: debugging
 description: >-
   Use when something is broken, crashing, throwing an error, failing intermittently, behaving differently in one environment than another, when a change you made (an env var, a config, a fix) had no effect, or when every check you run says it is fine but it plainly is not. Also for finding a root cause. Not for a platform-driven investigation (see observability) or a deploy/activation failure (see infra) — both apply this same method: reproduce, probe the layer closest to the fault, use a positive control, diff the working path against the failing one.
 metadata:
-  summary: "Use when something is broken, flaky, or differs between environments: reproduce, probe the closest layer, use a positive control."
+  summary: "Use when something is broken, crashing, failing, erroring, stopped working or a change had no effect: find the root cause; probe the closest layer."
 ---
 
 # Debugging

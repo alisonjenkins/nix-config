@@ -10,7 +10,7 @@ description: >-
   ignore false positives, or patch, bump or override a vulnerable package or
   bundled library. Scans and builds only, never a live switch.
 metadata:
-  summary: "Use to audit CVEs and advisories: vulnix on Nix closures, cargo-deny on Rust repos, packages a repo defines; triage and patch."
+  summary: "Use to audit CVEs, vulnerabilities and advisories: vulnix on NixOS closures, SBOMs, cargo-deny on Rust repos, packages a repo defines; triage and patch."
 ---
 
 # Security: find known vulnerabilities, triage, patch
