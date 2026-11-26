@@ -29,6 +29,7 @@
   designcraft = pkgs.callPackage ./designcraft {};
   uresourced = pkgs.callPackage ./uresourced {};
   xr-video-player = pkgs.callPackage ./xr-video-player {};
+  frame-control = pkgs.callPackage ./frame-control {};
   piper-voice-jenny-dioco = pkgs.callPackage ./piper-voice-jenny-dioco {};
   piper-tts-talk = pkgs.callPackage ./piper-tts-talk { inherit pkgs; piper-voice = piper-voice-jenny-dioco; };
   caveman = pkgs.callPackage ./caveman {};
