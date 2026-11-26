@@ -554,9 +554,6 @@ in {
         # (performance/performance on AC, powersave/balance_power on battery).
         # See modules/power-management/default.nix.
 
-        # Reduce ZRAM for faster hibernation (less data to serialize)
-        zramSwap.memoryPercent = lib.mkForce 50;
-
         programs = {
 
           niri = {
