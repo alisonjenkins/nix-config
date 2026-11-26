@@ -26,7 +26,8 @@ Its `flake.lock` stays at the root node only. Do not run
 
 ## Commands
 
-Check `tack --help` first, or `detect-inputs.sh`'s `tack_cli`.
+Check `tack --help` first, or `detect-inputs.sh`'s `tack_cli`, in the same
+shell you run tack from. A different tack on `PATH` gives the wrong tier.
 
 Present since 1.x:
 

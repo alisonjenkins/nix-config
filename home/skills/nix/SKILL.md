@@ -21,7 +21,9 @@ inputs. Each child file holds one workflow.
   may name a wrapper (`just update`, an update bot) or a policy that wraps
   the raw commands below. The repo's rule wins.
 - **Run tools through Nix, not `PATH`.** `nix shell nixpkgs#tack -c tack ...`
-  or the repo's dev shell. Do not assume a tool is installed.
+  or the repo's dev shell. Do not assume a tool is installed. Run
+  `detect-inputs.sh` in that same environment, so its `tack_cli` describes
+  the tack you will run.
 - **Never change the input system as a side effect.** A bump stays in the
   repo's current system; switching is a separate decision for the user.
 
