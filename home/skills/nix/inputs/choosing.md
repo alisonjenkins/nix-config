@@ -32,7 +32,12 @@ Do this on a branch, and expect to touch the tooling from step 2.
    not plain identifiers.
 2. Review `pins.toml` against the old `inputs`. Nested follows deeper than
    one level do not carry over.
-3. `tack update` to write `pins.lock.json`.
+3. Hold each pin at its old revision first. `--convert` copies URLs, not
+   `flake.lock` revisions, so a bare `tack update` moves every branch that
+   has moved upstream. Append `?rev=SHA` (the full `locked.rev` from
+   `flake.lock`) to each git or GitHub pin, then `tack update` to write
+   `pins.lock.json`. Drop the `?rev=` once step 7 passes, on the pins that
+   should track a branch again.
 4. Rewire `flake.nix` by hand. `--convert` never edits it. Remove `inputs`
    and import `./.tack` in `outputs` (see [tack.md](tack.md)). Or run
    `tack init --flake` in a scratch dir and copy its template.
