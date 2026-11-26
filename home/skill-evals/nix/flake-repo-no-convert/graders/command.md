@@ -1,5 +1,5 @@
 ---
 type: regex
-pattern: 'nix flake (update|lock --update-input) home-manager([ \t]+-\S+)*[ \t]*([`"\n;&|)]|$)'
+pattern: 'nix flake update home-manager([ \t]+-\S+)*[ \t]*([`"\n;&|).]|$)'
 match: contains
 ---
