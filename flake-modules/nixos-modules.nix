@@ -22,6 +22,7 @@
     luks-controller-unlock = import ../modules/luks-controller-unlock.nix;
     luksPCR15 = import ../modules/luksPCR15;
     niks3-cache-push = import ../modules/niks3-cache-push;
+    nightly-update-trigger = import ../modules/nightly-update-trigger;
     nohang = import ../modules/nohang;
     llama-cpp = import ../modules/llama-cpp;
     llama-swap = import ../modules/llama-swap/nixos.nix;

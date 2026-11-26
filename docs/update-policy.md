@@ -174,11 +174,23 @@ needs:
   reported instead). Only between 00:30 and 04:30 UTC (`REBASE_WINDOW`):
   the checks run on the self-hosted runners at home, and power is cheap
   00:30-05:30 UK time, which that UTC window stays inside in GMT and BST.
-  The nightly itself runs at 02:00 UTC for the same reason;
+  The nightly itself starts at 02:00 UK time for the same reason;
 - **a failed check, a conflict, or open 6 hours or more**: open or update one
   issue titled "Nightly flake update is stuck", which says why and links the
   run. It is closed automatically once nothing is stuck. A failed or
   conflicting PR is not retried; the next night's PR supersedes it.
+
+- **no nightly started for 26 hours**: the same issue, pointing at the timer.
+
+The nightly is not started by GitHub's cron, which ran the 02:00 job 7-10
+hours late. A systemd timer on home-k8s-master-1
+(`modules/nightly-update-trigger`, script `.github/scripts/nightly-dispatch.sh`)
+dispatches `update.yaml` at 02:00 local time with a fine-grained token that
+has only "Actions: read and write" on this repository (sops secret
+`nightly-dispatch-token`). The timer is not persistent, so a night the host
+was down is skipped rather than run on daytime power. When the token expires
+the dispatch fails with HTTP 401 in `journalctl -u nightly-update-trigger`,
+and the shepherd's missed-night issue appears the next day.
 
 `update-policy shepherd --prs FILE` takes the JSON of `gh pr list --json
 number,headRefName,isDraft,createdAt,mergeStateStatus,statusCheckRollup` and

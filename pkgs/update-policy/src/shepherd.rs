@@ -234,6 +234,23 @@ pub fn decide(prs: &[Pr], now: i64, stuck_after: i64, rebase_window: Option<Wind
     out
 }
 
+/// Reports a missed nightly: `last` is when the newest run of the nightly
+/// workflow started (None when there is none), and `max_gap` how long
+/// (seconds) may pass before that is a problem. The nightly is started by a
+/// timer on the home builder, so a gap means the timer, the host or its token
+/// is broken.
+pub fn missed_nightly(last: Option<i64>, now: i64, max_gap: i64) -> Option<String> {
+    const WHERE: &str = "check the nightly-update-trigger timer on home-k8s-master-1 \
+        (systemctl list-timers nightly-update-trigger; journalctl -u nightly-update-trigger)";
+    match last {
+        None => Some(format!("the nightly flake update has never run; {WHERE}")),
+        Some(t) if now - t >= max_gap => {
+            Some(format!("the nightly flake update has not started for {}; {WHERE}", hours(now - t)))
+        }
+        Some(_) => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -368,6 +385,17 @@ mod tests {
                     "aa:bb-01:00", "00:30-04:30-05:00", "+1:30-04:30", "00:30-04:+3"] {
             assert_eq!(Window::parse(bad), None, "{bad}");
         }
+    }
+
+    #[test]
+    fn missed_nightly_after_the_gap() {
+        assert_eq!(missed_nightly(Some(NOW - 25 * H), NOW, 26 * H), None);
+        assert_eq!(missed_nightly(Some(NOW - 26 * H + 1), NOW, 26 * H), None);
+        let msg = missed_nightly(Some(NOW - 26 * H), NOW, 26 * H).unwrap();
+        assert!(msg.starts_with("the nightly flake update has not started for 26.0h; check the nightly-update-trigger timer"), "{msg}");
+        assert!(msg.contains("journalctl -u nightly-update-trigger"));
+        let never = missed_nightly(None, NOW, 26 * H).unwrap();
+        assert!(never.starts_with("the nightly flake update has never run; check"), "{never}");
     }
 
     #[test]

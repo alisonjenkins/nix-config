@@ -8,6 +8,7 @@
 #   rebase N         the PR is behind main: update its branch, checks re-run
 #   stuck N reason   a human should look: open or update one tracking issue
 #   wait N detail    nothing to do yet
+#   missed reason    the nightly has not started for a day: also in the issue
 # When nothing is stuck, the tracking issue is closed.
 #
 # Environment:
@@ -45,8 +46,18 @@ if ! gh pr list --repo "$repo" --state open --author "app/$APP_SLUG" --limit 50 
 fi
 window_args=()
 if [ -n "${REBASE_WINDOW:-}" ]; then window_args=(--rebase-window "$REBASE_WINDOW"); fi
+
+# When the nightly last started, so a missed night (timer, host or token
+# broken) is reported too. Read with ISSUE_TOKEN: the App has no actions scope.
+if ! last_nightly="$(GH_TOKEN="$ISSUE_TOKEN" gh api "repos/$repo/actions/workflows/update.yaml/runs?per_page=1" \
+    --jq '.workflow_runs[0].created_at // "none"' 2>"$work/err")"; then
+  echo "::error::could not read the nightly workflow's last run: $(cat "$work/err")"
+  exit 1
+fi
+
 if ! "$UPDATE_POLICY" shepherd --prs "$work/prs.json" \
-    --stuck-after-hours "${STUCK_AFTER_HOURS:-6}" "${window_args[@]}" >"$work/decisions"; then
+    --stuck-after-hours "${STUCK_AFTER_HOURS:-6}" "${window_args[@]}" \
+    --last-nightly "$last_nightly" >"$work/decisions"; then
   echo "::error::update-policy shepherd failed; its message is above"
   exit 1
 fi
@@ -69,6 +80,10 @@ while read -r verb number rest; do
       ;;
     wait)
       echo "#$number: $rest"
+      ;;
+    missed)
+      echo "::warning::$number $rest"
+      stuck+=("$number $rest")
       ;;
     *)
       echo "::error::update-policy shepherd printed a line this script does not understand: $verb $number $rest"
@@ -101,7 +116,7 @@ if [ "${#stuck[@]}" -eq 0 ]; then
 fi
 
 {
-  echo "The nightly flake update cannot merge on its own:"
+  echo "The nightly flake update needs a look:"
   echo
   for line in "${stuck[@]}"; do echo "- $line"; done
   echo

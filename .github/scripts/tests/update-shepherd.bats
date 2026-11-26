@@ -25,6 +25,7 @@ case "\$1 \$2" in
   "pr list") [ -z "\${STUB_LIST_FAIL:-}" ] || { echo "HTTP 401" >&2; exit 1; }; echo '[]' ;;
   "pr update-branch") [ -z "\${STUB_REBASE_FAIL:-}" ] || { echo "refusing to allow a GitHub App to update workflow" >&2; exit 1; } ;;
   "issue list") printf '%s' "\${STUB_ISSUE:-}" ;;
+  "api repos/o/r/actions/workflows/update.yaml/runs?per_page=1") [ -z "\${STUB_RUNS_FAIL:-}" ] || { echo "HTTP 403" >&2; exit 1; }; echo "\${STUB_LAST:-2026-11-24T02:00:05Z}" ;;
   "issue create") echo "https://github.com/o/r/issues/99" ;;
   "issue edit") cp "\$(sed -n 's/.*--body-file \([^ ]*\).*/\1/p' <<<"\$*")" "\$WORK/body.md" ;;
 esac
@@ -57,6 +58,26 @@ teardown() {
   REBASE_WINDOW=00:30-04:30 STUCK_AFTER_HOURS=3 run "$BASH" "$SCRIPT"
   [ "$status" -eq 0 ]
   grep -qF -- "--stuck-after-hours 3 --rebase-window 00:30-04:30" "$WORK/policy.log"
+}
+
+@test "the nightly's last start is read with the issue token and passed on" {
+  run "$BASH" "$SCRIPT"
+  [ "$status" -eq 0 ]
+  grep -qF "[issues] api repos/o/r/actions/workflows/update.yaml/runs?per_page=1 --jq" "$WORK/gh.log"
+  grep -qF -- "--last-nightly 2026-11-24T02:00:05Z" "$WORK/policy.log"
+}
+
+@test "a missed nightly goes in the issue" {
+  STUB_DECISIONS=$'missed the nightly flake update has not started for 30.0h; check the timer\n' run "$BASH" "$SCRIPT"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"::warning::the nightly flake update has not started for 30.0h; check the timer"* ]]
+  grep -qF -- "- the nightly flake update has not started for 30.0h; check the timer" "$WORK/body.md"
+}
+
+@test "failing to read the nightly's runs is an error" {
+  STUB_RUNS_FAIL=1 run "$BASH" "$SCRIPT"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"::error::could not read the nightly workflow's last run: HTTP 403"* ]]
 }
 
 @test "behind PR is rebased with the App token" {

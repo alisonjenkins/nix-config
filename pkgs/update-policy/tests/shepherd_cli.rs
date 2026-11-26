@@ -47,6 +47,23 @@ fn prints_one_line_per_decision() {
 }
 
 #[test]
+fn reports_a_missed_nightly_only_when_asked_and_late() {
+    let f = prs_file("missed", "[]");
+    let p = f.to_str().unwrap();
+    // NOW is 2026-11-24T00:00:00Z.
+    let o = run(&["--prs", p, "--now", NOW, "--last-nightly", "2026-11-23T02:00:00Z"]);
+    assert_eq!(stdout(&o), "");
+    let o = run(&["--prs", p, "--now", NOW, "--last-nightly", "2026-11-22T22:00:00Z"]);
+    assert!(stdout(&o).starts_with("missed the nightly flake update has not started for 26.0h;"), "{}", stdout(&o));
+    let o = run(&["--prs", p, "--now", NOW, "--last-nightly", "2026-11-23T02:00:00Z", "--max-nightly-gap-hours", "20"]);
+    assert!(stdout(&o).starts_with("missed the nightly flake update has not started for 22.0h;"), "{}", stdout(&o));
+    let o = run(&["--prs", p, "--now", NOW, "--last-nightly", "none"]);
+    assert!(stdout(&o).starts_with("missed the nightly flake update has never run;"), "{}", stdout(&o));
+    assert_eq!(stdout(&o).lines().count(), 1);
+    fs::remove_file(f).unwrap();
+}
+
+#[test]
 fn no_prs_prints_nothing() {
     let f = prs_file("empty", "[]");
     let o = run(&["--prs", f.to_str().unwrap(), "--now", NOW]);
@@ -76,6 +93,8 @@ fn bad_arguments_exit_2() {
         (&["--prs", "x", "--stuck-after-hours", "0"][..], "`--stuck-after-hours 0` is not a positive whole number"),
         (&["--prs", "x", "--apply"][..], "unknown option `--apply`"),
         (&["--prs", "x", "--rebase-window", "1-2"][..], "`--rebase-window 1-2` is not HH:MM-HH:MM (UTC)"),
+        (&["--prs", "x", "--last-nightly", "today"][..], "`--last-nightly today` is not a UTC timestamp"),
+        (&["--prs", "x", "--max-nightly-gap-hours", "0"][..], "`--max-nightly-gap-hours 0` is not a positive whole number"),
     ] {
         let o = run(args);
         assert_eq!(o.status.code(), Some(2), "{args:?}");
@@ -85,7 +104,7 @@ fn bad_arguments_exit_2() {
 
 #[test]
 fn shepherd_options_belong_to_shepherd_only() {
-    for flag in ["--prs", "--now", "--stuck-after-hours", "--rebase-window"] {
+    for flag in ["--prs", "--now", "--stuck-after-hours", "--rebase-window", "--last-nightly", "--max-nightly-gap-hours"] {
         let o = Command::new(env!("CARGO_BIN_EXE_update-policy")).args(["bump", flag, "1"]).output().unwrap();
         assert_eq!(o.status.code(), Some(2), "{flag}");
         assert!(stderr(&o).contains(&format!("unknown option `{flag}`")), "{flag}: {}", stderr(&o));
