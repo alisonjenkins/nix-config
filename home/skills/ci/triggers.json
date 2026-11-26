@@ -1,0 +1,17 @@
+{
+  "fire": [
+    "set up CI for this repo",
+    "our GitHub Actions workflow is too slow",
+    "add caching to the CI pipeline",
+    "only run affected tests on a PR",
+    "add path filters so docs changes skip the PR check",
+    "the CI job keeps failing then passing on retry",
+    "run mutation testing in CI on just the changed code",
+    "shard the test suite across CI runners"
+  ],
+  "not_fire": [
+    "fix this flaky test",
+    "check branch protection on this repo",
+    "write unit tests for this function"
+  ]
+}
