@@ -42,9 +42,13 @@ lint_body_length() {
 }
 
 # A link inside a fenced block or an inline code span is an example, not a link.
+# A fenced block becomes a blank line, so a stray backtick cannot pair across
+# it. A code span opens and closes with backtick runs of equal length and ends
+# at a blank line (LF or CRLF), as in CommonMark.
 prose_only() {
-    # shellcheck disable=SC2016 # the backticks are literal, for sed
-    awk '/^```/ { fenced = !fenced; next } !fenced' "$1" | sed 's/`[^`]*`//g'
+    # shellcheck disable=SC2016 # the backticks are literal, for perl
+    awk '/^```/ { fenced = !fenced; if (!fenced) print ""; next } !fenced' "$1" |
+        perl -0777 -pe 's/(?<!`)(`+)(?!`)(?:(?!\n[ \t]*\r?\n).)*?(?<!`)\1(?!`)//gs'
 }
 
 lint_links() {

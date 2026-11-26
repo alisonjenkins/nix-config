@@ -113,6 +113,47 @@ make_skill() {
   [ "$status" -eq 0 ]
 }
 
+@test "ignores a link inside a code span that wraps across lines" {
+  make_skill demo '`see [x](missing.md) and
+more`'
+  run bash "$script" "$skills"
+  [ "$status" -eq 0 ]
+}
+
+@test "still checks a link after an unclosed backtick across a paragraph break" {
+  make_skill demo 'a lone ` backtick
+
+[y](missing.md) and a later `'
+  run bash "$script" "$skills"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"missing.md"* ]]
+}
+
+@test "still checks a link after an unclosed backtick across a CRLF paragraph break" {
+  make_skill demo "$(printf 'a lone \x60 backtick\r\n\r\n[y](missing.md) and a later \x60')"
+  run bash "$script" "$skills"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"missing.md"* ]]
+}
+
+@test "still checks a link after an unclosed backtick across a fenced block" {
+  make_skill demo 'a lone ` backtick
+```
+code
+```
+[y](missing.md) and a later `'
+  run bash "$script" "$skills"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"missing.md"* ]]
+}
+
+@test "ignores a link inside a double-backtick code span that wraps across lines" {
+  make_skill demo '``see [x](missing.md) and
+more``'
+  run bash "$script" "$skills"
+  [ "$status" -eq 0 ]
+}
+
 @test "fails a script that hardcodes /run/current-system" {
   make_skill pathy
   mkdir "$skills/pathy/scripts"

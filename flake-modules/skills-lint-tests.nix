@@ -6,7 +6,7 @@
     {
       checks.skills-lint = pkgs.runCommand "skills-lint"
         {
-          nativeBuildInputs = [ pkgs.bats pkgs.yq-go ];
+          nativeBuildInputs = [ pkgs.bats pkgs.perl pkgs.yq-go ];
         } ''
         bash ${self + "/home/skills/skill-authoring/scripts/lint-skills.sh"} ${self + "/home/skills"}
         bats ${self + "/home/skills/skill-authoring/scripts"}/tests/lint-skills.bats
