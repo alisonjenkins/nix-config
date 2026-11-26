@@ -2621,11 +2621,11 @@
         }
       ]
     },
-    "nix-inputs/scripts/detect-inputs.sh": {
-      "hash": "52c57fe213c2d07845f6b927c1502f31b0a33c90c5e26fda5c06852057ed1a6c",
+    "nix/scripts/detect-inputs.sh": {
+      "hash": "a6ff5b6fbfc811be88ecffda2eae1c2dc2c026f4c0b6aadeba46037c579caf73",
       "killed": 19,
       "mutants": 19,
-      "ran_at": "2026-11-26T23:03:34Z",
+      "ran_at": "2026-11-26T23:43:26Z",
       "status": "tested",
       "survivors": []
     },

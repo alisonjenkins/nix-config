@@ -67,6 +67,6 @@ project-local workflow skill for host/module/secret scaffolding conventions.
 
 ## Inputs
 
-Bumping, adding or pinning a flake or tack input is the `nix-inputs`
-skill's job. Run its `detect-inputs.sh` before touching `flake.lock` or
-`.tack/`.
+Bumping, adding or pinning a flake or tack input is the `nix` skill's
+job (`inputs.md`). Run its `detect-inputs.sh` before touching `flake.lock`
+or `.tack/`.

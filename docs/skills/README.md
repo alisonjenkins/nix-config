@@ -22,8 +22,8 @@ history.
 |---|---|---|
 | [0001](git/adr/0001-merge-by-rebasing-locally-and-pushing.md) | Merge by rebasing locally and pushing, not with GitHub's rebase | Accepted |
 
-## nix-inputs
+## nix
 
 | # | Decision | Status |
 |---|---|---|
-| [0001](nix-inputs/adr/0001-detect-input-system-and-gate-tack.md) | One nix-inputs skill that detects flake.lock or tack before acting | Accepted |
+| [0001](nix/adr/0001-detect-input-system-and-gate-tack.md) | A nix family skill whose inputs workflow detects flake.lock or tack before acting | Accepted |

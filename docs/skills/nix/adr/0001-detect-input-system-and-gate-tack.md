@@ -1,4 +1,4 @@
-# 0001. One nix-inputs skill that detects flake.lock or tack before acting
+# 0001. A nix family skill whose inputs workflow detects flake.lock or tack before acting
 
 - Status: Accepted
 - Date: 2026-11-26
@@ -23,9 +23,12 @@ Two facts shaped the design:
 
 ## Decision
 
-1. Add a leaf skill `nix-inputs`. `SKILL.md` holds detection, a routing
-   table, and the when/why decision rule. `tack.md`, `flake-lock.md` and
-   `choosing.md` hold the detail.
+1. Add a top-level family skill `nix`, for Nix repo workflows that are not
+   writing Nix. Its `SKILL.md` holds shared rules and routing. Inputs are
+   its first child: `inputs.md` holds detection, a routing table, and the
+   when/why decision rule; `inputs/tack.md`, `inputs/flake-lock.md` and
+   `inputs/choosing.md` hold the detail. Its description carries the
+   trigger words for every child, because only the parent is listed.
 2. Add `scripts/detect-inputs.sh`, which reports `mode` (`flake`, `tack`,
    `both`, `none`) as JSON. A root-only `flake.lock` beside `.tack/pins.toml`
    counts as `tack`, not `both`.
@@ -39,6 +42,16 @@ Two facts shaped the design:
 
 ## Alternatives rejected
 
+- **A leaf skill `nix-inputs`.** The first draft. Later Nix workflows
+  (cache, store, hosts) would each need a sibling leaf, and the "which
+  input system" rules would not be shared. A family takes new children
+  without new top-level names.
+- **Nest it under `programming`.** Only top-level skills are discovered.
+  `programming` fires on writing or fixing code, and "bump nixpkgs" or
+  "should we adopt tack" is neither, so the child would often not load.
+  Its description would also have to carry every tack and flake.lock
+  trigger, and each bump would load the general coding rules.
+  `programming/languages/nix.md` points across instead.
 - **Add tack to `programming/languages/nix.md`.** That file is about writing
   Nix. Input management is a workflow, read when bumping, not when writing.
 - **Add tack to `infra`.** `infra` is deploy. Bumping an input is not.
