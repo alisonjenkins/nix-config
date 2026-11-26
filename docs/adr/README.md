@@ -89,7 +89,6 @@ for the live-maintenance runbook.
 | # | Decision | Status |
 |---|---|---|
 | [0063](0063-unlock-homelab-luks-over-initrd-ssh-with-static-addresses.md) | Unlock homelab LUKS over initrd SSH, with static addresses and an on-host key | Accepted, pending live test |
-| [0065](0065-skill-behaviour-evals-with-claude-plugin-eval.md) | Skill behaviour evals with `claude plugin eval`, one plugin per skill | Accepted, live baseline pending |
 
 ## CI
 
@@ -154,6 +153,7 @@ under Claude Code context.
 | # | Decision | Status |
 |---|---|---|
 | [0064](0064-keep-skill-adrs-at-two-levels.md) | Keep skill ADRs at two levels, outside the skill files | Accepted |
+| [0065](0065-skill-behaviour-evals-with-claude-plugin-eval.md) | Skill behaviour evals with `claude plugin eval`, one plugin per skill | Accepted, live baseline pending |
 
 ## Token efficiency and observability
 
