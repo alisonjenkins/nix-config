@@ -20,6 +20,16 @@ spends Gemini quota (one call for all phrases, via the delegation skill's
 A `MISS` means the description does not separate that skill from the one it
 routed to, so read both descriptions before editing either.
 
+Near misses go in the same file as `not_fire`: phrases that sound like this
+skill but belong to a sibling, such as "review this diff" for `git`:
+
+    {"fire": ["commit this"], "not_fire": ["review this diff before I merge it"]}
+
+A `not_fire` phrase passes when the router picks any skill but this one. A
+`FALSE FIRE` line means it picked this one, so this description claims
+vocabulary its sibling owns. Pair each `not_fire` list with the sibling's own
+list pointing back, so both directions of the overlap are measured.
+
 ## Behaviour evals: does the body change the outcome?
 
 Same loop as `testing`'s TDD, applied to prose instead of code:

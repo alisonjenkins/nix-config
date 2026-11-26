@@ -157,3 +157,56 @@ set_delegate_error() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"Usage:"* ]]
 }
+
+# add_not_fire NAME PHRASE... — adds a not_fire list to an existing skill.
+add_not_fire() {
+  local name="$1" file
+  shift
+  file="$skills/$name/triggers.json"
+  [[ -f "$file" ]] || echo '{}' >"$file"
+  jq --args '. + {not_fire: $ARGS.positional}' "$@" <"$file" >"$file.new"
+  mv "$file.new" "$file"
+}
+
+@test "not_fire phrase routed to a sibling counts as correct" {
+  make_skill git "Use when committing." "commit this"
+  make_skill review "Use when reviewing." "review this"
+  add_not_fire git "review this PR"
+  set_reply '[{"i": 1, "skill": "git"}, {"i": 2, "skill": "review"}, {"i": 3, "skill": "review"}]'
+  run bash "$script" "$skills"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"top-1: 3/3 (100.0%)"* ]]
+  [[ "$output" != *"FALSE FIRE"* ]]
+}
+
+@test "not_fire phrase routed to its own skill prints FALSE FIRE and scores a miss" {
+  make_skill git "Use when committing." "commit this"
+  make_skill review "Use when reviewing." "review this"
+  add_not_fire git "review this PR"
+  set_reply '[{"i": 1, "skill": "git"}, {"i": 2, "skill": "git"}, {"i": 3, "skill": "review"}]'
+  run bash "$script" --min 100 "$skills"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *'FALSE FIRE git: "review this PR"'* ]]
+  [[ "$output" == *"git: 1/2"* ]]
+  [[ "$output" == *"top-1: 2/3 (66.7%)"* ]]
+}
+
+@test "not_fire phrase routed to none passes" {
+  make_skill git "Use when committing." "commit this"
+  add_not_fire git "what is the weather"
+  set_reply '[{"i": 1, "skill": "git"}, {"i": 2, "skill": "none"}]'
+  run bash "$script" "$skills"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"top-1: 2/2 (100.0%)"* ]]
+}
+
+@test "skill with only not_fire phrases is evaluated" {
+  make_skill git "Use when committing." "commit this"
+  make_skill review "Use when reviewing."
+  add_not_fire review "commit this too"
+  set_reply '[{"i": 1, "skill": "git"}, {"i": 2, "skill": "git"}]'
+  run bash "$script" "$skills"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"top-1: 2/2 (100.0%)"* ]]
+  [[ "$(<"$BATS_TEST_TMPDIR/recorded_prompt.txt")" == *"commit this too"* ]]
+}
