@@ -127,7 +127,9 @@ install-remote hostname="ali-steam-deck" target="root@192.168.1.65":
 # Unlock the homelab's LUKS hosts over initrd SSH, in boot order: the
 # hypervisor first (its VMs start only once it is up), then storage (the
 # others mount its NFS), then download. A host already up on port 22 is
-# skipped, so this is safe to re-run. See docs/homelab-luks-unlock.md.
+# skipped, so this is safe to re-run. While it waits it prints progress and,
+# for a VM, its libvirt state from the hypervisor. If the prompt never opens,
+# it offers the VM's serial console instead. See docs/homelab-luks-unlock.md.
 unlock-homelab *hosts="home-kvm-hypervisor-1 home-storage-server-1 download-server-1":
     #!/usr/bin/env bash
     set -euo pipefail
@@ -137,22 +139,90 @@ unlock-homelab *hosts="home-kvm-hypervisor-1 home-storage-server-1 download-serv
       -o IdentityFile="$HOME/.ssh/id_personal.pub"
       -o IdentityAgent="$HOME/.1password/agent.sock"
       -o StrictHostKeyChecking=accept-new
+      -o ConnectTimeout=10
+      -o ServerAliveInterval=10
+      -o ServerAliveCountMax=3
     )
+    hypervisor=home-kvm-hypervisor-1
+    domains_dir=libvirtd/$hypervisor/domains
     # How long to wait for a host to reach its unlock prompt, then to boot.
-    wait_seconds=600
+    prompt_wait=300
+    boot_wait=600
 
     port_open() { timeout 2 bash -c "exec 3<>/dev/tcp/$1/$2" 2>/dev/null; }
+    pingable() { ping -c1 -W1 "$1" >/dev/null 2>&1; }
+    is_vm() { [ -f "$domains_dir/$1.xml.nix" ]; }
 
+    hyp_ip=$(nix eval --raw ".#lib.homeLan.hosts.$hypervisor.ip")
+    # virsh on the hypervisor, as ali (in the libvirtd group). Fails fast
+    # when the hypervisor itself is not up yet.
+    hyp_virsh() {
+      ssh "${SSH_OPTS[@]}" -o BatchMode=yes -o ConnectTimeout=5 "ali@$hyp_ip" \
+        virsh -c qemu:///system "$@"
+    }
+
+    # One line on where the host is: libvirt state (for a VM), whether it
+    # answers ping, which ports are open.
+    status_line() {
+      local host=$1 ip=$2 port=$3 parts=()
+      last_state=""
+      if is_vm "$host"; then
+        local state
+        if state=$(hyp_virsh domstate "$host" 2>/dev/null | head -n1) && [ -n "$state" ]; then
+          parts+=("libvirt: $state")
+          last_state=$state
+        else
+          parts+=("libvirt: unknown (no ssh to $hypervisor)")
+        fi
+      fi
+      if pingable "$ip"; then parts+=("ping: yes"); else parts+=("ping: no"); fi
+      port_open "$ip" "$port" && parts+=("$port: open") || parts+=("$port: closed")
+      local line
+      line=$(printf '%s, ' "${parts[@]}")
+      echo "    [$(date +%H:%M:%S)] ${line%, }"
+    }
+
+    # Wait for a port, printing status every 30s. Exits early (code 2) when
+    # a VM is shut off, since waiting will never help.
     wait_port() {
-      local ip=$1 port=$2 waited=0
+      local host=$1 ip=$2 port=$3 limit=$4 waited=0
       until port_open "$ip" "$port"; do
-        if (( waited >= wait_seconds )); then
-          echo "    $ip:$port still closed after ${wait_seconds}s" >&2
+        if (( waited % 30 == 0 )); then
+          status_line "$host" "$ip" "$port"
+          if [ "${last_state:-}" = "shut off" ]; then
+            echo "    $host is shut off. Start it with: ssh ali@$hyp_ip virsh -c qemu:///system start $host" >&2
+            return 2
+          fi
+        fi
+        if (( waited >= limit )); then
+          echo "    $ip:$port still closed after ${limit}s" >&2
           return 1
         fi
         sleep 5
         waited=$((waited + 5))
       done
+    }
+
+    # Fallback when initrd SSH never answers: the passphrase prompt is also
+    # on the VM's serial console (exit the console with Ctrl-]).
+    console_fallback() {
+      local host=$1
+      if ! is_vm "$host"; then
+        echo "    Use the IPMI console at 192.168.1.11 to type the passphrase." >&2
+        return 1
+      fi
+      local cmd="ssh -t ali@$hyp_ip virsh -c qemu:///system console $host"
+      echo "    The passphrase prompt is also on the serial console: $cmd" >&2
+      if [ -t 0 ]; then
+        read -r -p "    Open the console now? [Y/n] " ans
+        case "${ans:-y}" in
+          [Yy]*)
+            echo "    Press Enter if the prompt is not shown. Ctrl-] leaves the console."
+            ssh -t "${SSH_OPTS[@]}" "ali@$hyp_ip" virsh -c qemu:///system console "$host" || true
+            return 0 ;;
+        esac
+      fi
+      return 1
     }
 
     for host in {{hosts}}; do
@@ -163,11 +233,28 @@ unlock-homelab *hosts="home-kvm-hypervisor-1 home-storage-server-1 download-serv
         echo "    already up, skipping"
         continue
       fi
-      echo "    waiting for the unlock prompt on port $port"
-      wait_port "$ip" "$port"
-      ssh -t "${SSH_OPTS[@]}" -p "$port" "root@$ip" systemd-tty-ask-password-agent
-      echo "    waiting for boot to reach sshd on port 22"
-      wait_port "$ip" 22
+      echo "    waiting up to ${prompt_wait}s for the unlock prompt on port $port"
+      rc=0
+      wait_port "$host" "$ip" "$port" "$prompt_wait" || rc=$?
+      if (( rc == 2 )); then
+        exit 1
+      elif (( rc != 0 )); then
+        if port_open "$ip" 22; then
+          echo "    $host reached port 22 meanwhile (unlocked elsewhere?)"
+          continue
+        fi
+        console_fallback "$host" || exit 1
+      else
+        # The agent exits once the passphrase is accepted and the initrd
+        # moves on, which drops this connection; that is not a failure.
+        ssh -t "${SSH_OPTS[@]}" -p "$port" "root@$ip" systemd-tty-ask-password-agent || true
+      fi
+      echo "    waiting up to ${boot_wait}s for boot to reach sshd on port 22"
+      if ! wait_port "$host" "$ip" 22 "$boot_wait"; then
+        echo "    $host did not reach port 22. Check its console." >&2
+        exit 1
+      fi
+      echo "    $host is up"
     done
 
 # Wipe and install a host over SSH with nixos-anywhere (kexec + disko).

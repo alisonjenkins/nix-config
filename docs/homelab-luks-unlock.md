@@ -39,7 +39,17 @@ just unlock-homelab
 
 It goes through the hosts in the order above. It skips a host that already
 answers on port 22. For each other host, it waits for port 2222, asks for the
-passphrase, then waits for port 22 before moving on. To unlock one host:
+passphrase, then waits for port 22 before moving on.
+
+While it waits, it prints a status line every 30 seconds. The line shows the
+VM's libvirt state (read from the hypervisor), whether the host answers ping,
+and whether the port is open. It waits up to 300 seconds for the prompt. It
+stops at once if the VM is shut off and prints the `virsh start` command. If
+the prompt never opens, it offers to open the VM's serial console on the
+hypervisor (`virsh console`), where the same prompt shows. Ctrl-] leaves the
+console.
+
+To unlock one host:
 
 ```sh
 just unlock-homelab home-storage-server-1
