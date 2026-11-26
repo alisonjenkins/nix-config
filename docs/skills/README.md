@@ -10,6 +10,12 @@ Each skill numbers its own records from 0001 and uses the template in
 "(decision <skill>/NNNN)". Supersede a record; never edit it to change
 history.
 
+## ci
+
+| # | Decision | Status |
+|---|---|---|
+| [0001](ci/adr/0001-ci-skill-and-ci-audit-command.md) | A ci skill for pipeline design, and /ci-audit to apply it | Accepted |
+
 ## git
 
 | # | Decision | Status |
