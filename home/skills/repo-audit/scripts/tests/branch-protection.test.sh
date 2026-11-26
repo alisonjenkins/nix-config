@@ -240,6 +240,34 @@ test_apply_protection_keeps_higher_review_count() {
     rm -rf "$d"
 }
 
+test_apply_protection_keeps_other_settings() {
+    # Linear history, conversation resolution, push restrictions and the
+    # review flags must survive the PUT, unwrapped from GET's {enabled: bool}.
+    local d; d="$(make_stub_dir)"
+    stub_gh_capture "$d"
+    FORGE="github"; TARGET_REPO="someowner/somerepo"
+    local current='{"required_linear_history":{"enabled":true},"required_conversation_resolution":{"enabled":true},"block_creations":{"enabled":true},"lock_branch":{"enabled":false},"allow_fork_syncing":{"enabled":true},"restrictions":{"users":[{"login":"alice"}],"teams":[{"slug":"core"}],"apps":[]},"required_pull_request_reviews":{"dismiss_stale_reviews":true,"require_code_owner_reviews":true,"required_approving_review_count":1}}'
+    local err
+    err="$(PATH="$d:$PATH" apply_protection "main" 1 "$current" 2>&1 >/dev/null)"
+    assert_eq "$(jq -c '[.required_linear_history, .required_conversation_resolution, .block_creations, .lock_branch, .allow_fork_syncing]' <<<"$err")" '[true,true,true,false,true]' "apply_protection: keeps branch flags as bare booleans"
+    assert_eq "$(jq -c '.restrictions' <<<"$err")" '{"users":["alice"],"teams":["core"],"apps":[]}' "apply_protection: keeps push restrictions"
+    assert_eq "$(jq -c '.required_pull_request_reviews | [.dismiss_stale_reviews, .require_code_owner_reviews]' <<<"$err")" '[true,true]' "apply_protection: keeps review flags"
+    rm -rf "$d"
+}
+
+test_apply_protection_reviews_zero_keeps_existing_rule() {
+    # main() passes reviews=0 on a solo repo; that means "do not add one",
+    # not "remove the one the owner set".
+    local d; d="$(make_stub_dir)"
+    stub_gh_capture "$d"
+    FORGE="github"; TARGET_REPO="someowner/somerepo"
+    local current='{"required_pull_request_reviews":{"required_approving_review_count":1,"require_code_owner_reviews":true}}'
+    local err
+    err="$(PATH="$d:$PATH" apply_protection "main" 0 "$current" 2>&1 >/dev/null)"
+    assert_eq "$(jq -c '.required_pull_request_reviews | [.required_approving_review_count, .require_code_owner_reviews]' <<<"$err")" '[1,true]' "apply_protection(reviews=0): keeps an existing review rule"
+    rm -rf "$d"
+}
+
 test_skips_unsupported_forge() {
     local repo; repo="$(make_fixture_repo)"
     git -C "$repo" remote add origin git@gitlab.com:someowner/somerepo.git
@@ -261,6 +289,8 @@ run_all() {
     test_apply_protection_keeps_required_checks
     test_apply_protection_keeps_contexts_without_checks
     test_apply_protection_no_checks_stays_null
+    test_apply_protection_keeps_other_settings
+    test_apply_protection_reviews_zero_keeps_existing_rule
     test_apply_protection_keeps_higher_review_count
     test_skips_unsupported_forge
 }

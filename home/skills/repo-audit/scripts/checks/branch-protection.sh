@@ -30,13 +30,25 @@ extract_job_ids() {
 
 # apply_protection <branch> <required-reviews> [current-protection-json]
 # PUT replaces the whole protection object, so anything left out is removed.
-# The branch's current required status checks are carried over: they are the
-# real gate on a solo repo, and sending null would delete them. A review
-# count above the wanted one is kept too: the fix only ever tightens it.
+# Every setting the branch already has is carried over: required status
+# checks (the real gate on a solo repo), the review rules, linear history,
+# conversation resolution, push restrictions, block_creations, lock_branch
+# and fork syncing. The GET form wraps booleans as {enabled: bool}; the PUT
+# form wants the bare bool. The fix only ever tightens: a review count above
+# the wanted one is kept, and with reviews=0 an existing review rule stays.
 apply_protection() {
     local branch="$1" required_reviews="$2" current="${3:-"{}"}"
     local payload
-    payload=$(jq -n --argjson reviews "$required_reviews" --argjson current "$current" '{
+    payload=$(jq -n --argjson reviews "$required_reviews" --argjson current "$current" '
+        def flag($name): ($current[$name].enabled // false);
+        ($current.required_pull_request_reviews
+            | if . == null then null
+              else {dismiss_stale_reviews: (.dismiss_stale_reviews // false),
+                    require_code_owner_reviews: (.require_code_owner_reviews // false),
+                    require_last_push_approval: (.require_last_push_approval // false),
+                    required_approving_review_count: (.required_approving_review_count // 0)}
+              end) as $cur_reviews
+        | {
         required_status_checks: ($current.required_status_checks
             | if . == null then null
               elif (.checks | length) > 0 then
@@ -46,10 +58,18 @@ apply_protection() {
               end),
         enforce_admins: true,
         required_pull_request_reviews: (if $reviews > 0 then
-            {required_approving_review_count:
-                ([$reviews, ($current.required_pull_request_reviews.required_approving_review_count // 0)] | max)}
-            else null end),
-        restrictions: null,
+            ($cur_reviews // {}) + {required_approving_review_count:
+                ([$reviews, ($cur_reviews.required_approving_review_count // 0)] | max)}
+            else $cur_reviews end),
+        restrictions: ($current.restrictions
+            | if . == null then null
+              else {users: [.users[]?.login], teams: [.teams[]?.slug], apps: [.apps[]?.slug]}
+              end),
+        required_linear_history: flag("required_linear_history"),
+        required_conversation_resolution: flag("required_conversation_resolution"),
+        block_creations: flag("block_creations"),
+        lock_branch: flag("lock_branch"),
+        allow_fork_syncing: flag("allow_fork_syncing"),
         allow_force_pushes: false,
         allow_deletions: false
     }')
