@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Usage: eval-triggers.sh [--min PERCENT] [SKILLS_DIR]
 # Measures whether an LLM router routes each trigger phrase to the right
-# skill judged from SKILL.md descriptions alone. Opt-in; spends Gemini quota.
+# skill judged from SKILL.md descriptions alone. A "fire" phrase must route
+# to its skill; a "not_fire" phrase (a near miss owned by a sibling) must
+# route anywhere else. Opt-in; spends Gemini quota.
 set -euo pipefail
 
 readonly DEFAULT_PROFILE="read"
@@ -104,6 +106,16 @@ for skill_md in "$skills_dir"/*/SKILL.md; do
             has_phrases=1
         done < <(jq -r '.fire // [] | .[]' "$triggers")
 
+        # not_fire: near-miss phrases that belong to a sibling skill. Any
+        # route except this skill passes; "!" marks the expectation.
+        while IFS= read -r phrase; do
+            [[ -n "$phrase" ]] || continue
+            phrases+=("$phrase")
+            phrase_expected+=("!$skill")
+            skill_total["$skill"]=$((skill_total["$skill"] + 1))
+            has_phrases=1
+        done < <(jq -r '.not_fire // [] | .[]' "$triggers")
+
         if ((has_phrases)); then
             skills_with_phrases+=("$skill")
         fi
@@ -164,7 +176,16 @@ for ((i = 0; i < total_phrases; i++)); do
     phrase="${phrases[i]}"
     got="${routed[i]}"
 
-    if [[ "$expected" == "$got" ]]; then
+    if [[ "$expected" == !* ]]; then
+        owner="${expected#!}"
+        if [[ "$got" != "$owner" ]]; then
+            skill_correct["$owner"]=$((skill_correct["$owner"] + 1))
+            total_correct=$((total_correct + 1))
+        else
+            skill_misses["$owner"]=$((skill_misses["$owner"] + 1))
+            printf 'FALSE FIRE %s: "%s"\n' "$owner" "$phrase"
+        fi
+    elif [[ "$expected" == "$got" ]]; then
         skill_correct["$expected"]=$((skill_correct["$expected"] + 1))
         total_correct=$((total_correct + 1))
     else
