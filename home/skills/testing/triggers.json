@@ -4,6 +4,7 @@
     "add a unit test for the parser",
     "the tests are failing after my change",
     "write bats tests for this script",
-    "does this change actually work, verify it"
+    "does this change actually work, verify it",
+    "cargo mutants uses way more memory linking than cargo test"
   ]
 }
