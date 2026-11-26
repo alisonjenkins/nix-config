@@ -223,16 +223,18 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"aarch64-linux nixosConfigurations (evaluated): skipped"* ]]
   [[ "$output" == *"packages.x86_64-linux (evaluated; changed ones built): skipped"* ]]
+  [[ "$output" == *"shared skills (lint, triggers, script tests): skipped"* ]]
   [[ "$output" == *"REA with the pinned Ghidra and JDK: skipped"* ]]
   [[ "$output" == *"CurseForge CDN paths, skill frontmatter: ok"* ]]
   ! grep -q "^eval\|^build" "$WORK/nix.log"
 }
 
-@test "editing a skill's markdown runs only that skill's tests" {
+@test "editing a skill's markdown runs the skill checks and that skill's tests" {
   export STUB_DIFF=$'home/skills/delegation/SKILL.md\n'
   run bash .github/scripts/pr-check-x86_64-linux.sh
   [ "$status" -eq 0 ]
   [[ "$output" == *"delegation script tests (bats): ok"* ]]
+  [[ "$output" == *"shared skills (lint, triggers, script tests): ok"* ]]
   [[ "$output" == *"copilot-cli script tests (bats): skipped"* ]]
   [[ "$output" == *"aarch64-linux nixosConfigurations (evaluated): skipped"* ]]
   ! grep -q "^eval" "$WORK/nix.log"
@@ -259,6 +261,7 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"ok: aarch64-linux nixosConfigurations (1 hosts, batched)"* ]]
   grep "builtins.filter" "$WORK/nix.log" | grep -q "(n: true &&"
+  [[ "$output" == *"shared skills (lint, triggers, script tests): skipped"* ]]
   [[ "$output" == *"REA with the pinned Ghidra and JDK: skipped"* ]]
 }
 
