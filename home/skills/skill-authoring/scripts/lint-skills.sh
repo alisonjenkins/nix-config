@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Model-free convention checks for shared skills (see ../conventions.md and
 # ../frontmatter.md). Usage: lint-skills.sh [skills_dir]
-# Defaults to the directory holding this skill. Needs yq-go on PATH.
+# Defaults to the directory holding this skill. Needs yq-go and perl on PATH.
 # Prints one "FAIL <skill>: <reason>" line per problem; exits 1 if any.
 set -euo pipefail
 
@@ -11,6 +11,13 @@ readonly MAX_BODY_LINES=500
 readonly ALLOWED_KEYS='["name","description","license","compatibility","metadata","allowed-tools","argument-hint"]'
 # Split so this file does not match its own check.
 readonly MACHINE_PATHS='(^|[^[:alnum:]_./-])(/run/current-''system|/ho''me/[a-z]|/Users/[a-z]|/nix/store/[a-z0-9]{32})'
+
+for tool in yq perl; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        echo "error: lint-skills.sh needs ${tool} on PATH" >&2
+        exit 2
+    fi
+done
 
 skills_dir="${1:-"$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"}"
 failures=0
