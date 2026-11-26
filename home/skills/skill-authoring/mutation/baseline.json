@@ -1,0 +1,3928 @@
+{
+  "pairs": {
+    "delegation/scripts/delegate-to-gemini.sh": {
+      "hash": "b7b145bafe5ad8905a76fa4a4d870d4466f94d15979a84a772685cdbf5f659fe",
+      "killed": 46,
+      "mutants": 63,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 12,
+          "line_hash": "5f71d938fc66",
+          "occurrence": 0,
+          "op": "lt-to-le",
+          "text": "if [[ $# -lt 1 || $# -gt 3 ]]; then"
+        },
+        {
+          "line": 63,
+          "line_hash": "b303cd9b20da",
+          "occurrence": 0,
+          "op": "strne-to-streq",
+          "text": "if [[ -n \"$git_common_dir\" && \"$git_common_dir\" != \"$repo_root\"/* ]]; then"
+        },
+        {
+          "line": 63,
+          "line_hash": "b303cd9b20da",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$git_common_dir\" && \"$git_common_dir\" != \"$repo_root\"/* ]]; then"
+        },
+        {
+          "line": 63,
+          "line_hash": "b303cd9b20da",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$git_common_dir\" && \"$git_common_dir\" != \"$repo_root\"/* ]]; then"
+        },
+        {
+          "line": 113,
+          "line_hash": "769acb1b7a1d",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ -z \"$err_file\" ]] || rm -f \"$err_file\""
+        },
+        {
+          "line": 113,
+          "line_hash": "769acb1b7a1d",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "[[ -z \"$err_file\" ]] || rm -f \"$err_file\""
+        },
+        {
+          "line": 114,
+          "line_hash": "9c4d92f1c6a8",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$staged_user_skills_root\" ]]; then"
+        },
+        {
+          "line": 115,
+          "line_hash": "9b9b9ac65e4d",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "chmod -R u+w \"$staged_user_skills_root\" 2>/dev/null || true"
+        },
+        {
+          "line": 128,
+          "line_hash": "c767de67e171",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"${HOME:-}\" && -d \"$HOME/.claude/skills\" ]]; then"
+        },
+        {
+          "line": 132,
+          "line_hash": "2bb0ffd4b36a",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "cp -rL \"$HOME/.claude/skills/.\" \"$staged_user_skills_root/\" 2>/dev/null || true"
+        },
+        {
+          "line": 155,
+          "line_hash": "43cd48d807a6",
+          "occurrence": 2,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 164,
+          "line_hash": "ca5311ef8fdd",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -d \"$project_skills_root\" ]] && extra_args+=(--add-dir \"$project_skills_root\")"
+        },
+        {
+          "line": 165,
+          "line_hash": "6f8beff30dbe",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$effective_user_skills_root\" ]]; then"
+        },
+        {
+          "line": 204,
+          "line_hash": "1f1383b6b43f",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "telemetry_finish \"$1\" \"$2\" \"$model\" \"$call_attempts\" \"$profile\" \"$skills_arg\" \"${envelope:-}\" || true"
+        },
+        {
+          "line": 243,
+          "line_hash": "b37c900ec5de",
+          "occurrence": 1,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        },
+        {
+          "line": 269,
+          "line_hash": "5dd2e45b64b7",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if (( use_json )) && jq -e . >/dev/null 2>&1 <<<\"$call_output\"; then"
+        },
+        {
+          "line": 282,
+          "line_hash": "2ba1c5767713",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        }
+      ]
+    },
+    "delegation/scripts/delegate-to-local-agent.sh": {
+      "hash": "682e146fef08d18ea613980bceb24d11d3a432f9d462fcd6c54e579f375f6cfb",
+      "killed": 53,
+      "mutants": 81,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 49,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 55,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 1,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 63,
+          "line_hash": "43cd48d807a6",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 70,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 2,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 75,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 3,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 113,
+          "line_hash": "94beeb4ef9e9",
+          "occurrence": 0,
+          "op": "strne-to-streq",
+          "text": "if [[ -n \"${LOCAL_LLM_EXPECT_PROFILE:-}\" && \"$LOCAL_LLM_EXPECT_PROFILE\" != \"$profile\" ]]; then"
+        },
+        {
+          "line": 122,
+          "line_hash": "0b962e8d8199",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"${LOCAL_LLM_PROFILES_FILE:-}\" ]]; then"
+        },
+        {
+          "line": 124,
+          "line_hash": "d9dd160eb956",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "elif [[ -n \"${XDG_CONFIG_HOME:-}\" ]]; then"
+        },
+        {
+          "line": 135,
+          "line_hash": "43cd48d807a6",
+          "occurrence": 3,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 176,
+          "line_hash": "73f672752c93",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "if [[ -z \"${LOCAL_LLM_URL:-}\" ]]; then"
+        },
+        {
+          "line": 185,
+          "line_hash": "8ba2ad38dcce",
+          "occurrence": 0,
+          "op": "drop-if-not",
+          "text": "if ! jq -e --arg profile \"$profile\" --argjson until \"$reservation_expires\" \\"
+        },
+        {
+          "line": 186,
+          "line_hash": "787497cc254a",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "'.profile == $profile and .expires_at >= $until' \\"
+        },
+        {
+          "line": 195,
+          "line_hash": "01f925ba9e78",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if jq -e --arg reason \"$reservation_reason\" '.reason == $reason' \\"
+        },
+        {
+          "line": 240,
+          "line_hash": "c085582ae33d",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "kill \"$oc_pid\" 2>/dev/null || true"
+        },
+        {
+          "line": 245,
+          "line_hash": "c085582ae33d",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "kill \"$oc_pid\" 2>/dev/null || true"
+        },
+        {
+          "line": 255,
+          "line_hash": "c634e83fc2ab",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "diff -ruN \"$snapshot\" \"$work_dir\" >\"$log.diff\" || true"
+        },
+        {
+          "line": 258,
+          "line_hash": "8ffbe71cb9b5",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$snapshot\" && ! -s \"$log.diff\" ]]; then"
+        },
+        {
+          "line": 265,
+          "line_hash": "8275c6ffe7a9",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "diff -rq \"$snapshot\" \"$work_dir\" >&2 || true"
+        },
+        {
+          "line": 273,
+          "line_hash": "a92888fd8df2",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "{ (cd \"$snapshot\" && find . -mindepth 1 -print0)"
+        },
+        {
+          "line": 275,
+          "line_hash": "15a784ac152c",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "} | sort -z -u"
+        },
+        {
+          "line": 287,
+          "line_hash": "973026f53b55",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ -d \"$s\" || -d \"$w\" ]] && continue"
+        },
+        {
+          "line": 288,
+          "line_hash": "f770b2064c4c",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "if [[ ! -e \"$s\" || ! -e \"$w\" ]] || ! diff -q \"$s\" \"$w\" >/dev/null 2>&1; then"
+        },
+        {
+          "line": 288,
+          "line_hash": "f770b2064c4c",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "if [[ ! -e \"$s\" || ! -e \"$w\" ]] || ! diff -q \"$s\" \"$w\" >/dev/null 2>&1; then"
+        },
+        {
+          "line": 288,
+          "line_hash": "f770b2064c4c",
+          "occurrence": 0,
+          "op": "drop-test-not",
+          "text": "if [[ ! -e \"$s\" || ! -e \"$w\" ]] || ! diff -q \"$s\" \"$w\" >/dev/null 2>&1; then"
+        },
+        {
+          "line": 314,
+          "line_hash": "696367177ee8",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "events | jq -r 'select(.type == \"tool_use\") | \"tool \\(.part.tool) \\(.part.state.status): \\(.part.state.input | tojson)\"' >&2"
+        },
+        {
+          "line": 319,
+          "line_hash": "f0beba016715",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if events | jq -r 'select(.type == \"text\") | .part.text' | grep -q 'Continue if you have next steps'; then"
+        },
+        {
+          "line": 324,
+          "line_hash": "b446f887b1eb",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "events | jq -r 'select(.type == \"error\") | .error.data.message' | head -1 >&2"
+        },
+        {
+          "line": 334,
+          "line_hash": "d4fdc4021042",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "events | jq -r 'select(.type == \"error\") | .error.data.message // .error' | head -1 >&2"
+        }
+      ]
+    },
+    "delegation/scripts/delegate-to-local.sh": {
+      "hash": "bf218315be7628d23887aeb6b2a2a1da15f0c7d1fb5f898ba3fc3ead73c01a2f",
+      "killed": 20,
+      "mutants": 21,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 122,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 1,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        }
+      ]
+    },
+    "delegation/scripts/delegate.sh": {
+      "hash": "0e6b36517361f31f72253b2c67a5d98ddff1cb0ebe0341e2b4345810e465e2fd",
+      "killed": 48,
+      "mutants": 55,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 70,
+          "line_hash": "2d3f95be2ce0",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "until_human=\"$(date -d \"@$cooldown_until\" -Iseconds 2>/dev/null || date -r \"$cooldown_until\" 2>/dev/null || echo \"$cooldown_until\")\""
+        },
+        {
+          "line": 70,
+          "line_hash": "2d3f95be2ce0",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "until_human=\"$(date -d \"@$cooldown_until\" -Iseconds 2>/dev/null || date -r \"$cooldown_until\" 2>/dev/null || echo \"$cooldown_until\")\""
+        },
+        {
+          "line": 71,
+          "line_hash": "4c016bcf3deb",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "script_dir=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\""
+        },
+        {
+          "line": 185,
+          "line_hash": "4042d22c035e",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "chmod -R u+w \"$staged_user_skills_root\" 2>/dev/null || true"
+        },
+        {
+          "line": 219,
+          "line_hash": "acb04a7a1f52",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "elif [[ -n \"$effective_user_skills_root\" && -d \"$effective_user_skills_root/$name\" ]]; then"
+        },
+        {
+          "line": 326,
+          "line_hash": "e7797c3dfb21",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "elif [[ $status -eq 1 ]] && is_credits_exhausted \"$call_output\"; then"
+        },
+        {
+          "line": 330,
+          "line_hash": "411485e87d69",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "echo \"$(( $(date +%s) + credits_cooldown_seconds ))\" >\"$credits_cooldown_file\" 2>/dev/null || true"
+        }
+      ]
+    },
+    "delegation/scripts/lib/delegate-telemetry.sh": {
+      "hash": "ae50cc10ab585fc87377f99cb0ff53948fcaa2416a8672eaa53d60b3c11c5f04",
+      "killed": 19,
+      "mutants": 29,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 28,
+          "line_hash": "17adf6870c2d",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ \"$ns\" =~ ^[0-9]{19}$ ]] || ns=\"$(date +%s)000000000\""
+        },
+        {
+          "line": 55,
+          "line_hash": "e894e71c35f3",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        },
+        {
+          "line": 58,
+          "line_hash": "8c963f153e61",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$file\" && -f \"$file\" ]]; then"
+        },
+        {
+          "line": 59,
+          "line_hash": "555fc3491f39",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "jq -r '.urls.otlpHttp // empty' \"$file\" 2>/dev/null || true"
+        },
+        {
+          "line": 73,
+          "line_hash": "d51466abe0a6",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "if [[ -z \"$envelope\" ]] || ! jq -e . >/dev/null 2>&1 <<<\"$envelope\"; then"
+        },
+        {
+          "line": 128,
+          "line_hash": "1c0cd0c6ea86",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "}' 2>/dev/null)\" || return 0"
+        },
+        {
+          "line": 129,
+          "line_hash": "10cb63cfa5bc",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "[[ -n \"$both\" ]] || return 0"
+        },
+        {
+          "line": 133,
+          "line_hash": "4f2200f2ab86",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "elif [[ -n \"${XDG_STATE_HOME:-}\" ]]; then"
+        },
+        {
+          "line": 135,
+          "line_hash": "3dc9b0999e13",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "elif [[ -n \"${HOME:-}\" ]]; then"
+        },
+        {
+          "line": 152,
+          "line_hash": "f66c7546a945",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        }
+      ]
+    },
+    "delegation/scripts/lib/queue-common.sh": {
+      "hash": "9dcdd03a935662f8c5619a1d4e2d7cbc42d3e3ec0c9bfeac6ec668f53430daea",
+      "killed": 12,
+      "mutants": 64,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 42,
+          "line_hash": "ce6ebdb3abb9",
+          "occurrence": 0,
+          "op": "return1-to-return0",
+          "text": "return 1"
+        },
+        {
+          "line": 56,
+          "line_hash": "2ce91ce6468e",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -z \"$key_file\" ]] && return 0"
+        },
+        {
+          "line": 56,
+          "line_hash": "2ce91ce6468e",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "[[ -z \"$key_file\" ]] && return 0"
+        },
+        {
+          "line": 56,
+          "line_hash": "2ce91ce6468e",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "[[ -z \"$key_file\" ]] && return 0"
+        },
+        {
+          "line": 57,
+          "line_hash": "8e8317217b21",
+          "occurrence": 0,
+          "op": "drop-if-not",
+          "text": "if ! token=\"$(<\"$key_file\")\" 2>/dev/null; then"
+        },
+        {
+          "line": 59,
+          "line_hash": "53c12eb94604",
+          "occurrence": 0,
+          "op": "return1-to-return0",
+          "text": "return 1"
+        },
+        {
+          "line": 63,
+          "line_hash": "7063a2b3cc29",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "if [[ -z \"$token\" ]]; then"
+        },
+        {
+          "line": 65,
+          "line_hash": "53c12eb94604",
+          "occurrence": 1,
+          "op": "return1-to-return0",
+          "text": "return 1"
+        },
+        {
+          "line": 67,
+          "line_hash": "7c00121d1f66",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if [[ \"$token\" == *[[:cntrl:]]* ]]; then"
+        },
+        {
+          "line": 69,
+          "line_hash": "53c12eb94604",
+          "occurrence": 2,
+          "op": "return1-to-return0",
+          "text": "return 1"
+        },
+        {
+          "line": 71,
+          "line_hash": "928a43aae5d6",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "llm_auth_header_file=\"$(umask 077 && mktemp \"${TMPDIR:-/tmp}/llm-auth.XXXXXX\")\""
+        },
+        {
+          "line": 77,
+          "line_hash": "c9b682d6ada8",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "if [[ -z \"$value\" ]]; then"
+        },
+        {
+          "line": 81,
+          "line_hash": "491a20227e89",
+          "occurrence": 0,
+          "op": "drop-if-not",
+          "text": "if ! [[ \"$value\" =~ ^[0-9]+(\\.[0-9]+)?$ ]]; then"
+        },
+        {
+          "line": 90,
+          "line_hash": "16eae04d2bd2",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"${LOCAL_LLM_STATE_DIR:-}\" ]]; then"
+        },
+        {
+          "line": 92,
+          "line_hash": "bf66d72b4720",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "elif [[ -n \"${XDG_CACHE_HOME:-}\" ]]; then"
+        },
+        {
+          "line": 94,
+          "line_hash": "3dc9b0999e13",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "elif [[ -n \"${HOME:-}\" ]]; then"
+        },
+        {
+          "line": 97,
+          "line_hash": "53c12eb94604",
+          "occurrence": 3,
+          "op": "return1-to-return0",
+          "text": "return 1"
+        },
+        {
+          "line": 122,
+          "line_hash": "d214e63b7f22",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "holder=\"$(readlink \"$lock\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 132,
+          "line_hash": "413a13f04eef",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ \"$(readlink \"$lock\" 2>/dev/null || true)\" == \"$holder\" ]] && rm -f \"$lock\""
+        },
+        {
+          "line": 148,
+          "line_hash": "ed9be91f058f",
+          "occurrence": 0,
+          "op": "drop-if-not",
+          "text": "if ! acquire_lock \"$seq_lock\" 5 0.1; then"
+        },
+        {
+          "line": 150,
+          "line_hash": "53c12eb94604",
+          "occurrence": 4,
+          "op": "return1-to-return0",
+          "text": "return 1"
+        },
+        {
+          "line": 152,
+          "line_hash": "7b8fa184e53c",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -f \"$seq_file\" ]] && seq=\"$(<\"$seq_file\")\""
+        },
+        {
+          "line": 153,
+          "line_hash": "e614fec000d4",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ \"$seq\" =~ ^[0-9]+$ ]] || seq=0"
+        },
+        {
+          "line": 167,
+          "line_hash": "774f0a6dd742",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "existing_pid=\"$(cat \"$pidfile\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 168,
+          "line_hash": "29faa5f423ec",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$existing_pid\" ]] && kill -0 \"$existing_pid\" 2>/dev/null; then"
+        },
+        {
+          "line": 168,
+          "line_hash": "29faa5f423ec",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$existing_pid\" ]] && kill -0 \"$existing_pid\" 2>/dev/null; then"
+        },
+        {
+          "line": 169,
+          "line_hash": "e894e71c35f3",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        },
+        {
+          "line": 171,
+          "line_hash": "efcdff2a014d",
+          "occurrence": 0,
+          "op": "drop-if-not",
+          "text": "if ! acquire_lock \"$starter_lock\" 5 0.1; then"
+        },
+        {
+          "line": 172,
+          "line_hash": "d5c3b5ebe024",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0 # another submitter is starting it right now; don't also try"
+        },
+        {
+          "line": 174,
+          "line_hash": "774f0a6dd742",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "existing_pid=\"$(cat \"$pidfile\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 175,
+          "line_hash": "29faa5f423ec",
+          "occurrence": 1,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$existing_pid\" ]] && kill -0 \"$existing_pid\" 2>/dev/null; then"
+        },
+        {
+          "line": 175,
+          "line_hash": "29faa5f423ec",
+          "occurrence": 1,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$existing_pid\" ]] && kill -0 \"$existing_pid\" 2>/dev/null; then"
+        },
+        {
+          "line": 177,
+          "line_hash": "e894e71c35f3",
+          "occurrence": 1,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        },
+        {
+          "line": 188,
+          "line_hash": "fe6a40851377",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ -d \"$fd_dir\" ]] || continue"
+        },
+        {
+          "line": 191,
+          "line_hash": "5301827d6fde",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ \"$fd_num\" =~ ^[0-9]+$ ]] || continue"
+        },
+        {
+          "line": 192,
+          "line_hash": "686c09513c27",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "(( fd_num > 2 )) || continue"
+        },
+        {
+          "line": 193,
+          "line_hash": "678231638dcf",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "eval \"exec ${fd_num}>&-\" 2>/dev/null || true"
+        },
+        {
+          "line": 206,
+          "line_hash": "db333f32593c",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "new_pid=\"$(cat \"$pidfile\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 207,
+          "line_hash": "457e89e68e12",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -n \"$new_pid\" ]] && kill -0 \"$new_pid\" 2>/dev/null && break"
+        },
+        {
+          "line": 207,
+          "line_hash": "457e89e68e12",
+          "occurrence": 1,
+          "op": "and-to-or",
+          "text": "[[ -n \"$new_pid\" ]] && kill -0 \"$new_pid\" 2>/dev/null && break"
+        },
+        {
+          "line": 207,
+          "line_hash": "457e89e68e12",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "[[ -n \"$new_pid\" ]] && kill -0 \"$new_pid\" 2>/dev/null && break"
+        },
+        {
+          "line": 221,
+          "line_hash": "3ce087b0b4e8",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "seq=\"$(next_queue_seq \"$state_dir\")\" || return 1"
+        },
+        {
+          "line": 221,
+          "line_hash": "3ce087b0b4e8",
+          "occurrence": 0,
+          "op": "return1-to-return0",
+          "text": "seq=\"$(next_queue_seq \"$state_dir\")\" || return 1"
+        },
+        {
+          "line": 230,
+          "line_hash": "d3f116c61289",
+          "occurrence": 0,
+          "op": "drop-test-not",
+          "text": "while [[ ! -f \"$result_file\" ]]; do"
+        },
+        {
+          "line": 234,
+          "line_hash": "ce6ebdb3abb9",
+          "occurrence": 2,
+          "op": "return1-to-return0",
+          "text": "return 1"
+        },
+        {
+          "line": 241,
+          "line_hash": "cda5b2ce7243",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "exit_code=\"$(jq -r '.exit_code // 1' \"$result_file\" 2>/dev/null || echo 1)\""
+        },
+        {
+          "line": 242,
+          "line_hash": "fa7f06121d25",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "output=\"$(jq -r '.output // empty' \"$result_file\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 243,
+          "line_hash": "3222574592a1",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "stderr_text=\"$(jq -r '.stderr // empty' \"$result_file\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 246,
+          "line_hash": "954308192a16",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -n \"$stderr_text\" ]] && echo \"$stderr_text\" >&2"
+        },
+        {
+          "line": 246,
+          "line_hash": "954308192a16",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "[[ -n \"$stderr_text\" ]] && echo \"$stderr_text\" >&2"
+        },
+        {
+          "line": 247,
+          "line_hash": "e40541fbf8bc",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -n \"$output\" ]] && printf '%s\\n' \"$output\""
+        },
+        {
+          "line": 247,
+          "line_hash": "e40541fbf8bc",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "[[ -n \"$output\" ]] && printf '%s\\n' \"$output\""
+        }
+      ]
+    },
+    "delegation/scripts/list-local-profiles.sh": {
+      "hash": "de5ebad9c1b5654c1c7ef678e1d782206cfe7ceec5246859232cce6d6028f940",
+      "killed": 17,
+      "mutants": 26,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 11,
+          "line_hash": "43cd48d807a6",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 17,
+          "line_hash": "26598f38c6b2",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "elif [[ -n \"${XDG_CONFIG_HOME:-}\" ]]; then"
+        },
+        {
+          "line": 19,
+          "line_hash": "1a8009efc58d",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "elif [[ -n \"${HOME:-}\" ]]; then"
+        },
+        {
+          "line": 23,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 39,
+          "line_hash": "6aa7f4e3a692",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "elif [[ -n \"${XDG_CACHE_HOME:-}\" ]]; then"
+        },
+        {
+          "line": 41,
+          "line_hash": "1a8009efc58d",
+          "occurrence": 1,
+          "op": "n-to-z",
+          "text": "elif [[ -n \"${HOME:-}\" ]]; then"
+        },
+        {
+          "line": 50,
+          "line_hash": "f73c3534d9ef",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$active_file\" && -f \"$active_file\" ]] && active_json=\"$(jq -e . \"$active_file\" 2>/dev/null)\"; then"
+        },
+        {
+          "line": 57,
+          "line_hash": "afa30f507ec0",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$reservation_file\" && -f \"$reservation_file\" ]] && reservation_json=\"$(jq -e . \"$reservation_file\" 2>/dev/null)\"; then"
+        },
+        {
+          "line": 67,
+          "line_hash": "3030e07dd066",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ \"$res_expires\" =~ ^[0-9]+$ ]] && ((res_expires > res_now)); then"
+        }
+      ]
+    },
+    "delegation/scripts/queue-worker.sh": {
+      "hash": "806dccbefebfbf2285da8d04d4f125c870a6042c3877db46fcf5ca3139977999",
+      "killed": 17,
+      "mutants": 131,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 19,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 48,
+          "line_hash": "d4460949da30",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -f \"$dev_dir/mem_info_vram_used\" && -f \"$dev_dir/mem_info_vram_total\" ]] || continue"
+        },
+        {
+          "line": 48,
+          "line_hash": "d4460949da30",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ -f \"$dev_dir/mem_info_vram_used\" && -f \"$dev_dir/mem_info_vram_total\" ]] || continue"
+        },
+        {
+          "line": 49,
+          "line_hash": "cfa8b7b21c8f",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "used=\"$(cat \"$dev_dir/mem_info_vram_used\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 50,
+          "line_hash": "c9901834cef3",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "total=\"$(cat \"$dev_dir/mem_info_vram_total\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 51,
+          "line_hash": "83f3cb6988d7",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "if [[ \"$used\" =~ ^[0-9]+$ && \"$total\" =~ ^[0-9]+$ && \"$total\" -gt \"$best_total\" ]]; then"
+        },
+        {
+          "line": 51,
+          "line_hash": "83f3cb6988d7",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ \"$used\" =~ ^[0-9]+$ && \"$total\" =~ ^[0-9]+$ && \"$total\" -gt \"$best_total\" ]]; then"
+        },
+        {
+          "line": 51,
+          "line_hash": "83f3cb6988d7",
+          "occurrence": 1,
+          "op": "and-to-or",
+          "text": "if [[ \"$used\" =~ ^[0-9]+$ && \"$total\" =~ ^[0-9]+$ && \"$total\" -gt \"$best_total\" ]]; then"
+        },
+        {
+          "line": 55,
+          "line_hash": "b63389abade2",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "used=\"$(cat \"$dev_dir/mem_info_gtt_used\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 56,
+          "line_hash": "92a3fd5fea06",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "total=\"$(cat \"$dev_dir/mem_info_gtt_total\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 57,
+          "line_hash": "9b0d6a0bdb4e",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "if [[ \"$used\" =~ ^[0-9]+$ && \"$total\" =~ ^[0-9]+$ && \"$total\" -gt \"$best_gtt_total\" ]]; then"
+        },
+        {
+          "line": 57,
+          "line_hash": "9b0d6a0bdb4e",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ \"$used\" =~ ^[0-9]+$ && \"$total\" =~ ^[0-9]+$ && \"$total\" -gt \"$best_gtt_total\" ]]; then"
+        },
+        {
+          "line": 57,
+          "line_hash": "9b0d6a0bdb4e",
+          "occurrence": 1,
+          "op": "and-to-or",
+          "text": "if [[ \"$used\" =~ ^[0-9]+$ && \"$total\" =~ ^[0-9]+$ && \"$total\" -gt \"$best_gtt_total\" ]]; then"
+        },
+        {
+          "line": 62,
+          "line_hash": "6bda1b152cda",
+          "occurrence": 0,
+          "op": "lt-to-le",
+          "text": "if [[ \"$best_total\" -lt \"$dedicated_vram_floor\" && \"$best_gtt_total\" -gt \"$best_total\" ]]; then"
+        },
+        {
+          "line": 62,
+          "line_hash": "6bda1b152cda",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "if [[ \"$best_total\" -lt \"$dedicated_vram_floor\" && \"$best_gtt_total\" -gt \"$best_total\" ]]; then"
+        },
+        {
+          "line": 62,
+          "line_hash": "6bda1b152cda",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ \"$best_total\" -lt \"$dedicated_vram_floor\" && \"$best_gtt_total\" -gt \"$best_total\" ]]; then"
+        },
+        {
+          "line": 66,
+          "line_hash": "672410baaa6d",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "if [[ \"$best_total\" -gt 0 ]]; then"
+        },
+        {
+          "line": 84,
+          "line_hash": "7150b10e425b",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "stat -L -c%s \"$path\" 2>/dev/null || stat -L -f%z \"$path\" 2>/dev/null || true"
+        },
+        {
+          "line": 84,
+          "line_hash": "7150b10e425b",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "stat -L -c%s \"$path\" 2>/dev/null || stat -L -f%z \"$path\" 2>/dev/null || true"
+        },
+        {
+          "line": 90,
+          "line_hash": "4c0e097221d1",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "sz=\"$(stat -L -c%s \"$f\" 2>/dev/null || stat -L -f%z \"$f\" 2>/dev/null)\" || return"
+        },
+        {
+          "line": 90,
+          "line_hash": "4c0e097221d1",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "sz=\"$(stat -L -c%s \"$f\" 2>/dev/null || stat -L -f%z \"$f\" 2>/dev/null)\" || return"
+        },
+        {
+          "line": 91,
+          "line_hash": "f989f430ccce",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ \"$sz\" =~ ^[0-9]+$ ]] || return"
+        },
+        {
+          "line": 127,
+          "line_hash": "6acb258b3533",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ -n \"$model\" ]] || return 0"
+        },
+        {
+          "line": 127,
+          "line_hash": "6acb258b3533",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "[[ -n \"$model\" ]] || return 0"
+        },
+        {
+          "line": 127,
+          "line_hash": "6acb258b3533",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "[[ -n \"$model\" ]] || return 0"
+        },
+        {
+          "line": 131,
+          "line_hash": "6604c4b0460f",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "model_bytes=\"$(model_size_bytes \"$model\")\" || true"
+        },
+        {
+          "line": 132,
+          "line_hash": "2aed27b68de2",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ \"$model_bytes\" =~ ^[0-9]+$ ]] || return 0"
+        },
+        {
+          "line": 132,
+          "line_hash": "2aed27b68de2",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "[[ \"$model_bytes\" =~ ^[0-9]+$ ]] || return 0"
+        },
+        {
+          "line": 144,
+          "line_hash": "e8e9c1002949",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "[[ \"$name\" == \"$exclude_name\" ]] && continue"
+        },
+        {
+          "line": 144,
+          "line_hash": "e8e9c1002949",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ \"$name\" == \"$exclude_name\" ]] && continue"
+        },
+        {
+          "line": 146,
+          "line_hash": "acd1b5d7fa94",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "[[ \"$(jq -r '.runtime // empty' <<<\"$candidate_json\")\" == \"mock\" ]] && continue"
+        },
+        {
+          "line": 146,
+          "line_hash": "acd1b5d7fa94",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ \"$(jq -r '.runtime // empty' <<<\"$candidate_json\")\" == \"mock\" ]] && continue"
+        },
+        {
+          "line": 148,
+          "line_hash": "87dda2aa68a7",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ \"$candidate_required\" =~ ^[0-9]+$ ]] || continue"
+        },
+        {
+          "line": 149,
+          "line_hash": "30be7879256c",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "((candidate_required <= free_bytes)) && fits+=(\"$name\")"
+        },
+        {
+          "line": 183,
+          "line_hash": "f13e17c0a567",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if [[ \"$http_code\" == \"404\" ]]; then"
+        },
+        {
+          "line": 184,
+          "line_hash": "b124180569d2",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "curl -sS --max-time 1 \"$url/v1/models\" >/dev/null 2>&1 || return 1"
+        },
+        {
+          "line": 184,
+          "line_hash": "b124180569d2",
+          "occurrence": 0,
+          "op": "return1-to-return0",
+          "text": "curl -sS --max-time 1 \"$url/v1/models\" >/dev/null 2>&1 || return 1"
+        },
+        {
+          "line": 187,
+          "line_hash": "06c643d297d7",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "[[ \"$status\" == \"ok\" ]] || return 1"
+        },
+        {
+          "line": 187,
+          "line_hash": "06c643d297d7",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ \"$status\" == \"ok\" ]] || return 1"
+        },
+        {
+          "line": 187,
+          "line_hash": "06c643d297d7",
+          "occurrence": 0,
+          "op": "return1-to-return0",
+          "text": "[[ \"$status\" == \"ok\" ]] || return 1"
+        },
+        {
+          "line": 190,
+          "line_hash": "78a9a03d8808",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "curl -sS --max-time 1 \"$url/v1/models\" >/dev/null 2>&1 || return 1"
+        },
+        {
+          "line": 190,
+          "line_hash": "78a9a03d8808",
+          "occurrence": 0,
+          "op": "return1-to-return0",
+          "text": "curl -sS --max-time 1 \"$url/v1/models\" >/dev/null 2>&1 || return 1"
+        },
+        {
+          "line": 205,
+          "line_hash": "8148b0f4f13b",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "-d \"$request_body\" 2>/dev/null)\" || return 1"
+        },
+        {
+          "line": 205,
+          "line_hash": "8148b0f4f13b",
+          "occurrence": 0,
+          "op": "return1-to-return0",
+          "text": "-d \"$request_body\" 2>/dev/null)\" || return 1"
+        },
+        {
+          "line": 239,
+          "line_hash": "1721c620e164",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ -f \"$f\" ]] || return"
+        },
+        {
+          "line": 241,
+          "line_hash": "5b9277e0a71b",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "reservation_json=\"$(jq -e . \"$f\" 2>/dev/null)\" || return"
+        },
+        {
+          "line": 244,
+          "line_hash": "2c7c0b3b9826",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "'select(.profile == $profile and .expires_at > $now)' <<<\"$reservation_json\" 2>/dev/null || true"
+        },
+        {
+          "line": 244,
+          "line_hash": "2c7c0b3b9826",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "'select(.profile == $profile and .expires_at > $now)' <<<\"$reservation_json\" 2>/dev/null || true"
+        },
+        {
+          "line": 315,
+          "line_hash": "158744f9367a",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if [[ -z \"$profile_name\" || \"$profile_name\" == */* || \"$profile_name\" == \".\" || \"$profile_name\" == \"..\" ]]; then"
+        },
+        {
+          "line": 315,
+          "line_hash": "158744f9367a",
+          "occurrence": 1,
+          "op": "streq-to-strne",
+          "text": "if [[ -z \"$profile_name\" || \"$profile_name\" == */* || \"$profile_name\" == \".\" || \"$profile_name\" == \"..\" ]]; then"
+        },
+        {
+          "line": 315,
+          "line_hash": "158744f9367a",
+          "occurrence": 2,
+          "op": "streq-to-strne",
+          "text": "if [[ -z \"$profile_name\" || \"$profile_name\" == */* || \"$profile_name\" == \".\" || \"$profile_name\" == \"..\" ]]; then"
+        },
+        {
+          "line": 315,
+          "line_hash": "158744f9367a",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "if [[ -z \"$profile_name\" || \"$profile_name\" == */* || \"$profile_name\" == \".\" || \"$profile_name\" == \"..\" ]]; then"
+        },
+        {
+          "line": 315,
+          "line_hash": "158744f9367a",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "if [[ -z \"$profile_name\" || \"$profile_name\" == */* || \"$profile_name\" == \".\" || \"$profile_name\" == \"..\" ]]; then"
+        },
+        {
+          "line": 315,
+          "line_hash": "158744f9367a",
+          "occurrence": 2,
+          "op": "or-to-and",
+          "text": "if [[ -z \"$profile_name\" || \"$profile_name\" == */* || \"$profile_name\" == \".\" || \"$profile_name\" == \"..\" ]]; then"
+        },
+        {
+          "line": 315,
+          "line_hash": "158744f9367a",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "if [[ -z \"$profile_name\" || \"$profile_name\" == */* || \"$profile_name\" == \".\" || \"$profile_name\" == \"..\" ]]; then"
+        },
+        {
+          "line": 326,
+          "line_hash": "0cb15af5aaa2",
+          "occurrence": 0,
+          "op": "drop-test-not",
+          "text": "if [[ ! -f \"$profiles_file\" ]]; then"
+        },
+        {
+          "line": 331,
+          "line_hash": "0333dedc3b34",
+          "occurrence": 0,
+          "op": "drop-if-not",
+          "text": "if ! profiles_json=\"$(yq -p toml -o json '.' \"$profiles_file\" 2>&1)\"; then"
+        },
+        {
+          "line": 336,
+          "line_hash": "91b87b050463",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if ! profile_json=\"$(jq -e --arg name \"$profile_name\" '.[$name]' <<<\"$profiles_json\" 2>/dev/null)\" || [[ \"$profile_json\" == \"null\" ]]; then"
+        },
+        {
+          "line": 336,
+          "line_hash": "91b87b050463",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "if ! profile_json=\"$(jq -e --arg name \"$profile_name\" '.[$name]' <<<\"$profiles_json\" 2>/dev/null)\" || [[ \"$profile_json\" == \"null\" ]]; then"
+        },
+        {
+          "line": 336,
+          "line_hash": "91b87b050463",
+          "occurrence": 0,
+          "op": "drop-if-not",
+          "text": "if ! profile_json=\"$(jq -e --arg name \"$profile_name\" '.[$name]' <<<\"$profiles_json\" 2>/dev/null)\" || [[ \"$profile_json\" == \"null\" ]]; then"
+        },
+        {
+          "line": 338,
+          "line_hash": "fb706f22decb",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "available=\"$(jq -r 'keys | join(\", \")' <<<\"$profiles_json\" 2>/dev/null || echo \"(unreadable profiles file)\")\""
+        },
+        {
+          "line": 351,
+          "line_hash": "d67c8bd3ce52",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -n \"$arg\" ]] && launch_args+=(\"$arg\")"
+        },
+        {
+          "line": 351,
+          "line_hash": "d67c8bd3ce52",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "[[ -n \"$arg\" ]] && launch_args+=(\"$arg\")"
+        },
+        {
+          "line": 353,
+          "line_hash": "80d9b0ccb1f4",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "if [[ -z \"$runtime\" || -z \"$model\" ]]; then"
+        },
+        {
+          "line": 353,
+          "line_hash": "80d9b0ccb1f4",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "if [[ -z \"$runtime\" || -z \"$model\" ]]; then"
+        },
+        {
+          "line": 353,
+          "line_hash": "80d9b0ccb1f4",
+          "occurrence": 1,
+          "op": "z-to-n",
+          "text": "if [[ -z \"$runtime\" || -z \"$model\" ]]; then"
+        },
+        {
+          "line": 357,
+          "line_hash": "22e3f4c065b4",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "if ! [[ \"$port\" =~ ^[0-9]+$ ]] || ((port < 1 || port > 65535)); then"
+        },
+        {
+          "line": 357,
+          "line_hash": "22e3f4c065b4",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "if ! [[ \"$port\" =~ ^[0-9]+$ ]] || ((port < 1 || port > 65535)); then"
+        },
+        {
+          "line": 357,
+          "line_hash": "22e3f4c065b4",
+          "occurrence": 0,
+          "op": "drop-if-not",
+          "text": "if ! [[ \"$port\" =~ ^[0-9]+$ ]] || ((port < 1 || port > 65535)); then"
+        },
+        {
+          "line": 372,
+          "line_hash": "0f2aacc19525",
+          "occurrence": 0,
+          "op": "drop-if-not",
+          "text": "if ! command -v \"${cmd[0]}\" >/dev/null 2>&1; then"
+        },
+        {
+          "line": 389,
+          "line_hash": "51d60a3f6a1d",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "old_profile=\"$(jq -r '.profile // empty' \"$active_file\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 392,
+          "line_hash": "3bcfee852ad1",
+          "occurrence": 0,
+          "op": "strne-to-streq",
+          "text": "if [[ \"$runtime\" != \"mock\" && \"$force_switch\" != \"1\" ]]; then"
+        },
+        {
+          "line": 392,
+          "line_hash": "3bcfee852ad1",
+          "occurrence": 1,
+          "op": "strne-to-streq",
+          "text": "if [[ \"$runtime\" != \"mock\" && \"$force_switch\" != \"1\" ]]; then"
+        },
+        {
+          "line": 392,
+          "line_hash": "3bcfee852ad1",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ \"$runtime\" != \"mock\" && \"$force_switch\" != \"1\" ]]; then"
+        },
+        {
+          "line": 395,
+          "line_hash": "6cf36730ed35",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ \"$vram_used\" =~ ^[0-9]+$ && \"$vram_total\" =~ ^[0-9]+$ ]]; then"
+        },
+        {
+          "line": 404,
+          "line_hash": "2275d71214f9",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -n \"$old_profile\" ]] && old_pid=\"$(jq -r '.pid // empty' \"$active_file\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 404,
+          "line_hash": "2275d71214f9",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ -n \"$old_profile\" ]] && old_pid=\"$(jq -r '.pid // empty' \"$active_file\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 404,
+          "line_hash": "2275d71214f9",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "[[ -n \"$old_profile\" ]] && old_pid=\"$(jq -r '.pid // empty' \"$active_file\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 405,
+          "line_hash": "c3cc6fd30caf",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$old_pid\" ]] && kill -0 \"$old_pid\" 2>/dev/null; then"
+        },
+        {
+          "line": 405,
+          "line_hash": "c3cc6fd30caf",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$old_pid\" ]] && kill -0 \"$old_pid\" 2>/dev/null; then"
+        },
+        {
+          "line": 408,
+          "line_hash": "dae1c08f39f1",
+          "occurrence": 0,
+          "op": "strne-to-streq",
+          "text": "if [[ -n \"$old_json\" && \"$(jq -r '.runtime // empty' <<<\"$old_json\")\" != \"mock\" ]]; then"
+        },
+        {
+          "line": 408,
+          "line_hash": "dae1c08f39f1",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$old_json\" && \"$(jq -r '.runtime // empty' <<<\"$old_json\")\" != \"mock\" ]]; then"
+        },
+        {
+          "line": 408,
+          "line_hash": "dae1c08f39f1",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$old_json\" && \"$(jq -r '.runtime // empty' <<<\"$old_json\")\" != \"mock\" ]]; then"
+        },
+        {
+          "line": 412,
+          "line_hash": "a71f6fc519f1",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "((free_bytes > vram_total)) && free_bytes=$vram_total"
+        },
+        {
+          "line": 422,
+          "line_hash": "797e600a5e28",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$alternatives\" ]]; then"
+        },
+        {
+          "line": 439,
+          "line_hash": "149e75e50cb2",
+          "occurrence": 0,
+          "op": "strne-to-streq",
+          "text": "if [[ -n \"$old_profile\" && \"$force_switch\" != \"1\" ]]; then"
+        },
+        {
+          "line": 439,
+          "line_hash": "149e75e50cb2",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$old_profile\" && \"$force_switch\" != \"1\" ]]; then"
+        },
+        {
+          "line": 439,
+          "line_hash": "149e75e50cb2",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$old_profile\" && \"$force_switch\" != \"1\" ]]; then"
+        },
+        {
+          "line": 446,
+          "line_hash": "15139932d3fc",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "reservation=\"$(active_reservation_for \"$old_profile\")\" || true"
+        },
+        {
+          "line": 447,
+          "line_hash": "559c7e93e63d",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$reservation\" ]]; then"
+        },
+        {
+          "line": 453,
+          "line_hash": "4f990959d43a",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "((remaining < 0)) && remaining=0"
+        },
+        {
+          "line": 461,
+          "line_hash": "0d18abecc998",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "old_pid=\"$(jq -r '.pid // empty' \"$active_file\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 462,
+          "line_hash": "62dc94a43a31",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$old_pid\" ]] && kill -0 \"$old_pid\" 2>/dev/null; then"
+        },
+        {
+          "line": 462,
+          "line_hash": "62dc94a43a31",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$old_pid\" ]] && kill -0 \"$old_pid\" 2>/dev/null; then"
+        },
+        {
+          "line": 463,
+          "line_hash": "ea62abab82fd",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "kill \"$old_pid\" 2>/dev/null || true"
+        },
+        {
+          "line": 465,
+          "line_hash": "fb8f97bc917b",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "kill -0 \"$old_pid\" 2>/dev/null || break"
+        },
+        {
+          "line": 468,
+          "line_hash": "c7a8fdd6f951",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "kill -0 \"$old_pid\" 2>/dev/null && kill -9 \"$old_pid\" 2>/dev/null || true"
+        },
+        {
+          "line": 468,
+          "line_hash": "c7a8fdd6f951",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "kill -0 \"$old_pid\" 2>/dev/null && kill -9 \"$old_pid\" 2>/dev/null || true"
+        },
+        {
+          "line": 481,
+          "line_hash": "00d447c0c457",
+          "occurrence": 0,
+          "op": "drop-if-not",
+          "text": "if ! kill -0 \"$new_pid\" 2>/dev/null; then"
+        },
+        {
+          "line": 488,
+          "line_hash": "33a2aaff57be",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "kill \"$new_pid\" 2>/dev/null || true"
+        },
+        {
+          "line": 495,
+          "line_hash": "3d99945c848d",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "discovered_model=\"$(curl -sS --max-time 1 \"http://localhost:$port/v1/models\" 2>/dev/null | jq -er '.data[0].id' 2>/dev/null || echo \"$model\")\""
+        },
+        {
+          "line": 508,
+          "line_hash": "a2167d4a9dff",
+          "occurrence": 0,
+          "op": "drop-test-not",
+          "text": "if [[ ! -f \"$active_file\" ]]; then"
+        },
+        {
+          "line": 514,
+          "line_hash": "986685703bed",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "profile=\"$(jq -r '.profile // \"unknown\"' \"$active_file\" 2>/dev/null || echo unknown)\""
+        },
+        {
+          "line": 515,
+          "line_hash": "daea1605d32d",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "pid=\"$(jq -r '.pid // empty' \"$active_file\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 517,
+          "line_hash": "42cec0dff668",
+          "occurrence": 0,
+          "op": "strne-to-streq",
+          "text": "if [[ \"$force_switch\" != \"1\" ]]; then"
+        },
+        {
+          "line": 519,
+          "line_hash": "0d1f37bf5916",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "reservation=\"$(active_reservation_for \"$profile\")\" || true"
+        },
+        {
+          "line": 520,
+          "line_hash": "559c7e93e63d",
+          "occurrence": 1,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$reservation\" ]]; then"
+        },
+        {
+          "line": 526,
+          "line_hash": "4f990959d43a",
+          "occurrence": 1,
+          "op": "and-to-or",
+          "text": "((remaining < 0)) && remaining=0"
+        },
+        {
+          "line": 531,
+          "line_hash": "33c528b4352f",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$pid\" ]] && kill -0 \"$pid\" 2>/dev/null; then"
+        },
+        {
+          "line": 531,
+          "line_hash": "33c528b4352f",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$pid\" ]] && kill -0 \"$pid\" 2>/dev/null; then"
+        },
+        {
+          "line": 532,
+          "line_hash": "17e7994fa2dd",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "kill \"$pid\" 2>/dev/null || true"
+        },
+        {
+          "line": 534,
+          "line_hash": "eb90bdb45e98",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "kill -0 \"$pid\" 2>/dev/null || break"
+        },
+        {
+          "line": 537,
+          "line_hash": "45ad20b10b0e",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "kill -0 \"$pid\" 2>/dev/null && kill -9 \"$pid\" 2>/dev/null || true"
+        },
+        {
+          "line": 537,
+          "line_hash": "45ad20b10b0e",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "kill -0 \"$pid\" 2>/dev/null && kill -9 \"$pid\" 2>/dev/null || true"
+        }
+      ]
+    },
+    "delegation/scripts/reset-credits-cooldown.sh": {
+      "hash": "b31ea694607da16bd33c51e5b1472c572228bd807552b64338b63c76da84b302",
+      "killed": 4,
+      "mutants": 4,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "delegation/scripts/stop-local-profile.sh": {
+      "hash": "9ebe44dc314cb50511f10616773888a4f18c20abd33c3f5e8c108ee41de1424f",
+      "killed": 3,
+      "mutants": 5,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 16,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 21,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 1,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        }
+      ]
+    },
+    "delegation/scripts/switch-local-profile.sh": {
+      "hash": "975ffb8f4897e44aad93c01a4a45d5487a10965a36aa4aa2686850d735264683",
+      "killed": 8,
+      "mutants": 13,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 34,
+          "line_hash": "43cd48d807a6",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 42,
+          "line_hash": "26598f38c6b2",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "elif [[ -n \"${XDG_CONFIG_HOME:-}\" ]]; then"
+        },
+        {
+          "line": 44,
+          "line_hash": "1a8009efc58d",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "elif [[ -n \"${HOME:-}\" ]]; then"
+        },
+        {
+          "line": 48,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 1,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 58,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 3,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        }
+      ]
+    },
+    "docs-audit/scripts/check.sh": {
+      "hash": "04d9a54db89dfc3f71a365a5a3ba31587ac5d32522bf6d6bb4cbabd2570a1ac2",
+      "killed": 69,
+      "mutants": 115,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 36,
+          "line_hash": "f25a6eff6677",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "local r; r=\"$(find_primary_readme \"$repo\" || true)\""
+        },
+        {
+          "line": 37,
+          "line_hash": "a535c19225ec",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [ -n \"$r\" ] && [ -f \"$repo/$r\" ]; then"
+        },
+        {
+          "line": 59,
+          "line_hash": "f25a6eff6677",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "local r; r=\"$(find_primary_readme \"$repo\" || true)\""
+        },
+        {
+          "line": 60,
+          "line_hash": "4fbb638d4917",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "[ -n \"$r\" ] || return 0"
+        },
+        {
+          "line": 63,
+          "line_hash": "f019ab5a87f5",
+          "occurrence": 0,
+          "op": "lt-to-le",
+          "text": "if [ \"$count\" -lt 10 ]; then"
+        },
+        {
+          "line": 70,
+          "line_hash": "f25a6eff6677",
+          "occurrence": 2,
+          "op": "or-to-and",
+          "text": "local r; r=\"$(find_primary_readme \"$repo\" || true)\""
+        },
+        {
+          "line": 71,
+          "line_hash": "4fbb638d4917",
+          "occurrence": 1,
+          "op": "return0-to-return1",
+          "text": "[ -n \"$r\" ] || return 0"
+        },
+        {
+          "line": 74,
+          "line_hash": "f6f8494d23f9",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "if [ \"$count\" -gt 500 ]; then"
+        },
+        {
+          "line": 81,
+          "line_hash": "f25a6eff6677",
+          "occurrence": 3,
+          "op": "or-to-and",
+          "text": "local r; r=\"$(find_primary_readme \"$repo\" || true)\""
+        },
+        {
+          "line": 82,
+          "line_hash": "4fbb638d4917",
+          "occurrence": 2,
+          "op": "return0-to-return1",
+          "text": "[ -n \"$r\" ] || return 0"
+        },
+        {
+          "line": 90,
+          "line_hash": "6d91cb9b97cb",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "if [ -f \"$repo/LICENSE\" ] || [ -f \"$repo/LICENSE.md\" ] || [ -f \"$repo/COPYING\" ]; then"
+        },
+        {
+          "line": 90,
+          "line_hash": "6d91cb9b97cb",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "if [ -f \"$repo/LICENSE\" ] || [ -f \"$repo/LICENSE.md\" ] || [ -f \"$repo/COPYING\" ]; then"
+        },
+        {
+          "line": 93,
+          "line_hash": "f25a6eff6677",
+          "occurrence": 4,
+          "op": "or-to-and",
+          "text": "local r; r=\"$(find_primary_readme \"$repo\" || true)\""
+        },
+        {
+          "line": 94,
+          "line_hash": "e6935802dcc3",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [ -n \"$r\" ] && grep -Eiq '^[#]+[[:space:]]+.*license' \"$repo/$r\"; then"
+        },
+        {
+          "line": 95,
+          "line_hash": "b37c900ec5de",
+          "occurrence": 1,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        },
+        {
+          "line": 102,
+          "line_hash": "f25a6eff6677",
+          "occurrence": 5,
+          "op": "or-to-and",
+          "text": "local r; r=\"$(find_primary_readme \"$repo\" || true)\""
+        },
+        {
+          "line": 103,
+          "line_hash": "4fbb638d4917",
+          "occurrence": 3,
+          "op": "return0-to-return1",
+          "text": "[ -n \"$r\" ] || return 0"
+        },
+        {
+          "line": 106,
+          "line_hash": "ef04b785a71a",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "if [ \"$count\" -gt 5 ]; then"
+        },
+        {
+          "line": 141,
+          "line_hash": "c3b401c843e4",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if (cchar == fence_char && clen >= fence_len) {"
+        },
+        {
+          "line": 179,
+          "line_hash": "78cc543668d2",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "done < <(grep -Eni '\\[[[:space:]]*(here|click here|link|this)[[:space:]]*\\]\\(' \"$file\" || true)"
+        },
+        {
+          "line": 227,
+          "line_hash": "092746ad36b3",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "[ -d \"$repo/docs\" ] || return 0"
+        },
+        {
+          "line": 230,
+          "line_hash": "f25a6eff6677",
+          "occurrence": 6,
+          "op": "or-to-and",
+          "text": "local r; r=\"$(find_primary_readme \"$repo\" || true)\""
+        },
+        {
+          "line": 231,
+          "line_hash": "a535c19225ec",
+          "occurrence": 1,
+          "op": "and-to-or",
+          "text": "if [ -n \"$r\" ] && [ -f \"$repo/$r\" ]; then"
+        },
+        {
+          "line": 231,
+          "line_hash": "a535c19225ec",
+          "occurrence": 1,
+          "op": "n-to-z",
+          "text": "if [ -n \"$r\" ] && [ -f \"$repo/$r\" ]; then"
+        },
+        {
+          "line": 238,
+          "line_hash": "38289e7a4d44",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "if [ -z \"${visited[\"$dpath\"]:-}\" ]; then"
+        },
+        {
+          "line": 257,
+          "line_hash": "7e5ed952d8ba",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ \"$real_dest\" == \"$repo\"* ]] && [[ \"$real_dest\" == *.md ]]; then"
+        },
+        {
+          "line": 290,
+          "line_hash": "092746ad36b3",
+          "occurrence": 1,
+          "op": "return0-to-return1",
+          "text": "[ -d \"$repo/docs\" ] || return 0"
+        },
+        {
+          "line": 294,
+          "line_hash": "8e1c6742de19",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "[ ! -f \"$repo/docs/README.md\" ] || return 0"
+        },
+        {
+          "line": 295,
+          "line_hash": "f25a6eff6677",
+          "occurrence": 7,
+          "op": "or-to-and",
+          "text": "local r; r=\"$(find_primary_readme \"$repo\" || true)\""
+        },
+        {
+          "line": 296,
+          "line_hash": "4399f77e7cfa",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [ -n \"$r\" ] && grep -Eq '\\[[^]]*\\]\\([^)]*docs/[^)]*\\)' \"$repo/$r\"; then"
+        },
+        {
+          "line": 297,
+          "line_hash": "b37c900ec5de",
+          "occurrence": 2,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        },
+        {
+          "line": 310,
+          "line_hash": "c4938f5ceb96",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "tags=\"$(git -C \"$repo\" tag 2>/dev/null || true)\""
+        },
+        {
+          "line": 329,
+          "line_hash": "6ec70704d633",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "done < <(grep -En '(\\b(TODO|TBD|FIXME)\\b|[Ll]orem [Ii]psum|[Cc]oming [Ss]oon)' \"$file\" || true)"
+        },
+        {
+          "line": 337,
+          "line_hash": "611f1018d968",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [ -f \"$c\" ] && [ -f \"$a\" ]; then"
+        },
+        {
+          "line": 339,
+          "line_hash": "2fe433e1a269",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "if [ -L \"$c\" ] || [ -L \"$a\" ]; then"
+        },
+        {
+          "line": 340,
+          "line_hash": "d8c3a5a515b3",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "local rc; rc=\"$(realpath \"$c\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 341,
+          "line_hash": "b054aebb8073",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "local ra; ra=\"$(realpath \"$a\" 2>/dev/null || true)\""
+        },
+        {
+          "line": 342,
+          "line_hash": "72f167170fec",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[ \"$rc\" = \"$ra\" ] && is_symlink=1"
+        },
+        {
+          "line": 348,
+          "line_hash": "9ab83b73b449",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [ \"$c_import\" -eq 0 ] && [ \"$a_import\" -eq 0 ]; then"
+        },
+        {
+          "line": 358,
+          "line_hash": "2809e21630f1",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "if [ \"$lines\" -gt 200 ]; then"
+        },
+        {
+          "line": 367,
+          "line_hash": "092746ad36b3",
+          "occurrence": 2,
+          "op": "return0-to-return1",
+          "text": "[ -d \"$repo/docs\" ] || return 0"
+        },
+        {
+          "line": 370,
+          "line_hash": "bb8d44e8141c",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "[ \"$doc_count\" -gt 0 ] || return 0"
+        },
+        {
+          "line": 370,
+          "line_hash": "bb8d44e8141c",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "[ \"$doc_count\" -gt 0 ] || return 0"
+        },
+        {
+          "line": 371,
+          "line_hash": "f25a6eff6677",
+          "occurrence": 8,
+          "op": "or-to-and",
+          "text": "local r; r=\"$(find_primary_readme \"$repo\" || true)\""
+        },
+        {
+          "line": 372,
+          "line_hash": "4fbb638d4917",
+          "occurrence": 4,
+          "op": "return0-to-return1",
+          "text": "[ -n \"$r\" ] || return 0"
+        },
+        {
+          "line": 380,
+          "line_hash": "419f3c5f50f0",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "if [ \"$#\" -gt 1 ] || [ ! -d \"$repo\" ]; then"
+        }
+      ]
+    },
+    "git/scripts/check-no-fixups.sh": {
+      "hash": "648bbb237447baa0ba75e44d5474bd5e922ddb7161c83177ef9448fd46cd7c88",
+      "killed": 8,
+      "mutants": 14,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 18,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 23,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 1,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 29,
+          "line_hash": "2050c5e453ab",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "script_dir=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\""
+        },
+        {
+          "line": 32,
+          "line_hash": "c5aa090892d7",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "default_branch=\"$(detect_default_branch || true)\""
+        },
+        {
+          "line": 33,
+          "line_hash": "3eb1f1424dfd",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "if [[ -z \"$default_branch\" ]]; then"
+        },
+        {
+          "line": 35,
+          "line_hash": "43cd48d807a6",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        }
+      ]
+    },
+    "git/scripts/lib/default-branch.sh": {
+      "hash": "a79109c863133a1221433baa208412c0a6bd0ab792f51b68701c0a0efa1144d0",
+      "killed": 0,
+      "mutants": 3,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 9,
+          "line_hash": "e894e71c35f3",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        },
+        {
+          "line": 14,
+          "line_hash": "90f8e2725b82",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        },
+        {
+          "line": 17,
+          "line_hash": "46f22e4b9ebe",
+          "occurrence": 0,
+          "op": "return1-to-return0",
+          "text": "return 1"
+        }
+      ]
+    },
+    "git/scripts/lib/review-body.sh": {
+      "hash": "702a2c77a706cb20f824364b49485c7af8bea61ebc351dcaa4a97366888f5b7d",
+      "killed": 7,
+      "mutants": 7,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "git/scripts/merge-onto-default.sh": {
+      "hash": "5b3dae69fd29611d6f5af15e3bc75c818a98c3cc0a63abc4656a4578d7b39562",
+      "killed": 36,
+      "mutants": 44,
+      "ran_at": "2026-11-26T15:06:53Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 33,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 1,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 51,
+          "line_hash": "8a6d5cb42d86",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "default_branch=\"$(detect_default_branch || true)\""
+        },
+        {
+          "line": 54,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 4,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 82,
+          "line_hash": "a6d2f16e82e4",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "if ! pr_info=\"$(gh pr view --json number,headRefOid --jq '[.number,.headRefOid]|@tsv' 2>/dev/null)\" || [[ -z \"$pr_info\" ]]; then"
+        },
+        {
+          "line": 85,
+          "line_hash": "21302d6d826e",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "gh pr view --json number,headRefOid >&2 2>&1 || true"
+        },
+        {
+          "line": 106,
+          "line_hash": "3764867cb297",
+          "occurrence": 0,
+          "op": "return1-to-return0",
+          "text": "check_runs=\"$(gh api \"repos/{owner}/{repo}/commits/$1/check-runs\" --jq .total_count)\" || return 1"
+        },
+        {
+          "line": 107,
+          "line_hash": "468980c2d796",
+          "occurrence": 0,
+          "op": "return1-to-return0",
+          "text": "statuses=\"$(gh api \"repos/{owner}/{repo}/commits/$1/status\" --jq .total_count)\" || return 1"
+        },
+        {
+          "line": 145,
+          "line_hash": "5e9f29ec4094",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "echo \"warning: HEAD moved during the wait (now $(git rev-parse --short HEAD) on $(git symbolic-ref --short -q HEAD || echo 'detached HEAD')); pushing the gated $local_head_sha regardless\" >&2"
+        }
+      ]
+    },
+    "git/scripts/poll-pr-review.sh": {
+      "hash": "adb85d6fa1ea833f3e0c73c44b8357ad96f18f4f4a4d178f1df259cb393de933",
+      "killed": 29,
+      "mutants": 35,
+      "ran_at": "2026-11-26T15:07:00Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 21,
+          "line_hash": "c1e34e41cb30",
+          "occurrence": 0,
+          "op": "lt-to-le",
+          "text": "if [[ $# -lt 1 || $# -gt 2 ]]; then"
+        },
+        {
+          "line": 61,
+          "line_hash": "80d93775d7a1",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "if [[ $page_count -gt $max_pages ]]; then"
+        },
+        {
+          "line": 63,
+          "line_hash": "43cd48d807a6",
+          "occurrence": 1,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 85,
+          "line_hash": "0e46cb47e1b3",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "| select(.isResolved == false)"
+        },
+        {
+          "line": 93,
+          "line_hash": "4fe13c93a9f1",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "pageinfo_line=\"$(grep $'^__PAGEINFO__\\t' <<<\"$page_tsv\")\" || true"
+        },
+        {
+          "line": 94,
+          "line_hash": "06291f54f51d",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "page_rows=\"$(grep -v $'^__PAGEINFO__\\t' <<<\"$page_tsv\")\" || true"
+        }
+      ]
+    },
+    "git/scripts/pr-description.sh": {
+      "hash": "3dc99ae01ab6664e4316ec94ad612f6b4a48a7b8884387cdc5f34c678efdd747",
+      "killed": 14,
+      "mutants": 16,
+      "ran_at": "2026-11-26T15:07:14Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 49,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 2,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 63,
+          "line_hash": "2b77965ea703",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "if [[ ! -f \"$title_file\" || ! -f \"$body_file\" ]]; then"
+        }
+      ]
+    },
+    "git/scripts/pr-status.sh": {
+      "hash": "ef2910bb1efea11601793f061aee876cd2f3235f7cdd420a4e50d425063eadfb",
+      "killed": 28,
+      "mutants": 38,
+      "ran_at": "2026-11-26T15:07:23Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 20,
+          "line_hash": "c1e34e41cb30",
+          "occurrence": 0,
+          "op": "lt-to-le",
+          "text": "if [[ $# -lt 1 || $# -gt 2 ]]; then"
+        },
+        {
+          "line": 53,
+          "line_hash": "80d93775d7a1",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "if [[ $page_count -gt $max_pages ]]; then"
+        },
+        {
+          "line": 55,
+          "line_hash": "43cd48d807a6",
+          "occurrence": 1,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 91,
+          "line_hash": "4fe13c93a9f1",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "pageinfo_line=\"$(grep $'^__PAGEINFO__\\t' <<<\"$page_tsv\")\" || true"
+        },
+        {
+          "line": 92,
+          "line_hash": "06291f54f51d",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "page_rows=\"$(grep -v $'^__PAGEINFO__\\t' <<<\"$page_tsv\")\" || true"
+        },
+        {
+          "line": 96,
+          "line_hash": "43cd48d807a6",
+          "occurrence": 3,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 103,
+          "line_hash": "43cd48d807a6",
+          "occurrence": 4,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 126,
+          "line_hash": "f81dc6139b11",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "[[ \"$is_outdated\" == \"true\" ]] && outdated_note=\" [outdated: code has changed since]\""
+        },
+        {
+          "line": 126,
+          "line_hash": "f81dc6139b11",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ \"$is_outdated\" == \"true\" ]] && outdated_note=\" [outdated: code has changed since]\""
+        },
+        {
+          "line": 130,
+          "line_hash": "c7bb57e7d676",
+          "occurrence": 0,
+          "op": "eq-to-ne",
+          "text": "if [[ $thread_count -eq 0 ]]; then"
+        }
+      ]
+    },
+    "git/scripts/rebase-onto-default.sh": {
+      "hash": "7ff17c4323355e15bdf35df748650af0fae1336fc1b13e2ea42d213a9dbde875",
+      "killed": 23,
+      "mutants": 28,
+      "ran_at": "2026-11-26T15:07:24Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 64,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 5,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 89,
+          "line_hash": "1b7ccaad7315",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "if [[ \"$dropped\" -gt 0 ]]; then"
+        },
+        {
+          "line": 93,
+          "line_hash": "0ce4ff9f0a67",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if [[ \"$(git config --get commit.gpgsign || echo false)\" == \"true\" ]]; then"
+        },
+        {
+          "line": 93,
+          "line_hash": "0ce4ff9f0a67",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "if [[ \"$(git config --get commit.gpgsign || echo false)\" == \"true\" ]]; then"
+        },
+        {
+          "line": 94,
+          "line_hash": "b0126ac8eafd",
+          "occurrence": 0,
+          "op": "drop-if-not",
+          "text": "if ! \"$script_dir/verify-signed.sh\" \"origin/$default_branch..HEAD\"; then"
+        }
+      ]
+    },
+    "git/scripts/reply-threads.sh": {
+      "hash": "0285cc3c4ff596df118047c3615f8044a97493d8557e8ceee9a7199ae6c84ae9",
+      "killed": 10,
+      "mutants": 11,
+      "ran_at": "2026-11-26T15:07:34Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 33,
+          "line_hash": "36bcd51a6943",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "while IFS=$'\\t' read -r thread_id resolve body || [[ -n \"$thread_id\" ]]; do"
+        }
+      ]
+    },
+    "git/scripts/verify-signed.sh": {
+      "hash": "d1d1594c4e778e2af6f0baf9d2382c7cb853a7c0d669fe4324e419b33b15b7fc",
+      "killed": 7,
+      "mutants": 7,
+      "ran_at": "2026-11-26T15:07:47Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "git/scripts/watch-pr.sh": {
+      "hash": "5a412b6c44fd7059bd68c8d73059ab912ab1be02b3fcdd9d7c049204b3b01a5d",
+      "killed": 33,
+      "mutants": 36,
+      "ran_at": "2026-11-26T15:07:52Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 94,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 2,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 106,
+          "line_hash": "b585bc53aaa9",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "current_branch=\"$(git symbolic-ref --short -q HEAD || true)\""
+        },
+        {
+          "line": 109,
+          "line_hash": "43cd48d807a6",
+          "occurrence": 1,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        }
+      ]
+    },
+    "local-llm-setup/scripts/lib.sh": {
+      "hash": "4cb913ac7fe8720858491d6d89f21e86e4eb1f008f648532e93fdcdc5ceedca9",
+      "killed": 5,
+      "mutants": 14,
+      "ran_at": "2026-11-26T15:08:50Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 6,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 18,
+          "line_hash": "6443e4659ae1",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")/../..\" 2>/dev/null && pwd)/delegation/scripts\"; do"
+        },
+        {
+          "line": 19,
+          "line_hash": "bfc791be6aad",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$candidate\" && -x \"$candidate/switch-local-profile.sh\" ]]; then"
+        },
+        {
+          "line": 33,
+          "line_hash": "a07600e2ebd9",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -r \"$dir/mem_info_vram_total\" && -r \"$dir/mem_info_vram_used\" ]] || continue"
+        },
+        {
+          "line": 56,
+          "line_hash": "824d72a3fac8",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "\"$scripts/stop-local-profile.sh\" >/dev/null 2>&1 || true"
+        },
+        {
+          "line": 58,
+          "line_hash": "2fb87bb1e5a3",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "kill \"$(cat \"$state/queue-worker.pid\")\" 2>/dev/null || true"
+        },
+        {
+          "line": 67,
+          "line_hash": "d18d9f2c21db",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if [[ \"$engine\" == new ]]; then"
+        },
+        {
+          "line": 68,
+          "line_hash": "86af8645adbc",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -n \"${LLAMA_BIN_DIR:-}\" && -x \"$LLAMA_BIN_DIR/llama-server\" ]] ||"
+        },
+        {
+          "line": 68,
+          "line_hash": "86af8645adbc",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "[[ -n \"${LLAMA_BIN_DIR:-}\" && -x \"$LLAMA_BIN_DIR/llama-server\" ]] ||"
+        }
+      ]
+    },
+    "project-management/scripts/backends/github/_gh.sh": {
+      "hash": "b36c3354b33b200c4b98a1bfe0d8fd807f11cb3b63464f7ab10188255e3a3d1d",
+      "killed": 3,
+      "mutants": 3,
+      "ran_at": "2026-11-26T15:08:51Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "project-management/scripts/backends/github/list.sh": {
+      "hash": "e6faf9d09f2f0c39f6d79db335c12720a55f413ad0428d4424cfd063ed2dbd90",
+      "killed": 1,
+      "mutants": 1,
+      "ran_at": "2026-11-26T15:09:07Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "project-management/scripts/backends/github/show.sh": {
+      "hash": "832d8926d644b657d99e8aff86092e02688c3c5ee6aa917ad159ed5cc92bf62a",
+      "killed": 2,
+      "mutants": 2,
+      "ran_at": "2026-11-26T15:09:08Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "project-management/scripts/backends/github/status.sh": {
+      "hash": "ff09176aa473cc3562805f17206f3646f380b134602c529b5d9fc7d7ee93ce0f",
+      "killed": 3,
+      "mutants": 4,
+      "ran_at": "2026-11-26T15:09:18Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 18,
+          "line_hash": "091c76506630",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "stale=\"$(jq -r '[.[] | select(.state == \"OPEN\" and .updatedAt < (now - 1209600 | strftime(\"%Y-%m-%dT%H:%M:%SZ\")))] | length' <<<\"$json\")\""
+        }
+      ]
+    },
+    "project-management/scripts/backends/github/sync-plan.sh": {
+      "hash": "d83ddf95c9a873d3e66fa93087a776159ae2391851fd43f8f025029760b5ec55",
+      "killed": 36,
+      "mutants": 39,
+      "ran_at": "2026-11-26T15:09:25Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 42,
+          "line_hash": "6af69b8d147d",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -n $file && -f $file ]] || pm_die \"sync-plan: need an existing tasks file\""
+        },
+        {
+          "line": 53,
+          "line_hash": "179a1c3d68e0",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if [[ -n $top && $abs_dir == \"$top\"/* ]]; then"
+        },
+        {
+          "line": 69,
+          "line_hash": "2a529349cb52",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "total=\"$(printf '%s\\n' \"$rows\" | grep -c . || true)\""
+        }
+      ]
+    },
+    "project-management/scripts/backends/github/update.sh": {
+      "hash": "6b241ceebd9fbd2dad8aab524da4fb37b5ecbe625b7c5e83b99ad586fd668d77",
+      "killed": 17,
+      "mutants": 17,
+      "ran_at": "2026-11-26T15:09:35Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "project-management/scripts/backends/local/_local.sh": {
+      "hash": "39dc17c34852af5291e646da383dc7311e4318ef07689d4c3aba6de704d4b371",
+      "killed": 4,
+      "mutants": 4,
+      "ran_at": "2026-11-26T15:09:39Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "project-management/scripts/backends/local/list.sh": {
+      "hash": "6929dd68a90aa9e57ff99781d8bdb8c8a0d5e86942c292691e12d2015d8bac4a",
+      "killed": 1,
+      "mutants": 1,
+      "ran_at": "2026-11-26T15:09:45Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "project-management/scripts/backends/local/show.sh": {
+      "hash": "3314967607eeab96bf49ae1a012a7b903b5f40ec090a5c653a19b329a582e750",
+      "killed": 6,
+      "mutants": 6,
+      "ran_at": "2026-11-26T15:09:47Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "project-management/scripts/backends/local/status.sh": {
+      "hash": "492f9a17c602f349e15bc2c15473b179c649a77c75519badac1e603d31cfb55d",
+      "killed": 3,
+      "mutants": 3,
+      "ran_at": "2026-11-26T15:09:49Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "project-management/scripts/backends/local/sync-plan.sh": {
+      "hash": "f019d661cde9fde02f7bc040deffeab5e4a4f7ee4d14fe8f3f52cae24701c428",
+      "killed": 5,
+      "mutants": 6,
+      "ran_at": "2026-11-26T15:09:49Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 36,
+          "line_hash": "6c651c124fbb",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ -n $file && -f $file ]] || pm_die \"sync-plan: need an existing plan file\""
+        }
+      ]
+    },
+    "project-management/scripts/backends/local/update.sh": {
+      "hash": "fdb57edaa7ac700f41566914874a04aeb488678e0f1d7fda76bfb8af60769dd2",
+      "killed": 10,
+      "mutants": 10,
+      "ran_at": "2026-11-26T15:09:53Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "project-management/scripts/lib/common.sh": {
+      "hash": "e303bc20b4b15366b77ecb64e27402c00877eaada206bdf9eedeb13cc501a1c1",
+      "killed": 12,
+      "mutants": 16,
+      "ran_at": "2026-11-26T15:09:54Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 16,
+          "line_hash": "a02e0016e9ad",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "command -v \"$t\" >/dev/null 2>&1 || pm_die \"required tool not found: $t\""
+        },
+        {
+          "line": 22,
+          "line_hash": "447b66abeda3",
+          "occurrence": 0,
+          "op": "ge-to-gt",
+          "text": "[[ $# -ge 2 ]] || pm_die \"${1:-flag} needs a value\""
+        },
+        {
+          "line": 22,
+          "line_hash": "447b66abeda3",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ $# -ge 2 ]] || pm_die \"${1:-flag} needs a value\""
+        },
+        {
+          "line": 80,
+          "line_hash": "46f22e4b9ebe",
+          "occurrence": 1,
+          "op": "return1-to-return0",
+          "text": "return 1"
+        }
+      ]
+    },
+    "project-management/scripts/lib/tasks-md.sh": {
+      "hash": "50352c6ff92fb5ea4d1f520745d0ca16cfb44d3015f7235477fac449c5e2c08d",
+      "killed": 8,
+      "mutants": 10,
+      "ran_at": "2026-11-26T15:09:57Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 62,
+          "line_hash": "1032dc6dc73a",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "cat \"$tmp\" >\"$file\" || rc=$?"
+        },
+        {
+          "line": 72,
+          "line_hash": "c189d3ffafbc",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -s $file && -n \"$(tail -c1 \"$file\")\" ]]; then"
+        }
+      ]
+    },
+    "project-management/scripts/lib/tsv.sh": {
+      "hash": "f26b2b6593a476f00aea923a1419ac20642c594a16143cb3efce8d03cd811f30",
+      "killed": 23,
+      "mutants": 29,
+      "ran_at": "2026-11-26T15:09:58Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 43,
+          "line_hash": "b9fc42b06de2",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if ($2 == \"open\") isopen[$1] = 1 }"
+        },
+        {
+          "line": 50,
+          "line_hash": "6140f65da783",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "for (k = 1; k <= m; k++) if (d[k] != \"\" && (d[k] in isopen)) blk = 1"
+        },
+        {
+          "line": 53,
+          "line_hash": "342556a93f72",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "kd = (du[i] == \"\") ? \"9999\" : du[i]"
+        },
+        {
+          "line": 54,
+          "line_hash": "43ef22300b8b",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if (!have || kp < bp || (kp == bp && kd < bd)) { have = 1; bp = kp; bd = kd; bid = id[i]; bti = ti[i] }"
+        },
+        {
+          "line": 54,
+          "line_hash": "43ef22300b8b",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if (!have || kp < bp || (kp == bp && kd < bd)) { have = 1; bp = kp; bd = kd; bid = id[i]; bti = ti[i] }"
+        },
+        {
+          "line": 54,
+          "line_hash": "43ef22300b8b",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "if (!have || kp < bp || (kp == bp && kd < bd)) { have = 1; bp = kp; bd = kd; bid = id[i]; bti = ti[i] }"
+        }
+      ]
+    },
+    "project-management/scripts/lint-aliases.sh": {
+      "hash": "6289d7bd7e10527139bea42dce7c83c7818708c0aebbd619838ca1adee325e60",
+      "killed": 9,
+      "mutants": 10,
+      "ran_at": "2026-11-26T15:10:02Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 6,
+          "line_hash": "8de477b6234b",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "script_dir=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\""
+        }
+      ]
+    },
+    "repo-audit/scripts/checks/branch-protection.sh": {
+      "hash": "13e2d198d0f130ac5be52f0b15a113fddc516e8180ccbb4ec85a586af737906e",
+      "killed": 14,
+      "mutants": 17,
+      "ran_at": "2026-11-26T15:10:05Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 87,
+          "line_hash": "a823d46f0df3",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "shift || true"
+        },
+        {
+          "line": 103,
+          "line_hash": "b37c900ec5de",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        },
+        {
+          "line": 141,
+          "line_hash": "cf9050ead156",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if [[ \"$needs_fix\" == \"true\" ]]; then"
+        }
+      ]
+    },
+    "repo-audit/scripts/checks/ci-pipeline.sh": {
+      "hash": "40fa56bda4bf0a60150acdfe4157e66327184191282e82a7ac0e9b77c2a27c86",
+      "killed": 7,
+      "mutants": 9,
+      "ran_at": "2026-11-26T15:10:07Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 57,
+          "line_hash": "a823d46f0df3",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "shift || true"
+        },
+        {
+          "line": 73,
+          "line_hash": "b37c900ec5de",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        }
+      ]
+    },
+    "repo-audit/scripts/checks/dependency-updates.sh": {
+      "hash": "31b6e62b62bbde4fb44e77dd685e7d1c2f36c1d34893161908afa46ae9bcd53f",
+      "killed": 11,
+      "mutants": 15,
+      "ran_at": "2026-11-26T15:10:09Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 35,
+          "line_hash": "8a1384d6f4db",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        },
+        {
+          "line": 69,
+          "line_hash": "2692ce4650e2",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "&& grep -qriE 'dependabot/fetch-metadata|pr merge --auto|enable-automerge' \"$target/.github/workflows\" 2>/dev/null"
+        },
+        {
+          "line": 76,
+          "line_hash": "a823d46f0df3",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "shift || true"
+        },
+        {
+          "line": 92,
+          "line_hash": "b37c900ec5de",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        }
+      ]
+    },
+    "repo-audit/scripts/checks/dev-shell.sh": {
+      "hash": "65e85a23c56e4ad0444b3dffae80ce868f2d106cf73927f2d3699dfa2bc23c6d",
+      "killed": 5,
+      "mutants": 8,
+      "ran_at": "2026-11-26T15:10:10Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 30,
+          "line_hash": "a823d46f0df3",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "shift || true"
+        },
+        {
+          "line": 42,
+          "line_hash": "b37c900ec5de",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        },
+        {
+          "line": 66,
+          "line_hash": "2aecbabd2d6a",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -f \"$target/.envrc\" ]] && grep -qE '^use (flake|nix)|nix print-dev-env|nix develop' \"$target/.envrc\"; then"
+        }
+      ]
+    },
+    "repo-audit/scripts/checks/pre-commit.sh": {
+      "hash": "efc78d2b719e5e5818d763d080f9bc672a6945fa350629f30f6723c1ca390900",
+      "killed": 7,
+      "mutants": 14,
+      "ran_at": "2026-11-26T15:10:11Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 31,
+          "line_hash": "8a1384d6f4db",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        },
+        {
+          "line": 34,
+          "line_hash": "53c12eb94604",
+          "occurrence": 0,
+          "op": "return1-to-return0",
+          "text": "return 1"
+        },
+        {
+          "line": 44,
+          "line_hash": "631768978431",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "&& rg -l -i 'pre-commit run|pre-commit\\.ci|lefthook run' \"$target/.github/workflows\" 2>/dev/null | grep -q .; then"
+        },
+        {
+          "line": 54,
+          "line_hash": "a823d46f0df3",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "shift || true"
+        },
+        {
+          "line": 57,
+          "line_hash": "913022a0f42e",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "[[ \"$arg\" == \"--fix\" ]] && DO_FIX=true"
+        },
+        {
+          "line": 57,
+          "line_hash": "913022a0f42e",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ \"$arg\" == \"--fix\" ]] && DO_FIX=true"
+        },
+        {
+          "line": 69,
+          "line_hash": "b37c900ec5de",
+          "occurrence": 2,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        }
+      ]
+    },
+    "repo-audit/scripts/checks/release-management.sh": {
+      "hash": "92579a96b39368384f61c95a1a2519f0b6bd6cb2bfb8b83ad5ebee2e9f260e5d",
+      "killed": 11,
+      "mutants": 18,
+      "ran_at": "2026-11-26T15:10:12Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 22,
+          "line_hash": "2e68bbfd072b",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "&& rg -l -i 'release-please|semantic-release' \"$target/.github/workflows\" 2>/dev/null | grep -q .; then"
+        },
+        {
+          "line": 25,
+          "line_hash": "b10abc4f4dae",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "[[ -f \"$target/release-please-config.json\" ]] && return 0"
+        },
+        {
+          "line": 26,
+          "line_hash": "81fc992c8ec5",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ -f \"$target/.releaserc\" || -f \"$target/.releaserc.json\" || -f \"$target/.releaserc.yaml\" ]] && return 0"
+        },
+        {
+          "line": 26,
+          "line_hash": "81fc992c8ec5",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "[[ -f \"$target/.releaserc\" || -f \"$target/.releaserc.json\" || -f \"$target/.releaserc.yaml\" ]] && return 0"
+        },
+        {
+          "line": 26,
+          "line_hash": "81fc992c8ec5",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "[[ -f \"$target/.releaserc\" || -f \"$target/.releaserc.json\" || -f \"$target/.releaserc.yaml\" ]] && return 0"
+        },
+        {
+          "line": 34,
+          "line_hash": "8855bfe038fd",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "conventional=$(grep -cE '^(feat|fix|chore|docs|refactor|test|build|ci|perf|style)(\\(.+\\))?!?:' <<<\"$subjects\" || true)"
+        },
+        {
+          "line": 42,
+          "line_hash": "a823d46f0df3",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "shift || true"
+        }
+      ]
+    },
+    "repo-audit/scripts/checks/secret-scanning.sh": {
+      "hash": "31e470d6a2db23e1af6eb2b568f9b98753063a66538ba07a3d1c6d2ec0773dea",
+      "killed": 5,
+      "mutants": 6,
+      "ran_at": "2026-11-26T15:10:13Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 39,
+          "line_hash": "e4e5ec154678",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "if [[ ${#search_paths[@]} -gt 0 ]] \\"
+        }
+      ]
+    },
+    "repo-audit/scripts/lib/forge.sh": {
+      "hash": "276718b8cef7366af1365d9031ddae5ec93673c154a32b80216938c0eebb7796",
+      "killed": 4,
+      "mutants": 8,
+      "ran_at": "2026-11-26T15:10:13Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 20,
+          "line_hash": "a823d46f0df3",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "shift || true"
+        },
+        {
+          "line": 33,
+          "line_hash": "08a27b9533ec",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "remote_url=\"$(git -C \"$target\" remote get-url origin 2>/dev/null || true)\""
+        },
+        {
+          "line": 34,
+          "line_hash": "fe13360eede8",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "elif [[ \"$target\" == /* || \"$target\" == .* ]]; then"
+        },
+        {
+          "line": 62,
+          "line_hash": "70896c76db26",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "url=\"$(git -C \"$target\" remote get-url origin 2>/dev/null || true)\""
+        }
+      ]
+    },
+    "repo-audit/scripts/lib/github.sh": {
+      "hash": "bb34b8f5e59639c6708214cabbe0b1b94c0801125b1c179688631f614219b943",
+      "killed": 2,
+      "mutants": 6,
+      "ran_at": "2026-11-26T15:10:14Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 36,
+          "line_hash": "ec85d6a3f09c",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "payload=$(jq -n --arg pp \"$with_push_protection\" '{"
+        },
+        {
+          "line": 39,
+          "line_hash": "3232d181df6c",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "secret_scanning_push_protection: {status: (if $pp == \"true\" then \"enabled\" else \"disabled\" end)}"
+        },
+        {
+          "line": 50,
+          "line_hash": "6783ffce20cc",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "gh api \"repos/$TARGET_REPO/contents/.github/workflows\" --jq '.[].name' 2>/dev/null || true"
+        },
+        {
+          "line": 62,
+          "line_hash": "c612807cbd4c",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "gh api \"repos/$TARGET_REPO/releases\" --jq '.[] | {tag: .tag_name, published_at: .published_at}' 2>/dev/null || true"
+        }
+      ]
+    },
+    "repo-audit/scripts/lib/gitlab.sh": {
+      "hash": "3b7878a4b5b59537e30141368ddcc93689c68027b11b3fd669ac3471d6661158",
+      "killed": 0,
+      "mutants": 0,
+      "ran_at": "2026-11-26T15:10:15Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "repo-audit/scripts/lib/report.sh": {
+      "hash": "702f2cbdf3f70d630259012ac3030ba1b55b484f3085d5f3960e0b5dbfc63bc8",
+      "killed": 1,
+      "mutants": 2,
+      "ran_at": "2026-11-26T15:10:15Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 14,
+          "line_hash": "ece3488d9091",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"${2:-}\" ]]; then"
+        }
+      ]
+    },
+    "skill-authoring/scripts/check-currency.sh": {
+      "hash": "1c9753130f6f32163ecbd2be183bfb0ef369c4688dc1235124ba2ac726152138",
+      "killed": 39,
+      "mutants": 39,
+      "ran_at": "2026-11-26T15:10:15Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "skill-authoring/scripts/check-triggers.sh": {
+      "hash": "cdb20d48b33ccbeda68d4c9d5901a3f3c8e3799df18c6ca1422e5b9c6b44b889",
+      "killed": 22,
+      "mutants": 24,
+      "ran_at": "2026-11-26T15:10:15Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 25,
+          "line_hash": "efce042d02d8",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "skills_dir=\"${1:-\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")/../..\" && pwd)\"}\""
+        },
+        {
+          "line": 40,
+          "line_hash": "bae19f076d65",
+          "occurrence": 1,
+          "op": "streq-to-strne",
+          "text": "if [[ \"$suffix\" == ing || \"$suffix\" == ed ]] && [[ \"${stem: -1}\" == \"${stem: -2:1}\" ]] && [[ \"${stem: -1}\" != [aeiouslzf] ]]; then"
+        }
+      ]
+    },
+    "skill-authoring/scripts/eval-triggers.sh": {
+      "hash": "bc4643591a2e2635b533f7ada372fc65d5c1f91ce490768d92b56990ed0ba66f",
+      "killed": 29,
+      "mutants": 37,
+      "ran_at": "2026-11-26T15:10:16Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 40,
+          "line_hash": "ff862696fad8",
+          "occurrence": 0,
+          "op": "lt-to-le",
+          "text": "if [[ $# -lt 2 ]]; then"
+        },
+        {
+          "line": 42,
+          "line_hash": "36a08d157d0b",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 52,
+          "line_hash": "ff862696fad8",
+          "occurrence": 1,
+          "op": "lt-to-le",
+          "text": "if [[ $# -lt 2 ]]; then"
+        },
+        {
+          "line": 54,
+          "line_hash": "36a08d157d0b",
+          "occurrence": 1,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 73,
+          "line_hash": "36a08d157d0b",
+          "occurrence": 2,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 83,
+          "line_hash": "2ba1c5767713",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 87,
+          "line_hash": "8de477b6234b",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "script_dir=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\""
+        },
+        {
+          "line": 89,
+          "line_hash": "297fc31fdd40",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "skills_dir=\"$(cd \"$script_dir/../..\" && pwd)\""
+        }
+      ]
+    },
+    "skill-authoring/scripts/lint-skills.sh": {
+      "hash": "bd18646e181b23ccd42a7d4a45611e4820b9d233038d3e791625a1076cefb754",
+      "killed": 10,
+      "mutants": 11,
+      "ran_at": "2026-11-26T15:10:43Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 73,
+          "line_hash": "d2b8721a6e87",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "done < <(prose_only \"$md\" | grep -oE '\\]\\([^)]+\\)' | sed -e 's/^](//' -e 's/)$//' || true)"
+        }
+      ]
+    },
+    "skill-authoring/scripts/mutate-scripts.sh": {
+      "hash": "5f9b5139065627b3530c8c660d2c5e34f2eda6ac776d1475266e1451c6d4ddfa",
+      "killed": 89,
+      "mutants": 140,
+      "ran_at": "2026-11-26T15:11:03Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 20,
+          "line_hash": "b2295ba22e8a",
+          "occurrence": 0,
+          "op": "eq-to-ne",
+          "text": "$'eq-to-ne\\t -eq \\t -ne \\t0'"
+        },
+        {
+          "line": 21,
+          "line_hash": "9e144aa4e325",
+          "occurrence": 0,
+          "op": "eq-to-ne",
+          "text": "$'ne-to-eq\\t -ne \\t -eq \\t0'"
+        },
+        {
+          "line": 23,
+          "line_hash": "f8707ddddc27",
+          "occurrence": 0,
+          "op": "lt-to-le",
+          "text": "$'le-to-lt\\t -le \\t -lt \\t0'"
+        },
+        {
+          "line": 24,
+          "line_hash": "67ee7d9bc509",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "$'gt-to-ge\\t -gt \\t -ge \\t0'"
+        },
+        {
+          "line": 24,
+          "line_hash": "67ee7d9bc509",
+          "occurrence": 0,
+          "op": "ge-to-gt",
+          "text": "$'gt-to-ge\\t -gt \\t -ge \\t0'"
+        },
+        {
+          "line": 25,
+          "line_hash": "ed0a1814a7ab",
+          "occurrence": 0,
+          "op": "gt-to-ge",
+          "text": "$'ge-to-gt\\t -ge \\t -gt \\t0'"
+        },
+        {
+          "line": 25,
+          "line_hash": "ed0a1814a7ab",
+          "occurrence": 0,
+          "op": "ge-to-gt",
+          "text": "$'ge-to-gt\\t -ge \\t -gt \\t0'"
+        },
+        {
+          "line": 26,
+          "line_hash": "40a1d22ee677",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "$'streq-to-strne\\t == \\t != \\t0'"
+        },
+        {
+          "line": 26,
+          "line_hash": "40a1d22ee677",
+          "occurrence": 0,
+          "op": "strne-to-streq",
+          "text": "$'streq-to-strne\\t == \\t != \\t0'"
+        },
+        {
+          "line": 27,
+          "line_hash": "a3b4caad11e5",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "$'strne-to-streq\\t != \\t == \\t0'"
+        },
+        {
+          "line": 27,
+          "line_hash": "a3b4caad11e5",
+          "occurrence": 0,
+          "op": "strne-to-streq",
+          "text": "$'strne-to-streq\\t != \\t == \\t0'"
+        },
+        {
+          "line": 28,
+          "line_hash": "e4aefafb52a1",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "$'and-to-or\\t && \\t || \\t0'"
+        },
+        {
+          "line": 28,
+          "line_hash": "e4aefafb52a1",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "$'and-to-or\\t && \\t || \\t0'"
+        },
+        {
+          "line": 29,
+          "line_hash": "2910f2d29511",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "$'or-to-and\\t || \\t && \\t0'"
+        },
+        {
+          "line": 29,
+          "line_hash": "2910f2d29511",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "$'or-to-and\\t || \\t && \\t0'"
+        },
+        {
+          "line": 30,
+          "line_hash": "b8bac7835564",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "$'z-to-n\\t -z \\t -n \\t0'"
+        },
+        {
+          "line": 30,
+          "line_hash": "b8bac7835564",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "$'z-to-n\\t -z \\t -n \\t0'"
+        },
+        {
+          "line": 31,
+          "line_hash": "b40a8820efeb",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "$'n-to-z\\t -n \\t -z \\t0'"
+        },
+        {
+          "line": 31,
+          "line_hash": "b40a8820efeb",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "$'n-to-z\\t -n \\t -z \\t0'"
+        },
+        {
+          "line": 36,
+          "line_hash": "472bb37b51a7",
+          "occurrence": 0,
+          "op": "drop-test-not",
+          "text": "$'drop-test-not\\t[[ ! \\t[[ \\t0'"
+        },
+        {
+          "line": 47,
+          "line_hash": "8de477b6234b",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "script_dir=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\""
+        },
+        {
+          "line": 86,
+          "line_hash": "8c1b6f0c0503",
+          "occurrence": 4,
+          "op": "or-to-and",
+          "text": "(($# >= 2)) || usage"
+        },
+        {
+          "line": 118,
+          "line_hash": "1073cd11ae6e",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "root_dir=\"$(cd \"$script_dir/../..\" && pwd)\""
+        },
+        {
+          "line": 164,
+          "line_hash": "8159003f814f",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "[[ -n \"$key\" ]] || continue"
+        },
+        {
+          "line": 164,
+          "line_hash": "8159003f814f",
+          "occurrence": 1,
+          "op": "n-to-z",
+          "text": "[[ -n \"$key\" ]] || continue"
+        },
+        {
+          "line": 245,
+          "line_hash": "61479173cea0",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "($acc | any(.script == $s and .op == $surv.op and .line_hash == $surv.line_hash and .occurrence == $surv.occurrence)) | not"
+        },
+        {
+          "line": 245,
+          "line_hash": "61479173cea0",
+          "occurrence": 1,
+          "op": "streq-to-strne",
+          "text": "($acc | any(.script == $s and .op == $surv.op and .line_hash == $surv.line_hash and .occurrence == $surv.occurrence)) | not"
+        },
+        {
+          "line": 245,
+          "line_hash": "61479173cea0",
+          "occurrence": 2,
+          "op": "streq-to-strne",
+          "text": "($acc | any(.script == $s and .op == $surv.op and .line_hash == $surv.line_hash and .occurrence == $surv.occurrence)) | not"
+        },
+        {
+          "line": 245,
+          "line_hash": "61479173cea0",
+          "occurrence": 3,
+          "op": "streq-to-strne",
+          "text": "($acc | any(.script == $s and .op == $surv.op and .line_hash == $surv.line_hash and .occurrence == $surv.occurrence)) | not"
+        },
+        {
+          "line": 255,
+          "line_hash": "b34dd8d20945",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "select(($acc | any(.script == $s and .op == $surv.op and .line_hash == $surv.line_hash and .occurrence == $surv.occurrence)) | not)"
+        },
+        {
+          "line": 255,
+          "line_hash": "b34dd8d20945",
+          "occurrence": 1,
+          "op": "streq-to-strne",
+          "text": "select(($acc | any(.script == $s and .op == $surv.op and .line_hash == $surv.line_hash and .occurrence == $surv.occurrence)) | not)"
+        },
+        {
+          "line": 255,
+          "line_hash": "b34dd8d20945",
+          "occurrence": 2,
+          "op": "streq-to-strne",
+          "text": "select(($acc | any(.script == $s and .op == $surv.op and .line_hash == $surv.line_hash and .occurrence == $surv.occurrence)) | not)"
+        },
+        {
+          "line": 255,
+          "line_hash": "b34dd8d20945",
+          "occurrence": 3,
+          "op": "streq-to-strne",
+          "text": "select(($acc | any(.script == $s and .op == $surv.op and .line_hash == $surv.line_hash and .occurrence == $surv.occurrence)) | not)"
+        },
+        {
+          "line": 266,
+          "line_hash": "d117d996ba83",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "while IFS= read -r line || [[ -n \"$line\" ]]; do"
+        },
+        {
+          "line": 286,
+          "line_hash": "7753516b2872",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if [[ \"$check_line\" == \"$heredoc_word\" ]]; then"
+        },
+        {
+          "line": 307,
+          "line_hash": "8f164fae1710",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if [[ \"${BASH_REMATCH[1]}\" == \"-\" ]]; then"
+        },
+        {
+          "line": 337,
+          "line_hash": "6aebecf94ecc",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ \"$next_ch\" != \" \" && \"$next_ch\" != \";\" && \"$next_ch\" != \")\" ]]; then"
+        },
+        {
+          "line": 337,
+          "line_hash": "6aebecf94ecc",
+          "occurrence": 1,
+          "op": "and-to-or",
+          "text": "if [[ \"$next_ch\" != \" \" && \"$next_ch\" != \";\" && \"$next_ch\" != \")\" ]]; then"
+        },
+        {
+          "line": 359,
+          "line_hash": "d117d996ba83",
+          "occurrence": 1,
+          "op": "or-to-and",
+          "text": "while IFS= read -r line || [[ -n \"$line\" ]]; do"
+        },
+        {
+          "line": 389,
+          "line_hash": "8507225d151b",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "(cd \"$test_dir\" && timeout \"$timeout_secs\" bash \"$test_base\" >/dev/null 2>&1) || rc=$?"
+        },
+        {
+          "line": 389,
+          "line_hash": "8507225d151b",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "(cd \"$test_dir\" && timeout \"$timeout_secs\" bash \"$test_base\" >/dev/null 2>&1) || rc=$?"
+        },
+        {
+          "line": 438,
+          "line_hash": "4fe37b7eb785",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "while IFS= read -r l || [[ -n \"$l\" ]]; do"
+        },
+        {
+          "line": 533,
+          "line_hash": "11e9a8826b35",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "if ((${#filter_scripts[@]} > 0)) && [[ -z \"${in_filter[$script_rel]:-}\" ]]; then"
+        },
+        {
+          "line": 541,
+          "line_hash": "11e9a8826b35",
+          "occurrence": 1,
+          "op": "z-to-n",
+          "text": "if ((${#filter_scripts[@]} > 0)) && [[ -z \"${in_filter[$script_rel]:-}\" ]]; then"
+        },
+        {
+          "line": 577,
+          "line_hash": "016bb8855dc8",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if [[ \"$base_status\" == \"not-tested\" ]]; then"
+        },
+        {
+          "line": 596,
+          "line_hash": "1aea2dde870b",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"${results_dir:-}\" && -d \"$results_dir\" ]]; then"
+        },
+        {
+          "line": 596,
+          "line_hash": "1aea2dde870b",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"${results_dir:-}\" && -d \"$results_dir\" ]]; then"
+        },
+        {
+          "line": 649,
+          "line_hash": "2d28a51ecfe5",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "if ((jobs_count == 1)); then"
+        },
+        {
+          "line": 655,
+          "line_hash": "f71348adfc00",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "wait -n || true"
+        },
+        {
+          "line": 655,
+          "line_hash": "f71348adfc00",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "wait -n || true"
+        },
+        {
+          "line": 662,
+          "line_hash": "e754cbf8ee5f",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "wait || true"
+        }
+      ]
+    },
+    "skill-authoring/scripts/raise-currency-issue.sh": {
+      "hash": "be8a8018e28e72d1adb0f4ea6d1501fa85d5575e95866cf43da6f31d54e31121",
+      "killed": 21,
+      "mutants": 26,
+      "ran_at": "2026-11-26T15:11:05Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 17,
+          "line_hash": "c0d3e87e37f3",
+          "occurrence": 0,
+          "op": "ge-to-gt",
+          "text": "[[ $# -ge 2 ]] || { echo \"error: --repo requires an argument\" >&2; exit 2; }"
+        },
+        {
+          "line": 26,
+          "line_hash": "27c10b708f9e",
+          "occurrence": 0,
+          "op": "ge-to-gt",
+          "text": "[[ $# -ge 2 ]] || { echo \"error: --registry requires a file\" >&2; exit 2; }"
+        },
+        {
+          "line": 47,
+          "line_hash": "4f2877a45fd8",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "if [[ -z \"$today\" ]]; then"
+        },
+        {
+          "line": 82,
+          "line_hash": "635e07543cef",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "if [[ -n \"$body_file\" && -f \"$body_file\" ]]; then"
+        },
+        {
+          "line": 82,
+          "line_hash": "635e07543cef",
+          "occurrence": 0,
+          "op": "n-to-z",
+          "text": "if [[ -n \"$body_file\" && -f \"$body_file\" ]]; then"
+        }
+      ]
+    },
+    "skill-authoring/scripts/run-behaviour-evals.sh": {
+      "hash": "f0130f1f432f11dc1af69521e9d43ea72c6cbbb0c9ca12a488ddf0100879073f",
+      "killed": 25,
+      "mutants": 35,
+      "ran_at": "2026-11-26T15:11:07Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 19,
+          "line_hash": "8de477b6234b",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "script_dir=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\""
+        },
+        {
+          "line": 20,
+          "line_hash": "eea1fbf024c8",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "skills_dir=\"$(cd \"$script_dir/../..\" && pwd)\""
+        },
+        {
+          "line": 29,
+          "line_hash": "7598791ed2b5",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "--evals) [[ $# -ge 2 ]] || { usage; exit 1; }; evals_dir=\"$2\"; shift 2 ;;"
+        },
+        {
+          "line": 30,
+          "line_hash": "735197208dad",
+          "occurrence": 0,
+          "op": "ge-to-gt",
+          "text": "--skills) [[ $# -ge 2 ]] || { usage; exit 1; }; skills_dir=\"$2\"; shift 2 ;;"
+        },
+        {
+          "line": 30,
+          "line_hash": "735197208dad",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "--skills) [[ $# -ge 2 ]] || { usage; exit 1; }; skills_dir=\"$2\"; shift 2 ;;"
+        },
+        {
+          "line": 32,
+          "line_hash": "6b741a0a3421",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "-*) usage; exit 1 ;;"
+        },
+        {
+          "line": 39,
+          "line_hash": "43cd48d807a6",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        },
+        {
+          "line": 118,
+          "line_hash": "02f990a9db61",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "[[ \"$arg\" == --max-cost-usd || \"$arg\" == --max-cost-usd=* ]] && has_ceiling=1"
+        },
+        {
+          "line": 118,
+          "line_hash": "02f990a9db61",
+          "occurrence": 1,
+          "op": "streq-to-strne",
+          "text": "[[ \"$arg\" == --max-cost-usd || \"$arg\" == --max-cost-usd=* ]] && has_ceiling=1"
+        },
+        {
+          "line": 118,
+          "line_hash": "02f990a9db61",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "[[ \"$arg\" == --max-cost-usd || \"$arg\" == --max-cost-usd=* ]] && has_ceiling=1"
+        }
+      ]
+    },
+    "time-management/scripts/backends/google/plan.sh": {
+      "hash": "5f10e1e41127c340d9a202e8bf05f9a110b3cb94d2134a6a068bdb0863ef566f",
+      "killed": 1,
+      "mutants": 1,
+      "ran_at": "2026-11-26T15:11:29Z",
+      "status": "tested",
+      "survivors": []
+    },
+    "time-management/scripts/backends/ics/plan.sh": {
+      "hash": "a2f30503af2133348edd96cb1c8a0b493da5a5fc55e57bf343f1c0ee14427db6",
+      "killed": 19,
+      "mutants": 21,
+      "ran_at": "2026-11-26T15:11:33Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 81,
+          "line_hash": "b35d31b7665f",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "trap 'rm -rf \"$tmp\"; [[ -z $ics_tmp ]] || rm -f \"$ics_tmp\"' EXIT"
+        },
+        {
+          "line": 81,
+          "line_hash": "b35d31b7665f",
+          "occurrence": 0,
+          "op": "z-to-n",
+          "text": "trap 'rm -rf \"$tmp\"; [[ -z $ics_tmp ]] || rm -f \"$ics_tmp\"' EXIT"
+        }
+      ]
+    },
+    "time-management/scripts/lib/common.sh": {
+      "hash": "7accb59520d96c87f88fd6fcf804c7b411e90f8eea228cf07175d4b745931d53",
+      "killed": 23,
+      "mutants": 24,
+      "ran_at": "2026-11-26T15:11:36Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 91,
+          "line_hash": "e894e71c35f3",
+          "occurrence": 0,
+          "op": "return0-to-return1",
+          "text": "return 0"
+        }
+      ]
+    },
+    "time-management/scripts/lint-aliases.sh": {
+      "hash": "ab26d7943e412b6b1b45204f01924595326c1f969882a5db31df80e6f09c3e70",
+      "killed": 5,
+      "mutants": 10,
+      "ran_at": "2026-11-26T15:11:55Z",
+      "status": "tested",
+      "survivors": [
+        {
+          "line": 6,
+          "line_hash": "8de477b6234b",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "script_dir=\"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)\""
+        },
+        {
+          "line": 18,
+          "line_hash": "85b1d514699f",
+          "occurrence": 0,
+          "op": "or-to-and",
+          "text": "[[ -d $d ]] || continue"
+        },
+        {
+          "line": 39,
+          "line_hash": "62d75df58080",
+          "occurrence": 0,
+          "op": "streq-to-strne",
+          "text": "((i == j)) && continue"
+        },
+        {
+          "line": 39,
+          "line_hash": "62d75df58080",
+          "occurrence": 0,
+          "op": "and-to-or",
+          "text": "((i == j)) && continue"
+        },
+        {
+          "line": 51,
+          "line_hash": "11ef38dce1eb",
+          "occurrence": 0,
+          "op": "exit1-to-exit0",
+          "text": "exit 1"
+        }
+      ]
+    }
+  }
+}

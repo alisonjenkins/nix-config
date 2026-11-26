@@ -1,0 +1,41 @@
+{
+  "version": "1",
+  "pairs": {
+    "delegation/scripts/lib/delegate-telemetry.sh": ["delegation/scripts/tests/delegate-to-gemini.bats"],
+    "delegation/scripts/queue-worker.sh": ["delegation/scripts/tests/queue-common.bats", "delegation/scripts/tests/delegate-to-local.bats"],
+    "delegation/scripts/reset-credits-cooldown.sh": ["delegation/scripts/tests/delegate.bats"],
+    "git/scripts/lib/default-branch.sh": ["git/scripts/tests/merge-onto-default.bats", "git/scripts/tests/rebase-onto-default.bats", "git/scripts/tests/check-no-fixups.bats"],
+    "git/scripts/lib/review-body.sh": ["git/scripts/tests/poll-pr-review.bats"],
+    "local-llm-setup/scripts/lib.sh": ["local-llm-setup/scripts/tests/test-lib.sh"],
+    "project-management/scripts/backends/github/_gh.sh": ["project-management/scripts/tests/github.bats"],
+    "project-management/scripts/backends/github/list.sh": ["project-management/scripts/tests/github.bats"],
+    "project-management/scripts/backends/github/show.sh": ["project-management/scripts/tests/github.bats"],
+    "project-management/scripts/backends/github/status.sh": ["project-management/scripts/tests/github.bats"],
+    "project-management/scripts/backends/github/sync-plan.sh": ["project-management/scripts/tests/github.bats"],
+    "project-management/scripts/backends/github/update.sh": ["project-management/scripts/tests/github.bats"],
+    "project-management/scripts/backends/local/_local.sh": ["project-management/scripts/tests/local.bats"],
+    "project-management/scripts/backends/local/list.sh": ["project-management/scripts/tests/local.bats"],
+    "project-management/scripts/backends/local/show.sh": ["project-management/scripts/tests/local.bats"],
+    "project-management/scripts/backends/local/status.sh": ["project-management/scripts/tests/local.bats"],
+    "project-management/scripts/backends/local/sync-plan.sh": ["project-management/scripts/tests/local.bats"],
+    "project-management/scripts/backends/local/update.sh": ["project-management/scripts/tests/local.bats"],
+    "project-management/scripts/lib/common.sh": ["project-management/scripts/tests/lib.bats", "project-management/scripts/tests/dispatch.bats"],
+    "project-management/scripts/lib/tasks-md.sh": ["project-management/scripts/tests/lib.bats"],
+    "project-management/scripts/lib/tsv.sh": ["project-management/scripts/tests/lib.bats"],
+    "repo-audit/scripts/lib/github.sh": ["repo-audit/scripts/tests/branch-protection.test.sh"],
+    "repo-audit/scripts/lib/gitlab.sh": ["repo-audit/scripts/tests/forge.test.sh"],
+    "time-management/scripts/backends/ics/plan.sh": ["time-management/scripts/tests/tm.bats", "time-management/scripts/tests/ics-out.bats"],
+    "time-management/scripts/backends/google/plan.sh": ["time-management/scripts/tests/tm.bats"],
+    "time-management/scripts/lib/common.sh": ["time-management/scripts/tests/tm.bats"],
+    "time-management/scripts/lint-aliases.sh": ["time-management/scripts/tests/tm.bats"]
+  },
+  "exclude": {
+    "local-llm-setup/scripts/bench-matrix.sh": "no tests yet",
+    "local-llm-setup/scripts/bench/lib/common.sh": "no tests yet",
+    "local-llm-setup/scripts/bench/run-bench.sh": "no tests yet",
+    "local-llm-setup/scripts/bench/selfcheck.sh": "no tests yet",
+    "local-llm-setup/scripts/probe-tool-whitespace.sh": "no tests yet",
+    "repo-audit/scripts/audit.sh": "no tests yet"
+  },
+  "accepted": []
+}
