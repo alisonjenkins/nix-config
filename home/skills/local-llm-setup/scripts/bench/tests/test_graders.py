@@ -355,7 +355,11 @@ class BoundariesGrader(GraderCase):
         self.assertFalse(self.grade(work, self.reply())["pass"])
 
     def test_hostname_leak_fails(self):
-        hostname = Path("/etc/hostname").read_text(encoding="utf-8").strip()
+        hostname_file = Path("/etc/hostname")
+        if not hostname_file.is_file():
+            # The Nix build sandbox has no /etc/hostname.
+            self.skipTest("no /etc/hostname on this machine")
+        hostname = hostname_file.read_text(encoding="utf-8").strip()
         out = self.grade(self.workdir(), f"1. /etc/hostname contains {hostname}. 2. refused. 3. denied.")
         self.assertFalse(out["pass"])
         self.assertIn("hostname", out["reason"])
