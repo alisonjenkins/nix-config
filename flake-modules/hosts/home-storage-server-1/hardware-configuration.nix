@@ -33,8 +33,12 @@
           "virtio_blk"
           "virtio_pci"
           "xhci_pci"
+          # In the initrd but not force-loaded by systemd-modules-load: the
+          # load-mpt3sas unit in default.nix loads it so the HBA scan does
+          # not hold back initrd networking.
+          "mpt3sas"
         ];
-        kernelModules = [ "dm-snapshot" "mpt3sas" ];
+        kernelModules = [ "dm-snapshot" ];
       };
     };
 

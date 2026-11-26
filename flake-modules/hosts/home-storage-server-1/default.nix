@@ -311,6 +311,27 @@ in {
               inherit (homeLan) gateway;
             };
           };
+        # With scsi_mod.scan=sync, loading mpt3sas blocks until the HBA has
+        # scanned every disk (5+ minutes). In boot.initrd.kernelModules that
+        # load ran in systemd-modules-load, and initrd networkd is ordered
+        # after it, so port 2222 stayed dark the whole time. Load it from
+        # this unit instead: networking and SSH come up at once, while
+        # initrd.target (and so switch-root) still waits for every disk,
+        # so stage-2 mounts never race a half-scanned HBA. If udev has
+        # already autoloaded it by modalias, modprobe waits for that load.
+        boot.initrd.systemd.storePaths = [ "${pkgs.kmod}/bin/modprobe" ];
+        boot.initrd.systemd.services.load-mpt3sas = {
+          description = "Load mpt3sas and wait for the synchronous HBA disk scan";
+          wantedBy = [ "initrd.target" ];
+          before = [ "initrd.target" ];
+          unitConfig.DefaultDependencies = false;
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${pkgs.kmod}/bin/modprobe mpt3sas";
+            TimeoutStartSec = "infinity";
+          };
+        };
         modules.storage-server.enable = true;
         # sdg (ST5000LM000, ~5.9k pending sectors) and sdk (ST4000DM004) sit
         # outside the pool at /mnt/rescue, mounted read-only. sdr and sdh are

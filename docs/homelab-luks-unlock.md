@@ -71,4 +71,9 @@ Then deploy. The new initrd only runs at the next reboot.
 - The hypervisor has IPMI at 192.168.1.11. Use its console to type the
   passphrase there.
 - The VMs have their own consoles: `virsh console <vm>` on the hypervisor.
+- home-storage-server-1 used to keep port 2222 closed for 5+ minutes. Its HBA
+  driver (mpt3sas) scans every disk synchronously (`scsi_mod.scan=sync`), and
+  that load sat in `systemd-modules-load`, which initrd networking waits for.
+  The `load-mpt3sas` initrd unit now loads it instead. Networking and SSH come
+  up at once, and switch-root still waits for the scan to finish.
 - To go back, pick the previous generation in the boot menu.
