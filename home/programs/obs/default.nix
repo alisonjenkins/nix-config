@@ -42,6 +42,8 @@
       # itself relies on shared-memory IVSHMEM, a QEMU/x86 KVM feature).
       ++ lib.optionals pkgs.stdenv.hostPlatform.isx86_64 [
         looking-glass-obs
+        # SteamVR headset view as an OBS source (OpenVR is x86_64-only).
+        pkgs.obs-openvr
       ];
   };
 
