@@ -179,7 +179,9 @@ in {
         # because this box has 16 idle cores (cpu PSI ~0) but is memory-bound
         # (memory PSI was ~60% full-stall) — trade cheap CPU for effective RAM.
         # 200% + ~2.7:1 zstd ratio yields roughly 2-3x usable memory and keeps
-        # cold pages off the slow disk swap partition.
+        # cold pages off the slow disk swap partition. Kept over the base's
+        # zswap-for-disk-swap default: zswap's 20% pool would spill to that disk.
+        zramSwap.enable = true;
         zramSwap.memoryPercent = lib.mkForce 200;
 
         boot = {
