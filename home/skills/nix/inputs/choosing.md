@@ -43,7 +43,8 @@ Do this on a branch, and expect to touch the tooling from step 2.
    `tack init --flake` in a scratch dir and copy its template.
 5. `nix flake lock` leaves a root-only `flake.lock`. Keep it committed.
 6. `tack dedup`, then review the `[all_follow]` lines it suggests.
-7. Build every output the old lock fed. Compare store paths for a host or
+7. `git add .tack`: a Git flake ignores untracked files, so the import
+   fails until they are staged. Build every output the old lock fed. Compare store paths for a host or
    two to confirm nothing moved that you did not bump.
 8. Update the tooling from checklist step 2, in the same branch or first.
 
