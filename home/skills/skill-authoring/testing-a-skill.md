@@ -47,13 +47,33 @@ Same loop as `testing`'s TDD, applied to prose instead of code:
 
 A skill written without watching it fail first is a guess dressed as a fix.
 
+Keep the scenarios as cases so the loop can be re-run. Cases live in
+`home/skill-evals/<skill>/<case>/`: a `prompt.md` (frontmatter plus the
+prompt) and a `graders/` directory. That is the native `claude plugin eval`
+format, which runs every case with and without the skill and reports the
+delta.
+
+- Pick a prompt the model gets wrong *without* the skill. A case both arms
+  pass measures nothing.
+- Prefer `regex` graders; use `llm` only for behaviour a pattern cannot see.
+- Add a `tool_used: Skill` grader so a with-arm pass that never loaded the
+  skill shows up.
+
+`scripts/run-behaviour-evals.sh --check` validates every case offline (the
+`skills-behaviour-evals` flake check runs it). The live run spends credit, so
+it is opt-in and needs a logged-in `claude` CLI:
+`scripts/run-behaviour-evals.sh [SKILL...] -- --runs 3`.
+Each skill is capped at `$SKILL_EVALS_MAX_COST_USD` (default 1) unless
+`--max-cost-usd` is passed.
+It packs one skill per throwaway plugin, so each delta is that skill alone.
+
 ## Cost and usage audit
 
 - `/doctor` (bundled) reports each skill's context cost and invocation
   frequency — run it after a change that could bloat a description or
   duplicate another skill's trigger vocabulary.
-- `claude plugin eval` runs a plugin-packaged skill's `evals.json` in CI,
-  gateable like a test suite.
+- `claude plugin eval` runs the behaviour-eval cases above; its exit code
+  (0 pass, 1 below threshold, 2 partial) gates like a test suite.
 
 ## Related
 
