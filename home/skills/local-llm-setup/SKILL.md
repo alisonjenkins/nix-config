@@ -34,9 +34,10 @@ were. See [benchmarking.md](benchmarking.md) for the numbers.
    [engine-preflight.md](engine-preflight.md) before trusting any tool-calling
    result.
 2. **Model card config.** Read the card for sampling, thinking switch, tool
-   format and chat template. Our profiles set none of the sampling, so every
-   model has run on llama-server's defaults (temp 0.8, top-k 40, min-p 0.05).
-   See [model-config.md](model-config.md).
+   format and chat template. Only the llama-swap models on ali-work-laptop
+   set sampling (`coding`: temp 0.6, top-p 0.95, top-k 20, min-p 0). Every
+   other profile runs on llama-server's defaults (temp 0.8, top-k 40,
+   min-p 0.05). See [model-config.md](model-config.md).
 3. **Template.** Compare the GGUF's embedded template (`GET /props`) with the
    vendor's `chat_template.jinja`. If they differ, test `--chat-template-file`.
 4. **Thinking.** Know whether it is on, and try it off before blaming the

@@ -1,8 +1,10 @@
 # Model configuration
 
 llama-server runs on its own defaults unless told otherwise: temperature 0.8,
-top-k 40, top-p 0.95, min-p 0.05, no presence penalty. No profile in this repo
-sets sampling, so every model so far ran off its vendor's recommendation.
+top-k 40, top-p 0.95, min-p 0.05, no presence penalty. Only the llama-swap
+models on ali-work-laptop set sampling: the `coding` list in
+`flake-modules/hosts/ali-work-laptop/default.nix` (temp 0.6, top-p 0.95,
+top-k 20, min-p 0). Every other profile runs on llama-server's defaults.
 
 ## Where to look, in order
 
