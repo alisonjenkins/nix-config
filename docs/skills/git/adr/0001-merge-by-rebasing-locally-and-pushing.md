@@ -1,4 +1,4 @@
-# 0064. Merge by rebasing locally and pushing, not with GitHub's rebase
+# 0001. Merge by rebasing locally and pushing, not with GitHub's rebase
 
 - Status: Accepted
 - Date: 2026-11-26
