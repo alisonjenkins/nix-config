@@ -28,6 +28,59 @@ print_suppressed_findings() {
       have = 0
       text = ""
     }
+    function emit(l, t) {
+      key = l "\x1f" t
+      if (!(key in seen)) {
+        seen[key] = 1
+        print l "\t" t
+      }
+    }
+    # CodeRabbit puts out-of-diff and nitpick findings in "> " quoted blocks:
+    # a `path:N` or `path:N-M` line, a severity line ("**Minor** · ..."),
+    # then the finding title in bold. Matched on the unquoted copy only, so
+    # the Copilot rules below never see a quote marker.
+    {
+      cr = $0
+      sub(/^([ \t]*>[ \t]?)+/, "", cr)
+    }
+    cr ~ /^<summary>.* \([0-9]+\)<\/summary>/ {
+      cr_path = cr
+      sub(/^<summary>/, "", cr_path)
+      sub(/ \([0-9]+\)<\/summary>.*$/, "", cr_path)
+      next
+    }
+    cr_path != "" && cr ~ /^`[0-9]+(-[0-9]+)?`: \*\*.+\*\*[ \t]*$/ {
+      flush()
+      rng = cr
+      sub(/^`/, "", rng)
+      sub(/`:.*$/, "", rng)
+      t = cr
+      sub(/^`[0-9]+(-[0-9]+)?`: \*\*/, "", t)
+      sub(/\*\*[ \t]*$/, "", t)
+      emit(cr_path ":" rng, t)
+      next
+    }
+    cr ~ /^`[^`]+:[0-9]+(-[0-9]+)?`[ \t]*$/ {
+      flush()
+      cr_loc = cr
+      sub(/^`/, "", cr_loc)
+      sub(/`[ \t]*$/, "", cr_loc)
+      cr_left = 6
+      next
+    }
+    cr_left > 0 {
+      cr_left--
+      if (cr ~ / · / || cr ~ /^[ \t]*$/) next
+      if (cr ~ /^\*\*.+\*\*[ \t]*$/) {
+        t = cr
+        sub(/^\*\*/, "", t)
+        sub(/\*\*[ \t]*$/, "", t)
+        if (t ~ /^(.* )?(Nitpick|Trivial|Minor|Major|Critical|Refactor suggestion|Potential issue)$/) next
+        emit(cr_loc, t)
+        cr_left = 0
+        next
+      }
+    }
     /^\*\*[^*]+:[0-9]+\*\*$/ {
       flush()
       loc = substr($0, 3, length($0) - 4)

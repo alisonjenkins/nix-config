@@ -271,3 +271,102 @@ EOF
   [ "$status" -eq 0 ]
   [[ "$output" == *"(no review with a summary yet)"* ]]
 }
+
+@test "extracts a CodeRabbit outside-diff finding from a quoted block" {
+  cat >"$FAKE_GH_FIXTURES/review-bodies.txt" <<'EOF2'
+**Actionable comments posted: 0**
+
+<details>
+<summary>⚠️ Outside diff range comments (1)</summary><blockquote>
+
+> `src/deploy.yaml:118-128`
+> **<picture><img alt="Minor" src="x.svg"></picture> Minor** · **Functional Correctness** · **Quick win**
+>
+> **Run the checks after the head commit changes.**
+>
+> The checks start before the new commit is pushed.
+
+</blockquote></details>
+EOF2
+  run bash "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  section="$(suppressed_section)"
+  [[ "$section" == *"src/deploy.yaml:118-128"* ]]
+  [[ "$section" == *"  Run the checks after the head commit changes."* ]]
+  [[ "$section" != *"Functional Correctness"* ]]
+  [[ "$section" != *"(none)"* ]]
+}
+
+@test "extracts a single-line CodeRabbit location inside nested quotes" {
+  cat >"$FAKE_GH_FIXTURES/review-bodies.txt" <<'EOF2'
+> > `lib/util.sh:7`
+> > **Nitpick** · **Style**
+> >
+> > **Quote the variable expansion.**
+EOF2
+  run bash "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  section="$(suppressed_section)"
+  [[ "$section" == *"lib/util.sh:7"* ]]
+  [[ "$section" == *"  Quote the variable expansion."* ]]
+}
+
+@test "skips a bare CodeRabbit severity label before the finding title" {
+  cat >"$FAKE_GH_FIXTURES/review-bodies.txt" <<'EOF2'
+> `lib/util.sh:7`
+> **Nitpick**
+>
+> **Real title**
+EOF2
+  run bash "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  section="$(suppressed_section)"
+  [[ "$section" == *"lib/util.sh:7"* ]]
+  [[ "$section" == *"  Real title"* ]]
+  [[ "$section" != *"Nitpick"* ]]
+}
+
+@test "extracts a CodeRabbit summary-scoped line-range finding" {
+  cat >"$FAKE_GH_FIXTURES/review-bodies.txt" <<'EOF2'
+> <details>
+> <summary>src/app.sh (1)</summary><blockquote>
+>
+> `10-20`: **Check the return code.**
+>
+> </blockquote></details>
+EOF2
+  run bash "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  section="$(suppressed_section)"
+  [[ "$section" == *"src/app.sh:10-20"* ]]
+  [[ "$section" == *"  Check the return code."* ]]
+}
+
+@test "reports Copilot and CodeRabbit findings from the same body" {
+  cat >"$FAKE_GH_FIXTURES/review-bodies.txt" <<'EOF2'
+**src/foo.sh:12**
+* the copilot finding
+
+> `src/bar.sh:3`
+> **Major** · **Correctness**
+>
+> **The coderabbit finding.**
+EOF2
+  run bash "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  section="$(suppressed_section)"
+  [[ "$section" == *"src/foo.sh:12"* ]]
+  [[ "$section" == *"the copilot finding"* ]]
+  [[ "$section" == *"src/bar.sh:3"* ]]
+  [[ "$section" == *"The coderabbit finding."* ]]
+}
+
+@test "ignores a quoted code span that is not followed by a bold finding" {
+  cat >"$FAKE_GH_FIXTURES/review-bodies.txt" <<'EOF2'
+> `src/only.sh:1`
+> plain text, no finding title here
+EOF2
+  run bash "$script" 319 owner/repo
+  [ "$status" -eq 0 ]
+  [[ "$(suppressed_section)" == *"(none)"* ]]
+}
