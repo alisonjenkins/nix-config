@@ -3,7 +3,7 @@ name: documents
 description: >-
   Use when asked to produce, read, edit or extract from a real document file, such as a report, memo, letter, deck, spreadsheet or template as .docx, .pdf, .pptx or .xlsx, when drafting long-form writing alongside the user, when writing an announcement or update aimed at other people, or when making an animated GIF for Slack. Routes to the specialist skill that does the work. Not for source code or markdown in a repo.
 metadata:
-  summary: "Use for .docx, .pdf, .pptx or .xlsx files, reports, memos, decks and long-form drafting with the user; routes to the specialist skill."
+  summary: "Use for .docx, .pdf, .pptx or .xlsx files, spreadsheets, reports, memos, decks and long-form drafting with the user; routes to the specialist skill."
 ---
 
 # Documents
