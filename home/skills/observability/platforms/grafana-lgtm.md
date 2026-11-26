@@ -67,9 +67,10 @@ data not yet ingested by Mimir.
 ## Reducing output before it reaches you
 
 A raw LogQL/PromQL/TraceQL query returns far more than an investigation
-needs. Use `sift lgtm logs`/`sift lgtm metrics`/`sift lgtm traces` (the
-`sift` package) for an aggregated, top-N, histogram, or baseline-diff
-view; the `--mode` flags match `sift datadog`
-(aggregate/topn/histogram/diff) since both share one reduction engine.
+needs. Use `sift lgtm logs` or `sift lgtm metrics` (the `sift` package)
+for an aggregated, top-N or histogram view (`--mode aggregate`, `topn`,
+`histogram`), the same modes as `sift datadog`. sift has no `lgtm traces`
+yet, so query Tempo directly. `--mode diff` is not wired to the CLI yet
+(`pkgs/sift/docs/adr/0003-diff-mode-logic-without-cli-wiring.md`).
 `sift` defaults away from a raw dump; pass `--mode raw` when you need
 every line.
