@@ -1599,15 +1599,7 @@ in
         unstable.github-copilot-cli
         unstable.mission-center
         unstable.nvtopPackages.amd
-        # From master until unstable passes 1.18.30, which crashes on every
-        # prompt (anomalyco/opencode#48965). Back to unstable after that.
-        # Master's 2.2.5 node_modules outputHash is stale (hash mismatch);
-        # drop the override once master's package.nix carries the new one.
-        (master.opencode.overrideAttrs (prev: {
-          node_modules = prev.node_modules.overrideAttrs (_: {
-            outputHash = "sha256-prx9dX7kUvs/E3zopkaPk5LXh3xJAy5sZeum/W8L7cA=";
-          });
-        }))
+        unstable.opencode
         unstable.teamtype
         unzip
         # wallpapers # TODO: re-enable after wallpapers relocated from LFS
