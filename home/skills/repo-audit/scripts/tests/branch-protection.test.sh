@@ -181,6 +181,54 @@ test_apply_protection_reviews_one_sets_requirement() {
     rm -rf "$d"
 }
 
+# stub_gh_capture <dir>: a gh stub that prints the --input payload to stderr.
+stub_gh_capture() {
+    stub "$1" gh '
+        prev=""
+        for a in "$@"; do
+            if [[ "$prev" == "--input" ]]; then cat "$a" >&2; fi
+            prev="$a"
+        done
+        exit 0
+    '
+}
+
+test_apply_protection_keeps_required_checks() {
+    # PUT replaces the whole object: the payload must carry the current
+    # required checks, or --fix deletes the gate it was meant to tighten.
+    local d; d="$(make_stub_dir)"
+    stub_gh_capture "$d"
+    FORGE="github"; TARGET_REPO="someowner/somerepo"
+    local current='{"required_status_checks":{"url":"u","strict":true,"contexts":["flake-check"],"contexts_url":"c","checks":[{"context":"flake-check","app_id":15368}]}}'
+    local err payload
+    err="$(PATH="$d:$PATH" apply_protection "main" 0 "$current" 2>&1 >/dev/null)"
+    payload="$(jq -c '.required_status_checks' <<<"$err")"
+    assert_eq "$payload" '{"strict":true,"checks":[{"context":"flake-check","app_id":15368}]}' "apply_protection: keeps required checks with their app"
+    rm -rf "$d"
+}
+
+test_apply_protection_keeps_contexts_without_checks() {
+    local d; d="$(make_stub_dir)"
+    stub_gh_capture "$d"
+    FORGE="github"; TARGET_REPO="someowner/somerepo"
+    local current='{"required_status_checks":{"strict":false,"contexts":["lint"]}}'
+    local err payload
+    err="$(PATH="$d:$PATH" apply_protection "main" 0 "$current" 2>&1 >/dev/null)"
+    payload="$(jq -c '.required_status_checks' <<<"$err")"
+    assert_eq "$payload" '{"strict":false,"contexts":["lint"]}' "apply_protection: keeps legacy contexts"
+    rm -rf "$d"
+}
+
+test_apply_protection_no_checks_stays_null() {
+    local d; d="$(make_stub_dir)"
+    stub_gh_capture "$d"
+    FORGE="github"; TARGET_REPO="someowner/somerepo"
+    local err
+    err="$(PATH="$d:$PATH" apply_protection "main" 0 '{}' 2>&1 >/dev/null)"
+    assert_eq "$(jq -c '.required_status_checks' <<<"$err")" 'null' "apply_protection: unprotected branch sends no checks"
+    rm -rf "$d"
+}
+
 test_skips_unsupported_forge() {
     local repo; repo="$(make_fixture_repo)"
     git -C "$repo" remote add origin git@gitlab.com:someowner/somerepo.git
@@ -199,6 +247,9 @@ run_all() {
     test_solo_repo_skips_required_review
     test_apply_protection_reviews_zero_omits_requirement
     test_apply_protection_reviews_one_sets_requirement
+    test_apply_protection_keeps_required_checks
+    test_apply_protection_keeps_contexts_without_checks
+    test_apply_protection_no_checks_stays_null
     test_skips_unsupported_forge
 }
 
