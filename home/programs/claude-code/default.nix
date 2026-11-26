@@ -21,6 +21,26 @@ let
   hasFable = args.hasFable or true;
   topTierModel = if hasFable then "fable" else "opus";
 
+  # Work MCP server (work only): read via `args ... or` for the same reason as
+  # hasFable above. It's a remote HTTP-only MCP server, so something has to
+  # hold its bearer token. A Claude Code `http`-type entry would make Claude
+  # Code itself hold it, sitting statically in ~/.claude.json — reachable by
+  # any process running as this user. Instead `workMcpLauncher` below (a
+  # stdio `mcp-remote` bridge) fetches the PAT (and the server's URL — kept
+  # out of the Nix store the same way, since it names the internal service)
+  # at invocation time from whichever store `workMcpProvider` names, so
+  # neither value ever lives in a file Claude Code or anything else reads
+  # from disk, and never in the Nix store (world-readable, and this repo's
+  # CI pushes it to a binary cache). `workMcpProvider` is a one-line swap
+  # between stores: "onepassword" (default — the work 1Password account) or
+  # "keychain" (macOS Keychain).
+  workMcp = args.workMcp or false;
+  workMcpProvider = args.workMcpProvider or "onepassword";
+  workMcpOnePasswordRef = args.workMcpOnePasswordRef or "op://Private/Work MCP/credential";
+  workMcpOnePasswordUrlRef = args.workMcpOnePasswordUrlRef or "op://Private/Work MCP/url";
+  workMcpKeychainService = args.workMcpKeychainService or "work-mcp";
+  workMcpKeychainUrlService = args.workMcpKeychainUrlService or "work-mcp-url";
+
   # Consultant agents: read-only advisors the session escalates to when it hits
   # a countable trigger (third failed attempt, hard-to-reverse decision, …).
   # They are advisory by design — the expensive model decides, the sonnet main
@@ -219,6 +239,43 @@ let
   githubMcpLauncher = pkgs.writeShellScript "github-mcp-launcher" ''
     export GITHUB_PERSONAL_ACCESS_TOKEN="$(${pkgs.gh}/bin/gh auth token)"
     exec ${pkgs.master.github-mcp-server}/bin/github-mcp-server stdio
+  '';
+
+  # Fetches the work MCP PAT and server URL at invocation time from whichever
+  # store `workMcpProvider` names, then bridges this stdio MCP connection to
+  # that remote HTTP endpoint via `mcp-remote` (npx), injecting the token as
+  # a header on that one subprocess only. Swapping provider is a one-line
+  # change (`workMcpProvider`) — both branches just set `token`/`url`.
+  workMcpLauncher = pkgs.writeShellScript "work-mcp-launcher" ''
+    set -euo pipefail
+    case "${workMcpProvider}" in
+      onepassword)
+        token=$(${pkgs._1password-cli}/bin/op read "${workMcpOnePasswordRef}")
+        url=$(${pkgs._1password-cli}/bin/op read "${workMcpOnePasswordUrlRef}")
+        ;;
+      keychain)
+        token=$(/usr/bin/security find-generic-password \
+          -a "$USER" -s "${workMcpKeychainService}" -w)
+        url=$(/usr/bin/security find-generic-password \
+          -a "$USER" -s "${workMcpKeychainUrlService}" -w)
+        ;;
+      *)
+        echo "workMcpLauncher: unknown workMcpProvider '${workMcpProvider}'" >&2
+        exit 1
+        ;;
+    esac
+    # Pass the token via env, not argv: an argv value is visible to any local
+    # user via `ps aux` / `/proc/<pid>/cmdline`. The single-quoted arg below
+    # is the literal string `''${WORK_MCP_TOKEN}` (bash leaves it unexpanded
+    # inside single quotes) — mcp-remote expands `''${VAR}` in header values
+    # itself, from its own env, so the token never appears as a process
+    # argument anywhere. The URL is a plain argv value (not a secret in the
+    # same sense) but is still fetched at runtime rather than hardcoded here,
+    # since the Nix store is world-readable and this repo's CI pushes it to
+    # a binary cache — the internal hostname shouldn't sit in either.
+    exec env WORK_MCP_TOKEN="$token" ${pkgs.nodejs}/bin/npx -y mcp-remote \
+      "$url" \
+      --header 'Authorization:Bearer ''${WORK_MCP_TOKEN}'
   '';
 
   obscuraMcpLauncher = pkgs.writeShellScript "obscura-mcp-launcher" ''
@@ -807,6 +864,12 @@ in
         command = "${cavememPkg}/bin/cavemem";
         args = [ "mcp" ];
       };
+    } // lib.optionalAttrs workMcp {
+      # See workMcpLauncher above: no secret lives in this store path,
+      # only logic that fetches one at invocation time.
+      workMcp = {
+        command = "${workMcpLauncher}";
+      };
     };
 
     # LSP servers shared with Neovim via lspmux — both editors connect to the
@@ -864,4 +927,5 @@ in
     run install -m 0644 "$claudeSettingsNew" "$claudeSettingsTarget"
     rm -f "$claudeSettingsOld" "$claudeSettingsNew"
   '';
+
 }
