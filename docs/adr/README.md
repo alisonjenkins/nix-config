@@ -142,6 +142,18 @@ works, how to enable it, and the benchmark results.
 | [0039](0039-do-not-add-more-retrieval-machinery-to-the-memory-hook.md) | Do not add more retrieval machinery to the memory hook | Accepted; research closed |
 | [0055](0055-hide-user-typed-and-unused-skills-from-the-listing.md) | Hide user-typed and unused skills from the model's listing | Accepted |
 
+## Skills
+
+Why a rule in a skill under `home/skills/` is the way it is. The skill
+states the rule and cites the record as "(decision NNNN)"; the reasoning
+lives here. Read the record before changing the rule. ADRs about the
+skill machinery (listing, retrieval, delegation) are under Claude Code
+context.
+
+| # | Decision | Status |
+|---|---|---|
+| [0064](0064-merge-by-rebasing-locally-and-pushing.md) | Merge by rebasing locally and pushing, not with GitHub's rebase | Accepted |
+
 ## Token efficiency and observability
 
 Design: [`specs/007-local-observability-stack/`](../../specs/007-local-observability-stack/).
