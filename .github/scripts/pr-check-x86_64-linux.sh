@@ -402,6 +402,7 @@ section_skills() {
     build_check skills-docs-audit
     build_check skills-local-llm-setup
     build_check skills-behaviour-evals
+    build_check skills-mutation
 }
 section_hetzner_bats() { build_check hetzner-volume-verify-bats; }
 section_pr_check_bats() { build_check pr-check-bats; }
