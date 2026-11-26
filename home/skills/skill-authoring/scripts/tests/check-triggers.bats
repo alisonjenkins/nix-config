@@ -18,14 +18,14 @@ make_skill() {
   fi
 }
 
-@test "passes when a phrase shares a word with the description" {
+@test "passes when a phrase shares a word with the listed summary" {
   make_skill git "Use when committing or opening a pull request." "commit this"
   run bash "$script" "$skills"
   [ "$status" -eq 0 ]
   [[ "$output" == *"all 1 trigger phrases"* ]]
 }
 
-@test "fails a phrase with no word in the description" {
+@test "fails a phrase with no word in the listed summary" {
   make_skill debugging "Use when something is broken." "why is this crashing"
   run bash "$script" "$skills"
   [ "$status" -eq 1 ]
@@ -94,5 +94,65 @@ make_skill() {
 
 @test "passes the real shared skills" {
   run bash "$script"
+  [ "$status" -eq 0 ]
+}
+
+# make_raw NAME FRONTMATTER_BODY PHRASE...: writes the frontmatter as given.
+make_raw() {
+  local name="$1" header="$2"
+  shift 2
+  mkdir -p "$skills/$name"
+  printf -- '---\n%s\n---\n\nbody\n' "$header" >"$skills/$name/SKILL.md"
+  printf '%s\n' "$@" | jq -R . | jq -s '{fire: .}' >"$skills/$name/triggers.json"
+}
+
+padding="$(printf 'filler words %.0s' $(seq 1 20))"
+
+@test "checks against the summary, not the full description" {
+  make_raw infra "name: infra
+description: Use for kubernetes deploys.
+summary: Use for pods." "scale kubernetes"
+  run bash "$script" "$skills"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *'FAIL infra: no word of "scale kubernetes"'* ]]
+}
+
+@test "reads a summary nested under metadata" {
+  make_raw infra "name: infra
+description: Use for kubernetes deploys.
+metadata:
+  summary: Use for pods." "restart pods"
+  run bash "$script" "$skills"
+  [ "$status" -eq 0 ]
+}
+
+@test "lists a short description whole, past its first sentence" {
+  make_raw infra "name: infra
+description: Use for pods. Also nodes." "drain nodes"
+  run bash "$script" "$skills"
+  [ "$status" -eq 0 ]
+}
+
+@test "lists only the first sentence of a long description" {
+  make_raw infra "name: infra
+description: Use for pods. Also nodes and $padding" "drain nodes"
+  run bash "$script" "$skills"
+  [ "$status" -eq 1 ]
+}
+
+@test "a dotted version number does not end the first sentence" {
+  make_raw infra "name: infra
+description: Use for v1.2 pods and nodes. $padding" "drain nodes"
+  run bash "$script" "$skills"
+  [ "$status" -eq 0 ]
+}
+
+@test "a summary past the listing cap loses its tail" {
+  make_raw infra "name: infra
+description: Use for pods.
+summary: Use for pods and $padding nodes" "drain nodes"
+  run bash "$script" "$skills"
+  [ "$status" -eq 1 ]
+  LISTING_CHARS=400 run bash "$script" "$skills"
   [ "$status" -eq 0 ]
 }
