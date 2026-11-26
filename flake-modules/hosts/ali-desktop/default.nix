@@ -961,6 +961,9 @@ in {
         # a hard kernel-enforced ceiling that guarantees headroom for PipeWire and games.
         systemd.services.lactd.serviceConfig.ExecStartPre = "${pkgs.coreutils}/bin/rm -f /run/lactd.sock";
         systemd.services.nix-daemon.serviceConfig.CPUQuota = "2880%";
+        # Past 40G of the 62G, builds are throttled and reclaimed into zswap
+        # instead of pushing the desktop and games out of RAM. Not a kill limit.
+        systemd.services.nix-daemon.serviceConfig.MemoryHigh = "40G";
 
         powerManagement = {
           cpuFreqGovernor = "performance";
