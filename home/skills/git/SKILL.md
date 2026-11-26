@@ -19,9 +19,11 @@ metadata:
   Fixups are fine while a PR is open; they are autosquashed into their
   targets before merge (see [pr-workflow.md](pr-workflow.md)), and
   `scripts/check-no-fixups.sh` must be green before any merge route.
-- **Merging PRs and branches:** prefer rebase-and-merge
-  (`gh pr merge --rebase`). If rebase merges are unavailable or disallowed,
-  use a merge commit (`gh pr merge --merge`). Never `gh pr merge --squash`.
+- **Merging PRs and branches:** rebase locally onto the default branch and
+  push it as a fast-forward (`scripts/merge-onto-default.sh`), which keeps
+  the signatures. Only if that push is rejected, `gh pr merge --rebase`;
+  if rebase merges are also off, `gh pr merge --merge`. Never
+  `gh pr merge --squash` (decision git/0001).
 - **Sign every commit.** Never pass `--no-gpg-sign` or `-c commit.gpgsign=false`,
   and never work around a failing signature by disabling it — fix the
   signing setup instead.
