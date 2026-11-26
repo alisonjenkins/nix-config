@@ -175,7 +175,8 @@ add_not_fire() {
   set_reply '[{"i": 1, "skill": "git"}, {"i": 2, "skill": "review"}, {"i": 3, "skill": "review"}]'
   run bash "$script" "$skills"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"top-1: 3/3 (100.0%)"* ]]
+  [[ "$output" == *"top-1: 2/2 (100.0%)"* ]]
+  [[ "$output" == *"false-fire: 0/1 (0.0%)"* ]]
   [[ "$output" != *"FALSE FIRE"* ]]
 }
 
@@ -184,11 +185,34 @@ add_not_fire() {
   make_skill review "Use when reviewing." "review this"
   add_not_fire git "review this PR"
   set_reply '[{"i": 1, "skill": "git"}, {"i": 2, "skill": "git"}, {"i": 3, "skill": "review"}]'
-  run bash "$script" --min 100 "$skills"
-  [ "$status" -ne 0 ]
+  run bash "$script" --max-false-fire 0 "$skills"
+  [ "$status" -eq 1 ]
   [[ "$output" == *'FALSE FIRE git: "review this PR"'* ]]
   [[ "$output" == *"git: 1/2"* ]]
-  [[ "$output" == *"top-1: 2/3 (66.7%)"* ]]
+  [[ "$output" == *"top-1: 2/2 (100.0%)"* ]]
+  [[ "$output" == *"false-fire: 1/1 (100.0%)"* ]]
+}
+
+@test "--min gates fire top-1 only, not false fires" {
+  make_skill git "Use when committing." "commit this"
+  make_skill review "Use when reviewing." "review this"
+  add_not_fire git "review this PR"
+  set_reply '[{"i": 1, "skill": "git"}, {"i": 2, "skill": "git"}, {"i": 3, "skill": "review"}]'
+  run bash "$script" --min 100 "$skills"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"top-1: 2/2 (100.0%)"* ]]
+  [[ "$output" == *"false-fire: 1/1 (100.0%)"* ]]
+}
+
+@test "fire misses do not move the false-fire rate" {
+  make_skill git "Use when committing." "commit this"
+  make_skill review "Use when reviewing." "review this"
+  add_not_fire git "review this PR"
+  set_reply '[{"i": 1, "skill": "review"}, {"i": 2, "skill": "review"}, {"i": 3, "skill": "review"}]'
+  run bash "$script" --min 60 --max-false-fire 0 "$skills"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"top-1: 1/2 (50.0%)"* ]]
+  [[ "$output" == *"false-fire: 0/1 (0.0%)"* ]]
 }
 
 @test "not_fire phrase routed to none passes" {
@@ -197,7 +221,8 @@ add_not_fire() {
   set_reply '[{"i": 1, "skill": "git"}, {"i": 2, "skill": "none"}]'
   run bash "$script" "$skills"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"top-1: 2/2 (100.0%)"* ]]
+  [[ "$output" == *"top-1: 1/1 (100.0%)"* ]]
+  [[ "$output" == *"false-fire: 0/1 (0.0%)"* ]]
 }
 
 @test "skill with only not_fire phrases is evaluated" {
@@ -207,6 +232,7 @@ add_not_fire() {
   set_reply '[{"i": 1, "skill": "git"}, {"i": 2, "skill": "git"}]'
   run bash "$script" "$skills"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"top-1: 2/2 (100.0%)"* ]]
+  [[ "$output" == *"top-1: 1/1 (100.0%)"* ]]
+  [[ "$output" == *"false-fire: 0/1 (0.0%)"* ]]
   [[ "$(<"$BATS_TEST_TMPDIR/recorded_prompt.txt")" == *"commit this too"* ]]
 }

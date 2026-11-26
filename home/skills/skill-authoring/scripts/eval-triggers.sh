@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-# Usage: eval-triggers.sh [--min PERCENT] [SKILLS_DIR]
+# Usage: eval-triggers.sh [--min PERCENT] [--max-false-fire PERCENT] [SKILLS_DIR]
 # Measures whether an LLM router routes each trigger phrase to the right
 # skill judged from SKILL.md descriptions alone. A "fire" phrase must route
 # to its skill; a "not_fire" phrase (a near miss owned by a sibling) must
-# route anywhere else. Opt-in; spends Gemini quota.
+# route anywhere else. The two are scored apart: "top-1" is the fire hit
+# rate (gated by --min), "false-fire" the share of not_fire phrases routed
+# to their own skill (gated by --max-false-fire). Opt-in; spends Gemini quota.
 set -euo pipefail
 
 readonly DEFAULT_PROFILE="read"
 
 usage() {
-    echo "Usage: eval-triggers.sh [--min PERCENT] [SKILLS_DIR]" >&2
+    echo "Usage: eval-triggers.sh [--min PERCENT] [--max-false-fire PERCENT] [SKILLS_DIR]" >&2
 }
 
 parse_reply() {
@@ -29,6 +31,7 @@ parse_reply() {
 }
 
 min_percent=""
+max_false_fire=""
 skills_dir=""
 
 while [[ $# -gt 0 ]]; do
@@ -43,6 +46,18 @@ while [[ $# -gt 0 ]]; do
             ;;
         --min=*)
             min_percent="${1#*=}"
+            shift
+            ;;
+        --max-false-fire)
+            if [[ $# -lt 2 ]]; then
+                usage
+                exit 1
+            fi
+            max_false_fire="$2"
+            shift 2
+            ;;
+        --max-false-fire=*)
+            max_false_fire="${1#*=}"
             shift
             ;;
         -*)
@@ -61,13 +76,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ -n "$min_percent" ]]; then
-    min_clean="${min_percent%%%}"
-    if ! [[ "$min_clean" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+for pct in "$min_percent" "$max_false_fire"; do
+    [[ -n "$pct" ]] || continue
+    if ! [[ "${pct%%%}" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
         usage
         exit 1
     fi
-fi
+done
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -z "$skills_dir" ]]; then
@@ -170,7 +185,10 @@ fi
 
 mapfile -t routed <<<"$parsed"
 
-total_correct=0
+fire_total=0
+fire_correct=0
+nf_total=0
+nf_fired=0
 for ((i = 0; i < total_phrases; i++)); do
     expected="${phrase_expected[i]}"
     phrase="${phrases[i]}"
@@ -178,16 +196,20 @@ for ((i = 0; i < total_phrases; i++)); do
 
     if [[ "$expected" == !* ]]; then
         owner="${expected#!}"
+        nf_total=$((nf_total + 1))
         if [[ "$got" != "$owner" ]]; then
             skill_correct["$owner"]=$((skill_correct["$owner"] + 1))
-            total_correct=$((total_correct + 1))
         else
+            nf_fired=$((nf_fired + 1))
             skill_misses["$owner"]=$((skill_misses["$owner"] + 1))
             printf 'FALSE FIRE %s: "%s"\n' "$owner" "$phrase"
         fi
-    elif [[ "$expected" == "$got" ]]; then
+        continue
+    fi
+    fire_total=$((fire_total + 1))
+    if [[ "$expected" == "$got" ]]; then
         skill_correct["$expected"]=$((skill_correct["$expected"] + 1))
-        total_correct=$((total_correct + 1))
+        fire_correct=$((fire_correct + 1))
     else
         skill_misses["$expected"]=$((skill_misses["$expected"] + 1))
         printf 'MISS %s: "%s" -> %s\n' "$expected" "$phrase" "$got"
@@ -200,14 +222,26 @@ for s in "${skills_with_phrases[@]}"; do
     fi
 done
 
-P="$(awk -v x="$total_correct" -v n="$total_phrases" 'BEGIN { printf "%.1f", (x * 100.0 / n) }')"
-printf 'top-1: %d/%d (%s%%)\n' "$total_correct" "$total_phrases" "$P"
+# percent X N IF_EMPTY: X as a share of N to one decimal, IF_EMPTY when N is 0.
+percent() {
+    awk -v x="$1" -v n="$2" -v e="$3" 'BEGIN { if (n == 0) printf "%s", e; else printf "%.1f", (x * 100.0 / n) }'
+}
 
-if [[ -n "$min_percent" ]]; then
-    min_clean="${min_percent%%%}"
-    if jq -e -n --argjson p "$P" --argjson min "$min_clean" '$p < $min' >/dev/null 2>&1; then
-        exit 1
-    fi
+P="$(percent "$fire_correct" "$fire_total" 100.0)"
+printf 'top-1: %d/%d (%s%%)\n' "$fire_correct" "$fire_total" "$P"
+F="$(percent "$nf_fired" "$nf_total" 0.0)"
+if ((nf_total > 0)); then
+    printf 'false-fire: %d/%d (%s%%)\n' "$nf_fired" "$nf_total" "$F"
 fi
 
-exit 0
+status=0
+if [[ -n "$min_percent" ]] &&
+    jq -e -n --argjson p "$P" --argjson min "${min_percent%%%}" '$p < $min' >/dev/null 2>&1; then
+    status=1
+fi
+if [[ -n "$max_false_fire" ]] &&
+    jq -e -n --argjson f "$F" --argjson max "${max_false_fire%%%}" '$f > $max' >/dev/null 2>&1; then
+    status=1
+fi
+
+exit "$status"
