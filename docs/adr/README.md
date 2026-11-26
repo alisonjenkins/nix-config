@@ -154,6 +154,7 @@ under Claude Code context.
 |---|---|---|
 | [0064](0064-keep-skill-adrs-at-two-levels.md) | Keep skill ADRs at two levels, outside the skill files | Accepted |
 | [0065](0065-skill-behaviour-evals-with-claude-plugin-eval.md) | Skill behaviour evals with `claude plugin eval`, one plugin per skill | Accepted, live baseline pending |
+| [0066](0066-incremental-mutation-testing-for-skill-scripts.md) | Incremental mutation testing for skill scripts, keyed on script and test hashes | Accepted |
 
 ## Token efficiency and observability
 
