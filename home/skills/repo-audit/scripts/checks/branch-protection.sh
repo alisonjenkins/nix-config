@@ -28,11 +28,21 @@ extract_job_ids() {
         | sed -E 's/^  ([a-zA-Z0-9_.-]+):.*/\1/'
 }
 
+# apply_protection <branch> <required-reviews> [current-protection-json]
+# PUT replaces the whole protection object, so anything left out is removed.
+# The branch's current required status checks are carried over: they are the
+# real gate on a solo repo, and sending null would delete them.
 apply_protection() {
-    local branch="$1" required_reviews="$2"
+    local branch="$1" required_reviews="$2" current="${3:-"{}"}"
     local payload
-    payload=$(jq -n --argjson reviews "$required_reviews" '{
-        required_status_checks: null,
+    payload=$(jq -n --argjson reviews "$required_reviews" --argjson current "$current" '{
+        required_status_checks: ($current.required_status_checks
+            | if . == null then null
+              elif (.checks | length) > 0 then
+                {strict: (.strict // false),
+                 checks: [.checks[] | {context} + (if .app_id then {app_id} else {} end)]}
+              else {strict: (.strict // false), contexts: (.contexts // [])}
+              end),
         enforce_admins: true,
         required_pull_request_reviews: (if $reviews > 0 then {required_approving_review_count: $reviews} else null end),
         restrictions: null,
@@ -106,7 +116,7 @@ main() {
 
     if [[ "$needs_fix" == "true" ]]; then
         confirm_fix "bring branch protection on $branch into line (reviews=$required_reviews, force-push/delete disabled)" \
-            apply_protection "$branch" "$required_reviews"
+            apply_protection "$branch" "$required_reviews" "$protection_json"
     fi
 
     local required_contexts
