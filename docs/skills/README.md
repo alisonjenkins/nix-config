@@ -27,3 +27,9 @@ history.
 | # | Decision | Status |
 |---|---|---|
 | [0001](nix/adr/0001-detect-input-system-and-gate-tack.md) | A nix family skill whose inputs workflow detects flake.lock or tack before acting | Accepted |
+
+## testing
+
+| # | Decision | Status |
+|---|---|---|
+| [0001](testing/adr/0001-mutants-cap-lints-keep-linker-out-of-rustflags.md) | Choose the linker with `linker`, not rustflags, when cargo-mutants caps lints | Accepted |
