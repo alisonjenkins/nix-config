@@ -48,3 +48,23 @@ When a project can't add a `bats` dependency, a plain-bash harness works:
 `scripts/tests/*.test.sh` file; `run-all.sh` drives them all and reports a
 summary. Prefer `bats` when available (clearer per-test output,
 `run`/`$status`/`$output` capture); fall back to this only when it isn't.
+
+## Mutation testing
+
+Skill scripts under `home/skills/*/scripts/` have a mutation runner:
+`home/skills/skill-authoring/scripts/mutate-scripts.sh`. It flips one
+operator at a time (`-eq`/`-ne`, `&&`/`||`, `exit 1`/`exit 0`, a dropped
+`!`, and so on) in a temporary copy, runs the script's tests, and reports
+each mutant no test killed as `SURVIVED <script>:<line> <op>`.
+
+- Default `--changed` mode re-runs only pairs whose script or tests changed
+  since the recorded baseline, or that still have open survivors.
+- Which tests belong to a script: `<skill>/scripts/tests/<name>.bats` (or
+  `.test.sh`) by default, else an entry in `mutation/map.json`. A new script
+  with neither fails the check.
+- Kill a survivor with a test that asserts the behaviour the mutant broke.
+  If the mutant is equivalent (no observable change), add it to `accepted`
+  in `map.json` with the reason.
+- After a run, commit the updated `mutation/baseline.json`.
+  `mutate-scripts.sh --check` (a flake check) fails when it is stale.
+

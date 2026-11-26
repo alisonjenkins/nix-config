@@ -64,6 +64,13 @@ whenever a suite has stayed green suspiciously long through real changes.
 Mutation-testing tools automate it, but doing it by hand on the one function
 you care about takes a minute and catches the same class of problem.
 
+Run a mutation pass incrementally. Once a script and its tests have a clean
+run (every mutant killed, or each survivor accepted with a reason), that
+result holds until one of them changes. Re-run only the pairs whose script or
+tests you modified, and any pair that still has open survivors. Key the
+result on a hash of both files: a script change can add an unkilled branch
+even when the tests are untouched.
+
 ## Source
 
 Adapted from The Pragmatic Programmer, 20th Anniversary Edition

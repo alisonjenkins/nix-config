@@ -78,4 +78,5 @@ It packs one skill per throwaway plugin, so each delta is that skill alone.
 ## Related
 
 Script-backed skills (e.g. `git`'s `scripts/`) verify with the language's
-real test framework, not this — see `testing`.
+real test framework, not this — see `testing`. Their tests are themselves checked by
+`scripts/mutate-scripts.sh`; see `testing`'s `languages/shell.md`.
