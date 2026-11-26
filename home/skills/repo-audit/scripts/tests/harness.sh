@@ -72,7 +72,7 @@ make_stub_dir() {
 stub() {
     local dir="$1" name="$2" body="$3"
     cat >"$dir/$name" <<EOF
-#!/usr/bin/env bash
+#!$(command -v bash)
 $body
 EOF
     chmod +x "$dir/$name"
