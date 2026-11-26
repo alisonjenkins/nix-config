@@ -31,7 +31,8 @@ extract_job_ids() {
 # apply_protection <branch> <required-reviews> [current-protection-json]
 # PUT replaces the whole protection object, so anything left out is removed.
 # The branch's current required status checks are carried over: they are the
-# real gate on a solo repo, and sending null would delete them.
+# real gate on a solo repo, and sending null would delete them. A review
+# count above the wanted one is kept too: the fix only ever tightens it.
 apply_protection() {
     local branch="$1" required_reviews="$2" current="${3:-"{}"}"
     local payload
@@ -44,7 +45,10 @@ apply_protection() {
               else {strict: (.strict // false), contexts: (.contexts // [])}
               end),
         enforce_admins: true,
-        required_pull_request_reviews: (if $reviews > 0 then {required_approving_review_count: $reviews} else null end),
+        required_pull_request_reviews: (if $reviews > 0 then
+            {required_approving_review_count:
+                ([$reviews, ($current.required_pull_request_reviews.required_approving_review_count // 0)] | max)}
+            else null end),
         restrictions: null,
         allow_force_pushes: false,
         allow_deletions: false

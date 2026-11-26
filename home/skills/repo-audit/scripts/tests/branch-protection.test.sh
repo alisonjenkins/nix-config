@@ -229,6 +229,17 @@ test_apply_protection_no_checks_stays_null() {
     rm -rf "$d"
 }
 
+test_apply_protection_keeps_higher_review_count() {
+    local d; d="$(make_stub_dir)"
+    stub_gh_capture "$d"
+    FORGE="github"; TARGET_REPO="someowner/somerepo"
+    local current='{"required_pull_request_reviews":{"required_approving_review_count":2}}'
+    local err
+    err="$(PATH="$d:$PATH" apply_protection "main" 1 "$current" 2>&1 >/dev/null)"
+    assert_eq "2" "$(jq '.required_pull_request_reviews.required_approving_review_count' <<<"$err")" "apply_protection: never lowers an existing review count"
+    rm -rf "$d"
+}
+
 test_skips_unsupported_forge() {
     local repo; repo="$(make_fixture_repo)"
     git -C "$repo" remote add origin git@gitlab.com:someowner/somerepo.git
@@ -250,6 +261,7 @@ run_all() {
     test_apply_protection_keeps_required_checks
     test_apply_protection_keeps_contexts_without_checks
     test_apply_protection_no_checks_stays_null
+    test_apply_protection_keeps_higher_review_count
     test_skips_unsupported_forge
 }
 
