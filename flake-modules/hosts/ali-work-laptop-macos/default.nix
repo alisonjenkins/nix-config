@@ -487,6 +487,12 @@ in {
           azureDevopsRsaKey = "~/.ssh/id_work_rsa.pub";
           workIdentity = true;
           workIdentitySecretsFile = self + "/secrets/ali-work-laptop-macos/work-identity.enc.yaml";
+          # Internal work MCP server: work-only, so only this host gets the
+          # flag. Default provider (onepassword) fetches the PAT from the
+          # work 1Password account at invocation time — see
+          # home/programs/claude-code/default.nix for the launcher and how to
+          # switch to Keychain instead (workMcpProvider = "keychain").
+          workMcp = true;
           # The work 1Password account is broken, so work-identity.enc.yaml has
           # no secretspec_work_1password_uri and the sops manifest fails to
           # build. Re-enable once the key is added.
