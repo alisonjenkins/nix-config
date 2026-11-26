@@ -15,7 +15,7 @@ phrase to the right skill, judged from the descriptions alone. It is opt-in and
 spends Gemini quota (one call for all phrases, via the delegation skill's
 `delegate-to-gemini.sh`):
 
-    home/skills/skill-authoring/scripts/eval-triggers.sh [--min PERCENT] [SKILLS_DIR]
+    home/skills/skill-authoring/scripts/eval-triggers.sh [--min PERCENT] [--max-false-fire PERCENT] [SKILLS_DIR]
 
 A `MISS` means the description does not separate that skill from the one it
 routed to, so read both descriptions before editing either.
@@ -29,6 +29,11 @@ A `not_fire` phrase passes when the router picks any skill but this one. A
 `FALSE FIRE` line means it picked this one, so this description claims
 vocabulary its sibling owns. Pair each `not_fire` list with the sibling's own
 list pointing back, so both directions of the overlap are measured.
+
+The two are scored apart. `top-1` counts `fire` phrases only, and `--min`
+gates it. `false-fire` is the share of `not_fire` phrases routed to their own
+skill, and `--max-false-fire` gates it. A combined figure would let easy near
+misses hide a drop in fire accuracy.
 
 ## Behaviour evals: does the body change the outcome?
 
