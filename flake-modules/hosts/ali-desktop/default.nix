@@ -479,6 +479,7 @@ in {
           enable = true;
           frameControl.enable = true;
           framePort.enable = true;
+          frameDongle.disablePowerSave = true;
           enableOpenSourceVR = true;
           codec = "av1";
           bitrate = 30000000;
