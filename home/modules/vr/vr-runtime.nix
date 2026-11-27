@@ -122,10 +122,18 @@ PY
           svc stop
           mkdir -p "$(dirname "$OPENXR_FILE")"
           # SteamVR ships its own OpenXR manifest, which carries
-          # VALVE_runtime_is_steamvr. Prefer it over a hand-written one so the
-          # manifest stays correct across SteamVR updates.
+          # VALVE_runtime_is_steamvr. Link to it rather than copying it:
+          # SteamVR's own "Set as default" makes active_runtime.json a
+          # symlink to <runtime>/steamxr_linux64.json and its startup check
+          # reads that link back. A copy, even byte-identical, fails the
+          # check and SteamVR warns that "the OpenXR runtime is currently set
+          # to another version of SteamVR" on every launch. The target is
+          # canonicalised because SteamVR records its runtime by real path
+          # (/media/... here), while steamvrRoot goes through the
+          # ~/.local/share/Steam symlink.
           if [ -f "$STEAMVR_ROOT/steamxr_linux64.json" ]; then
-            install_openxr "$STEAMVR_ROOT/steamxr_linux64.json"
+            ln -sfn "$(realpath "$STEAMVR_ROOT/steamxr_linux64.json")" "$OPENXR_FILE.new"
+            mv -fT "$OPENXR_FILE.new" "$OPENXR_FILE"
           else
             cat > "$OPENXR_FILE.new" <<EOF
 {
