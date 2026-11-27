@@ -397,9 +397,17 @@ in
 
     # adb to a Quest in developer mode, for pulling its APKs, OBBs and saves.
     # The uaccess tag gives the seat's user the device, as programs.adb did.
-    services.udev.extraRules = ''
-      SUBSYSTEM=="usb", ATTR{idVendor}=="2833", TAG+="uaccess"
-    '';
+    # It has to be set before systemd's 73-seat-late.rules acts on it, so it
+    # ships as a 70- rule; extraRules lands in 99-local.rules, too late.
+    services.udev.packages = [
+      (pkgs.writeTextFile {
+        name = "meta-quest-udev-rules";
+        destination = "/etc/udev/rules.d/70-meta-quest.rules";
+        text = ''
+          SUBSYSTEM=="usb", ATTR{idVendor}=="2833", TAG+="uaccess"
+        '';
+      })
+    ];
   })
   ];
 }
