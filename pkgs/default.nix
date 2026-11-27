@@ -30,6 +30,7 @@
   uresourced = pkgs.callPackage ./uresourced {};
   xr-video-player = pkgs.callPackage ./xr-video-player {};
   frame-control = pkgs.callPackage ./frame-control {};
+  frameport = pkgs.callPackage ./frameport {};
   obs-openvr = pkgs.callPackage ./obs-openvr {};
   piper-voice-jenny-dioco = pkgs.callPackage ./piper-voice-jenny-dioco {};
   piper-tts-talk = pkgs.callPackage ./piper-tts-talk { inherit pkgs; piper-voice = piper-voice-jenny-dioco; };

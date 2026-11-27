@@ -161,6 +161,12 @@ in
       Steam Frame over SSH, and its framedrop:// handler, so "Install with
       FrameDrop" links (FrameDrop itself is Windows-only) open in it
     '';
+    framePort.enable = lib.mkEnableOption ''
+      FramePort (pkgs/frameport), which copies Meta Quest games off a Quest
+      over adb, converts them to OpenXR and installs them on a Steam Frame.
+      Also adds adb and a uaccess udev rule for Meta Quest headsets (USB
+      vendor 2833) so the logged-in user can reach a Quest without root
+    '';
     enableOpenSourceVR = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -384,6 +390,16 @@ in
     # chooser for a custom scheme (see the vrmonitor note in home/modules/vr).
     xdg.mime.defaultApplications."x-scheme-handler/framedrop" = "framedrop-handler.desktop";
     xdg.mime.addedAssociations."x-scheme-handler/framedrop" = "framedrop-handler.desktop";
+  })
+
+  (lib.mkIf (cfg.enable && cfg.framePort.enable) {
+    environment.systemPackages = [ pkgs.frameport pkgs.android-tools ];
+
+    # adb to a Quest in developer mode, for pulling its APKs, OBBs and saves.
+    # The uaccess tag gives the seat's user the device, as programs.adb did.
+    services.udev.extraRules = ''
+      SUBSYSTEM=="usb", ATTR{idVendor}=="2833", TAG+="uaccess"
+    '';
   })
   ];
 }
