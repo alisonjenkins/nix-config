@@ -478,6 +478,7 @@ in {
         modules.vr = {
           enable = true;
           frameControl.enable = true;
+          frameDongle.disablePowerSave = true;
           enableOpenSourceVR = true;
           codec = "av1";
           bitrate = 30000000;

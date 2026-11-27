@@ -161,6 +161,11 @@ in
       Steam Frame over SSH, and its framedrop:// handler, so "Install with
       FrameDrop" links (FrameDrop itself is Windows-only) open in it
     '';
+    frameDongle.disablePowerSave = lib.mkEnableOption ''
+      turning Wi-Fi power saving off on the Steam Frame's USB dongle
+      (rtw89_8852cu, kernel 7.2+). With power save on, the link to the
+      headset drops and stutters
+    '';
     enableOpenSourceVR = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -384,6 +389,25 @@ in
     # chooser for a custom scheme (see the vrmonitor note in home/modules/vr).
     xdg.mime.defaultApplications."x-scheme-handler/framedrop" = "framedrop-handler.desktop";
     xdg.mime.addedAssociations."x-scheme-handler/framedrop" = "framedrop-handler.desktop";
+  })
+
+  (lib.mkIf (cfg.enable && cfg.frameDongle.disablePowerSave) {
+    # Matched by driver, so only the Frame's dongle is touched and any other
+    # Wi-Fi card keeps its own setting. This covers the dongle as soon as it
+    # appears, whoever brings the link up.
+    services.udev.extraRules = ''
+      ACTION=="add", SUBSYSTEM=="net", DRIVERS=="rtw89_8852cu", RUN+="${pkgs.iw}/bin/iw dev $name set power_save off"
+    '';
+
+    # NetworkManager sets power save again on every activation, and its
+    # fallback when nothing is configured is "enable" (3), which would undo
+    # the udev rule the moment it connects. 2 = disable.
+    networking.networkmanager.settings = lib.mkIf config.networking.networkmanager.enable {
+      "connection-steam-frame-dongle" = {
+        match-device = "driver:rtw89_8852cu";
+        "wifi.powersave" = 2;
+      };
+    };
   })
   ];
 }
