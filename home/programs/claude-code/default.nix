@@ -34,12 +34,22 @@ let
   # CI pushes it to a binary cache). `workMcpProvider` is a one-line swap
   # between stores: "onepassword" (default — the work 1Password account) or
   # "keychain" (macOS Keychain).
+  #
+  # The onepassword provider's item/vault/field names would themselves leak
+  # the internal service's name into this public repo, so they never appear
+  # here as literal strings: `workMcpSecretsFile` names a sops-encrypted file
+  # (see home/programs/ssh/default.nix for the same pattern with work SSH
+  # keys) holding the actual `op://` refs, decrypted at activation into
+  # `~/.local/state/work-mcp/`. The launcher reads them from there at
+  # invocation time, so the refs live only in encrypted git history and the
+  # user's own disk, never in a Nix string.
   workMcp = args.workMcp or false;
   workMcpProvider = args.workMcpProvider or "onepassword";
-  workMcpOnePasswordRef = args.workMcpOnePasswordRef or "op://Private/Work MCP/credential";
-  workMcpOnePasswordUrlRef = args.workMcpOnePasswordUrlRef or "op://Private/Work MCP/url";
+  workMcpSecretsFile = args.workMcpSecretsFile or null;
   workMcpKeychainService = args.workMcpKeychainService or "work-mcp";
   workMcpKeychainUrlService = args.workMcpKeychainUrlService or "work-mcp-url";
+  workMcpTokenRefPath = "${config.home.homeDirectory}/.local/state/work-mcp/token_ref";
+  workMcpUrlRefPath = "${config.home.homeDirectory}/.local/state/work-mcp/url_ref";
 
   # Consultant agents: read-only advisors the session escalates to when it hits
   # a countable trigger (third failed attempt, hard-to-reverse decision, …).
@@ -250,8 +260,8 @@ let
     set -euo pipefail
     case "${workMcpProvider}" in
       onepassword)
-        token=$(${pkgs._1password-cli}/bin/op read "${workMcpOnePasswordRef}")
-        url=$(${pkgs._1password-cli}/bin/op read "${workMcpOnePasswordUrlRef}")
+        token=$(${pkgs._1password-cli}/bin/op read "$(cat "${workMcpTokenRefPath}")")
+        url=$(${pkgs._1password-cli}/bin/op read "$(cat "${workMcpUrlRefPath}")")
         ;;
       keychain)
         token=$(/usr/bin/security find-generic-password \
@@ -424,6 +434,22 @@ let
 in
 {
   imports = [ inputs.claude-monitor.homeManagerModules.default ];
+
+  # Decrypts the onepassword provider's `op://` refs out of sops at
+  # activation time — see workMcpSecretsFile above for why they can't be Nix
+  # strings in this public repo.
+  sops.secrets = lib.mkIf (workMcp && workMcpProvider == "onepassword") {
+    "op_token_ref" = {
+      sopsFile = workMcpSecretsFile;
+      mode = "0600";
+      path = workMcpTokenRefPath;
+    };
+    "op_url_ref" = {
+      sopsFile = workMcpSecretsFile;
+      mode = "0600";
+      path = workMcpUrlRefPath;
+    };
+  };
 
   # Live dashboard of every Claude Code session in tmux (working / needs
   # permission / your turn). The module appends its `claude-monitor hook`
