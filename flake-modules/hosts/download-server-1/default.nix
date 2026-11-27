@@ -37,10 +37,10 @@ let
   # plus the k8s nodes, which is where the in-cluster Prometheus scrapes from.
   monitoringSources = qbittorrentAllowedIPs ++ k8sNodeIPs;
 
-  # Proton WireGuard server (CH#540). Must match the Endpoint in
+  # Proton WireGuard server (CH#811). Must match the Endpoint in
   # secrets/vpn.yaml; the pinned route and the firewall allow-list below both
   # derive from it.
-  vpnEndpointIP = "79.127.184.129";
+  vpnEndpointIP = "79.127.184.31";
   vpnEndpointPort = "51820";
 
   # qBittorrent WebUI auth-bypass whitelist. Must cover BOTH loopback families:
