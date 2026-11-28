@@ -25,6 +25,8 @@ in
 {
   programs.nushell = {
     enable = true;
+    # HM 26.11 flipped the default to true; keep the old behaviour.
+    loadSessionVariables = false;
 
     extraConfig = ''
       source ${zoxide-config}/zoxide.nu
