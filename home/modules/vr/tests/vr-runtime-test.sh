@@ -63,6 +63,13 @@ doc = json.load(open('$OPENXR'))
 assert doc['runtime'].get('VALVE_runtime_is_steamvr') is True, doc
 " || fail "active_runtime.json is not SteamVR's own shipped manifest"
 
+# 3a. it is a symlink to SteamVR's manifest, as SteamVR's own "Set as
+#     default" writes it. A copy makes SteamVR warn that OpenXR is "set to
+#     another version of SteamVR" on every launch.
+[ -L "$OPENXR" ] || fail "active_runtime.json is a copy, not a symlink to SteamVR's manifest"
+[ "$(readlink "$OPENXR")" = "$(realpath "$VR_RUNTIME_STEAMVR_ROOT/steamxr_linux64.json")" ] \
+  || fail "active_runtime.json links to $(readlink "$OPENXR"), not SteamVR's manifest"
+
 # 4. on a virgin file the config and log paths come from the Steam root, not
 #    from the runtime path — deriving them from the runtime wrote
 #    /nix/store/config on the WiVRn branch, where the runtime is OpenComposite
