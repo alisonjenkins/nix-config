@@ -15,10 +15,15 @@ sessions").
 
 ## First install
 
-1. Check the user name is `steamos` (`id -un`). If not, change
-   `frameUsername` in `flake-modules/hosts/home-only/default.nix`:
-   steam-frame-nix's installer and `just switch` both pick
-   `homeConfigurations.<user>`.
+1. Check the user name is `steamos` (`id -un`): steam-frame-nix's
+   installer and `just switch` both pick `homeConfigurations.<user>`. If it
+   isn't, clone first, set `frameUsername` in
+   `flake-modules/hosts/home-only/default.nix`, `git commit` it, and in
+   step 3 pass `--flake ~/nix-config` instead of `--clone ...`:
+
+   ```sh
+   git clone https://github.com/alisonjenkins/nix-config ~/nix-config
+   ```
 2. `passwd` if no password is set yet (the installer needs `sudo` to put
    Nix on the read-only root).
 3. Install Nix and switch to this repo in one go. The repo is public, so
@@ -53,7 +58,14 @@ cat ~/.ssh/id_ed25519.pub
 Then authorise the public key on ali-desktop: add it as `steamFrame` in
 `flake-modules/lib.nix` (`flake.lib.sshKeys`), append it to `ali-desktop`'s
 `users.users.ali.openssh.authorizedKeys.keys`, and `just switch` there.
-Optionally add it to GitHub too, for pushes from the headset. After that,
+Optionally add it to GitHub too, for pushes from the headset. The
+installer cloned over HTTPS, so point pushes at SSH:
+
+```sh
+git -C ~/nix-config remote set-url --push origin git@github.com:alisonjenkins/nix-config.git
+```
+
+After that,
 `ssh ali-desktop.lan` (or `ali-desktop` via Tailscale, if the Frame joins
 the tailnet) works.
 

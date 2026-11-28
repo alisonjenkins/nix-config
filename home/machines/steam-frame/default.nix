@@ -16,6 +16,15 @@ let
   # one, so anything that has to be shared (the SSH agent socket) is named
   # by this absolute path instead.
   outerRuntimeDir = config.steamFrame.session.runtimeDir;
+  # Both shells point at the agent in the Steam session's runtime dir; the
+  # agent module's default is $XDG_RUNTIME_DIR-relative, which is the wrong
+  # (private) dir in the nested desktop. A forwarded agent (SSH into the
+  # Frame with -A) is left alone.
+  sshAuthSockInit = ''
+    if [ -z "''${SSH_CONNECTION:-}" ]; then
+      export SSH_AUTH_SOCK="${outerRuntimeDir}/ssh-agent"
+    fi
+  '';
 in
 {
   imports = [
@@ -81,25 +90,19 @@ in
   programs.bash = {
     enable = true;
     # mkAfter: last in .bashrc, after nix.sh and hm-session-vars.sh.
-    initExtra = lib.mkAfter ''
+    initExtra = lib.mkAfter (sshAuthSockInit + ''
       if [[ $- == *i* && -z ''${ZSH_VERSION:-} && -z ''${NO_ZSH:-} && $TERM != dumb ]]; then
         exec ${config.programs.zsh.package}/bin/zsh -l
       fi
-    '';
+    '');
   };
 
   # gpg-agent comes from home-common on other Linux hosts; nothing here
   # signs with GPG, and git signing is off (gitGPGSigningKey = "").
   services.ssh-agent.enable = true;
-  # Both sessions use the agent in the Steam session's runtime dir (see
-  # outerRuntimeDir). .zshenv runs this after hm-session-vars.sh, so it wins
-  # over the agent module's $XDG_RUNTIME_DIR-relative default.
-  # A forwarded agent (SSH into the Frame with -A) is left alone.
-  programs.zsh.envExtra = ''
-    if [ -z "$SSH_CONNECTION" ]; then
-      export SSH_AUTH_SOCK="${outerRuntimeDir}/ssh-agent"
-    fi
-  '';
+  # .zshenv runs this after hm-session-vars.sh, so it wins over the agent
+  # module's default (see sshAuthSockInit; bash gets it in initExtra above).
+  programs.zsh.envExtra = sshAuthSockInit;
 
   steamFrame = {
     # Started in the Steam session's user manager after every switch (HM
