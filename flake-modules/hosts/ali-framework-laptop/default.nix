@@ -405,7 +405,7 @@ in {
 
           fw-fanctrl = {
             enable = true;
-            config = {
+            settings = {
               defaultStrategy = "agile";
               strategies = {
                 "agile" = {
