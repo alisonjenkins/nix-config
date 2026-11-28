@@ -13,8 +13,8 @@
 
 ["brotli-1.2.1"]
 cve = ["CVE-2026-111497"]
-until = "2027-02-25"
-comment = "False positive. NVD's own CPE ranges (re-analysed 2026-11-27) end before 1.2.1, and the advisory names 1.2.1 as the fixed release. vulnix's cached data still matches 1.2.1. Only this exact version is excused; 1.1.0 and 1.2.0 still fail."
+until = "2026-12-12"
+comment = "False positive. NVD's own CPE ranges (re-analysed 2026-11-27) end before 1.2.1, and the advisory names 1.2.1 as the fixed release. vulnix's NVD data still matched 1.2.1 on 2026-11-28, probably from before that re-analysis; short expiry so a fresh scan re-checks it. Only this exact version is excused; 1.1.0 and 1.2.0 still fail."
 
 ["polkit-1.pam"]
 cve = ["CVE-2021-4034"]
