@@ -1990,12 +1990,7 @@ EOF
 
           i2pd = {
             enable = true;
-
-            proto = {
-              sam = {
-                enable = true;
-              };
-            };
+            settings.sam.enabled = true;
           };
 
           # Renamed from services.jellyseerr in nixpkgs 26.05; the rename alias
