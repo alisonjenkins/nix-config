@@ -105,8 +105,9 @@ An update auto-merges only when all of these pass:
 4. **Scan.** No new CVE that is high or critical, or known or likely to be
    exploited, introduced, by vulnix (closures) and Trivy (images).
    nix-config: the `cve-scan` job in `pr-check.yaml` runs
-   `scripts/cve-scan.sh` whenever `flake.lock` or `overlays/` change. It
-   evaluates every NixOS host on the PR's base and head (nothing is built),
+   `scripts/cve-scan.sh` on every PR that changes more than `.github/` and
+   the top-level Markdown files (a module or host change can swap package
+   versions as surely as a lock bump). It evaluates every NixOS host on the PR's base and head (nothing is built),
    leaves out each host whose derivation is the same on both sides, and runs
    vulnix from the base's nixpkgs over the rest. A (package, CVE) pair the
    head has and the base did not fails when any of these hold:
@@ -126,6 +127,44 @@ An update auto-merges only when all of these pass:
    GitHub-hosted runner that never runs the PR's code. A CVE that is safe
    here can be accepted in `pins/vulnix-whitelist.toml`, with a comment and
    an `until` date at most 90 days away.
+
+   Only what runs counts. vulnix scans the whole derivation closure, which
+   includes compilers and build tools that never run on the host. Each
+   finding is checked against the runtime closure of the host's built system
+   (from the local store, where build-and-cache builds main, or from the
+   niks3 cache): a package that is in no host's runtime closure is build-time
+   only, and fails only when it is in KEV. A host whose built system is
+   unavailable counts as runtime. The PR gate classifies by the base's built
+   systems, matching packages by name, since the head is not built. A PR
+   that newly pulls a build-only package into a running system and also
+   brings it a new CVE is therefore judged as build-only, and the daily scan
+   below catches it the next day.
+
+   **Daily scan of main.** `cve-daily.yaml` runs every morning at 06:30 UTC.
+   The PR gate only blocks what a change brings in, so a CVE published
+   against a package already on main is only seen here.
+   - `scripts/cve-status.sh` scans every host on main the same way.
+   - `scripts/cve_track.py` keeps one issue, "CVE status of main", up to date,
+     assigned to the repository owner. It holds per-host counts, the alerts
+     (findings that would fail the gate) and the other runtime findings.
+   - It comments when a finding becomes an alert: a new CVE, or an old one
+     that has just entered KEV or crossed the EPSS threshold. Each Monday it
+     posts a digest of what is open, new and fixed.
+
+   **Fixes.** For each alerted package, `scripts/cve_fix.py` asks vulnix
+   whether the head of nixos-26.05, then nixos-unstable, then master has a
+   version it no longer flags.
+   - Fixed in nixos-26.05: the nightly update brings it.
+   - Fixed in nixos-unstable, and taking it rebuilds at most 40 derivations
+     in the hosts' closures: the script adds the package to
+     `overlays/cve-fixes.json`, applied by the `cve-fixes` overlay, with a
+     `cve-fix-<name>` entry in `pins/registry.json`. It proves the swap with
+     `cve-scan.sh`: the CVE must show as fixed and nothing may fail. Then it
+     opens a PR with the updater App, which is never auto-merged and is not
+     reopened once closed. The pin's probe tells the weekly pins run when
+     nixos-26.05 has caught up.
+   - Fixed in nixos-unstable but costly to take (a core library), or fixed
+     only in master: the issue's Fix column says what is being waited on.
 
 ## Flake inputs: how the cooldown is applied
 

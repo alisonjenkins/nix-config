@@ -295,6 +295,14 @@ class CveDiffTest(unittest.TestCase):
         self.assertIn("| curl | 8.20 | [CVE-2026-2](https://nvd.nist.gov/vuln/detail/CVE-2026-2) | 7.5 | srv |", out)
         self.assertIn("| glibc | 2.42 | [CVE-2026-6](https://nvd.nist.gov/vuln/detail/CVE-2026-6) | 7.8 | desk |", out)
 
+    def test_equal_derivations_at_other_paths_are_attributed(self):
+        # vulnix keeps one path for derivations with the same name and patches.
+        kept, other = "/nix/store/" + "a" * 32 + "-zlib-1.3.drv", "/nix/store/" + "b" * 32 + "-zlib-1.3.drv"
+        f = cve_diff.Finding("zlib", "CVE-2026-3", 5.0, ("1.3",), drvs=(kept,))
+        closures = {"desk": {kept}, "srv": {other}, "vm": {"/nix/store/" + "c" * 32 + "-zlib-1.4.drv"}}
+        out = cve_diff.attribute({("zlib", "CVE-2026-3"): f}, closures)
+        self.assertEqual(out[("zlib", "CVE-2026-3")].hosts, ("desk", "srv"))
+
     def test_closures_must_come_in_pairs(self):
         with redirect_stdout(io.StringIO()), mock.patch("sys.stderr", io.StringIO()), self.assertRaises(SystemExit):
             cve_diff.main([str(self.write("b.json", [])), str(self.write("h.json", [])), "--head-closures", str(self.dir)])
@@ -303,6 +311,90 @@ class CveDiffTest(unittest.TestCase):
         a, b = self.dir / "a.md", self.dir / "b.md"
         self.run_diff([], [], "--summary", str(a), "--summary", str(b))
         self.assertEqual(a.read_text(), b.read_text())
+
+    def runtime_dirs(self, runtime):
+        """Closures where every finding's drv is on host srv, plus runtime listings."""
+        h = "0" * 32
+        rt = self.dir / "runtime"
+        rt.mkdir()
+        for host, names in runtime.items():
+            (rt / host).write_text("".join(f"/nix/store/{h}-{n}\n" for n in names))
+        return str(rt)
+
+    def gate_with_runtime(self, head, runtime, *extra):
+        closures = {"srv": [d for i in head for d in [i["derivation"]]]}
+        return self.run_diff(
+            [],
+            head,
+            "--base-closures", self.closures("base", {"srv": []}),
+            "--head-closures", self.closures("head", closures),
+            "--runtime", self.runtime_dirs(runtime),
+            *extra,
+        )
+
+    def test_in_runtime_matches_name_and_version(self):
+        names = {"curl-8.20.0-bin", "python3.13-requests-2.32.3", "curl-impersonate-1.0"}
+        self.assertTrue(cve_diff.in_runtime("curl", names))
+        self.assertTrue(cve_diff.in_runtime("python3.13-requests", names))
+        self.assertFalse(cve_diff.in_runtime("python3.13-req", names))
+        self.assertFalse(cve_diff.in_runtime("gcc", names))
+        self.assertFalse(cve_diff.in_runtime("curl-impersonate-1", {"curl-impersonate-10"}))
+
+    def test_build_only_high_cve_does_not_fail(self):
+        head = [item("gcc", "14", ["CVE-2026-20"], {"CVE-2026-20": 9.8})]
+        rc, out = self.gate_with_runtime(head, {"srv": ["glibc-2.42", "openssl-3.5.1"]})
+        self.assertEqual(rc, 0)
+        self.assertIn("New, build-time only (1, not failing)", out)
+        self.assertIn("| build only | srv |", out)
+
+    def test_runtime_high_cve_fails(self):
+        head = [item("openssl", "3.5.2", ["CVE-2026-21"], {"CVE-2026-21": 9.8})]
+        rc, out = self.gate_with_runtime(head, {"srv": ["openssl-3.5.1-bin"]})
+        self.assertEqual(rc, 1)
+        self.assertIn("| yes | srv |", out)
+
+    def test_build_only_kev_cve_still_fails(self):
+        head = [item("gcc", "14", ["CVE-2026-20"], {"CVE-2026-20": 5.0})]
+        rc, out = self.gate_with_runtime(head, {"srv": []}, *self.intel(kev=["CVE-2026-20"]))
+        self.assertEqual(rc, 1)
+        self.assertIn("known exploited (CISA KEV), though build-time only", out)
+
+    def test_host_without_runtime_data_is_unknown_and_fails(self):
+        head = [item("gcc", "14", ["CVE-2026-20"], {"CVE-2026-20": 9.8})]
+        rc, out = self.gate_with_runtime(head, {"other": []})
+        self.assertEqual(rc, 1)
+        self.assertIn("| unknown | srv |", out)
+
+    def test_json_output(self):
+        out_json = self.dir / "out.json"
+        head = [item("gcc", "14", ["CVE-2026-20"], {"CVE-2026-20": 9.8})]
+        self.gate_with_runtime(head, {"srv": []}, "--json", str(out_json))
+        data = json.loads(out_json.read_text())
+        self.assertEqual(data["hosts"], ["srv"])
+        [f] = data["build_only"]
+        self.assertEqual((f["cve"], f["runtime"], f["alert"], f["hosts"]), ("CVE-2026-20", "build", False, ["srv"]))
+
+    def test_status_mode_lists_open_findings_and_never_fails(self):
+        out_json = self.dir / "status.json"
+        report = self.write("status-in.json", [item("curl", "8", ["CVE-2026-2"], {"CVE-2026-2": 9.8})])
+        out = io.StringIO()
+        with redirect_stdout(out):
+            rc = cve_diff.main(["--status", str(report), "--json", str(out_json)])
+        self.assertEqual(rc, 0)
+        self.assertIn("1 open finding(s), 1 that would fail the gate", out.getvalue())
+        data = json.loads(out_json.read_text())
+        self.assertTrue(data["open"][0]["alert"])
+        self.assertNotIn("failing", data)
+
+    def test_status_summary_lists_the_other_findings_too(self):
+        # The tracking issue cuts its tables to fit and points to this summary.
+        report = self.write("status-in.json", [item("curl", "8", ["CVE-2026-2"], {"CVE-2026-2": 9.8}),
+                                               item("zlib", "1", ["CVE-2026-3"], {"CVE-2026-3": 5.0})])
+        out = io.StringIO()
+        with redirect_stdout(out):
+            cve_diff.main(["--status", str(report)])
+        self.assertIn("1 other open finding(s) that run on a host, or may", out.getvalue())
+        self.assertIn("| zlib | 1 |", out.getvalue())
 
 
 if __name__ == "__main__":

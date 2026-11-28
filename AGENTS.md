@@ -142,6 +142,7 @@ Custom modules via `self.nixosModules.*` (exported in `nixos-modules.nix`), enab
 - **`update.yaml`**: daily flake lock update (2 AM UTC)
 - **`ami-build-and-upload.yaml`**: builds+uploads NixOS AMIs to AWS, retention cleanup
 - **`closure-report.yaml`**: closure size reports for desktop/laptop configs
+- **`cve-daily.yaml`**: daily CVE scan of main (`scripts/cve-status.sh`). It keeps the "CVE status of main" issue, alerts on new exploitable CVEs, and opens fix PRs for packages that nixos-unstable has fixed (`scripts/cve_fix.py`, `overlays/cve-fixes.json`). See `docs/update-policy.md` gate 4.
 
 ### Subsystems
 

@@ -606,6 +606,20 @@ in
   };
 
   # Take linux-firmware from unstable rather than the stable channel: stable's
+  # Security fixes taken early from another channel, one package at a time:
+  # scripts/cve_fix.py adds an entry to cve-fixes.json when the daily CVE scan
+  # alerts on a package that nixos-unstable has fixed and taking it rebuilds
+  # little, and opens a PR (never auto-merged). Each entry has a
+  # cve-fix-<name> entry in pins/registry.json whose probe says when
+  # nixos-26.05 has caught up and the entry can go. Applied last in
+  # modules/base, so it wins over the overlays before it.
+  cve-fixes = final: _prev:
+    builtins.mapAttrs
+      (name: fix:
+        assert builtins.elem fix.from [ "unstable" "master" ];
+        final.${fix.from}.${name})
+      (builtins.fromJSON (builtins.readFile ./cve-fixes.json)).fixes;
+
   # fetchpatch strips binary blobs from the amdxdna NPU firmware patch,
   # producing 0-byte files. This overlay used to pin a kernel.org snapshot
   # (20260514) for the AMD GC 12.0.1 (gfx1201, RX 9070 XT) firmware before a
