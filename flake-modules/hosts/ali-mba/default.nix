@@ -124,8 +124,9 @@ in {
             lnav
             lolcat
             luajitPackages.lpeg
-            mitmproxy
-            mitmproxy2swagger
+            # mitmproxy: marked broken in nixpkgs 26.11 (needs aioquic < 1.3).
+            # Restore once nixpkgs fixes it.
+            # mitmproxy2swagger: depends on mitmproxy, same breakage.
             mustache-go
             neovide
             nh
