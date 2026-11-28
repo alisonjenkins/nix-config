@@ -360,7 +360,7 @@ in {
 
           systemPackages = with pkgs; [
             amdgpu_top
-            antigravity
+            antigravity-ide
             calibre
             citron
             fw-ectool
