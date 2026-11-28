@@ -50,15 +50,14 @@ in
   inherit packageVersion;
   src = firefoxSrc;
 
-  # base.mozconfig: unsigned addons, sideloading, camoufox branding/app-name.
-  requireSigning = false;
-  allowAddonSideload = true;
+  # base.mozconfig: camoufox branding/app-name. Unsigned addons and
+  # sideloading are builder overrides (below) since NixOS 26.11.
   branding = "browser/branding/camoufox";
 
   # Remaining base.mozconfig `ac_add_options` that buildMozillaMach does not
   # already set from the args above. (--enable-application, --with-app-name,
   # --with-branding, --allow-addon-sideload, MOZ_REQUIRE_SIGNING are handled by
-  # the builder; --disable-crashreporter via the crashreporterSupport override.)
+  # the builder; --disable-crashreporter via the enableCrashReporter override.)
   extraConfigureFlags = [
     "--with-unsigned-addon-scopes=app,system"
     "--disable-default-browser-agent"
@@ -111,5 +110,8 @@ in
     mainProgram = "camoufox";
   };
 }).override {
-  crashreporterSupport = false;
+  enableCrashReporter = false;
+  # base.mozconfig: unsigned addons and sideloading.
+  enableAddonSigning = false;
+  enableAddonSideload = true;
 }
