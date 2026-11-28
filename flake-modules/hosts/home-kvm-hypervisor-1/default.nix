@@ -341,18 +341,18 @@ in {
         };
 
         virtualisation = {
-          libvirtd = {
-            package = inputs.nixpkgs_old.legacyPackages.${pkgs.stdenv.hostPlatform.system}.libvirt;
-            qemu = {
-              package = lib.mkForce inputs.nixpkgs_old.legacyPackages.${pkgs.stdenv.hostPlatform.system}.qemu;
-              runAsRoot = true;
-              swtpm.enable = true;
-            };
+          # libvirt and QEMU come from the host's own nixpkgs, with QEMU set
+          # by modules/libvirtd (qemu_kvm, no Ceph). They used to come from an
+          # EOL nixos-24.11 pin, which kept openssh, inetutils, git, brotli and
+          # edk2 with CISA KEV CVEs in this closure.
+          libvirtd.qemu = {
+            runAsRoot = true;
+            swtpm.enable = true;
           };
 
           libvirt = {
             enable = true;
-            package = inputs.nixpkgs_old.legacyPackages.${pkgs.stdenv.hostPlatform.system}.libvirt;
+            package = config.virtualisation.libvirtd.package;
 
             connections = {
               "qemu:///system" = {
