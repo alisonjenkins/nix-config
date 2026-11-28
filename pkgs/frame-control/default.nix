@@ -24,7 +24,7 @@ let
     hash = "sha256-/RV3XTQyXbD7t7QS4TWzjVLbZCx3kItkYeXH9ac4gio=";
   };
 
-  contents = appimageTools.extractType2 { inherit pname version src; };
+  contents = appimageTools.extract { inherit pname version src; };
 
   # `framedrop://install?manifest=…` -> `frame-control://install?manifest=…`.
   # Only the scheme is rewritten; Frame Control's own parser
