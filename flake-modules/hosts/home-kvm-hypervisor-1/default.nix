@@ -352,7 +352,9 @@ in {
 
           libvirt = {
             enable = true;
-            package = config.virtualisation.libvirtd.package;
+            # NixVirt also sets virtualisation.libvirtd.package from this
+            # (mkDefault), so naming pkgs here keeps both on one libvirt.
+            package = pkgs.libvirt;
 
             connections = {
               "qemu:///system" = {
