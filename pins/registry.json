@@ -144,16 +144,16 @@
       }
     },
     {
-      "id": "keybase-gui-6.5.1-insecure",
+      "id": "keybase-gui-6.6.3-insecure",
       "class": "exception",
       "kind": "insecure-package",
-      "site": {"file": "modules/desktop-base/default.nix", "match": "keybase-gui-6.5.1"},
-      "pinned": "permittedInsecurePackages entry for keybase-gui-6.5.1",
+      "site": {"file": "lib/permitted-insecure-packages.nix", "match": "keybase-gui-6.6.3"},
+      "pinned": "permittedInsecurePackages entry for keybase-gui-6.6.3",
       "since": "2026-11-23",
-      "reviewed": "2026-11-23",
+      "reviewed": "2026-11-28",
       "review_by": "2027-02-21",
-      "reason": "The 2026-11-23 nixpkgs bump marks keybase-gui-6.5.1 insecure (knownVulnerabilities: \"EOL vendored Electron 39.2.7\"), so ali-desktop failed to evaluate via modules/desktop-base and home/autostart. Accepted risk: keep the Keybase GUI working until upstream ships a build on a supported Electron.",
-      "removal": "Delete the nixpkgs.config.permittedInsecurePackages line and its comments in modules/desktop-base/default.nix, delete this entry, then build ali-desktop. If keybase-gui is still insecure, drop keybase-gui from modules/desktop-base and home/programs/keybase and the keybase autostart entry in home/autostart instead.",
+      "reason": "The 2026-11-23 nixpkgs bump marks keybase-gui-6.5.1 insecure (knownVulnerabilities: \"EOL vendored Electron 39.2.7\"), so ali-desktop failed to evaluate via modules/desktop-base and home/autostart. Accepted risk: keep the Keybase GUI working until upstream ships a build on a supported Electron. 2026-11-28: the NixOS 26.11 bump moved it to 6.6.3 with the same EOL Electron, so the permit moved with it.",
+      "removal": "Delete the keybase-gui entry in lib/permitted-insecure-packages.nix, delete this entry, then build ali-desktop. If keybase-gui is still insecure, drop keybase-gui from modules/desktop-base and home/programs/keybase and the keybase autostart entry in home/autostart instead.",
       "probe": {
         "type": "command",
         "cmd": ["sh", "-c", "test \"$(nix eval --json .#nixosConfigurations.ali-desktop.pkgs.keybase-gui.meta.knownVulnerabilities)\" = '[]'"],

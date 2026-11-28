@@ -7,6 +7,7 @@ let
 
     config = {
       allowUnfree = true;
+      permittedInsecurePackages = import (self + "/lib/permitted-insecure-packages.nix");
     };
 
     overlays = [
