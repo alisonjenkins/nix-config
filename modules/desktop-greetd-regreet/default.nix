@@ -149,7 +149,7 @@ in
   # ~25s greeter delay.
   #
   # Theming is unaffected either way: stylix applies it through
-  # programs.regreet.* — adw-gtk3, GTK css generated from the scheme, the dark
+  # services.displayManager.regreet.* — adw-gtk3, GTK css generated from the scheme, the dark
   # preference and the wallpaper — never through the greetd command. Disabling
   # the target would silence the warning and lose all of that, so filter the
   # message instead.
@@ -180,12 +180,14 @@ in
         # waits the full timeout before the greeter appears.
         settings.default_session.command = let
           cage = lib.getExe pkgs.cage;
-          regreet = lib.getExe config.programs.regreet.package;
+          regreet = lib.getExe config.services.displayManager.regreet.package;
         in lib.mkForce "${pkgs.bash}/bin/bash -c 'exec ${cage} -s -- ${regreet} 2>/dev/null'";
       };
     };
 
-    programs = {
+    # NixOS 26.11 moved programs.regreet here; a mkDefault through the
+    # rename alias fails the package type check.
+    services.displayManager = {
       regreet = {
         enable = true;
 
