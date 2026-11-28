@@ -12,7 +12,7 @@ in {
   ];
 
   config.programs.firefox = {
-    enable = lib.mkIf pkgs.stdenv.isLinux true;
+    enable = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
 
     # Keep the legacy profile location (home.stateVersion < 26.05). Silences
     # the configPath default-change warning without migrating ~/.mozilla/firefox.
@@ -26,7 +26,7 @@ in {
 
       extensions = {
         packages = (
-          if pkgs.stdenv.isLinux
+          if pkgs.stdenv.hostPlatform.isLinux
           then (with pkgs.nur.repos.rycee.firefox-addons; [
             auto-tab-discard
             darkreader
@@ -54,7 +54,7 @@ in {
   };
 
   config.home.file =
-    if pkgs.stdenv.isLinux then {
+    if pkgs.stdenv.hostPlatform.isLinux then {
       ".local/share/applications/Firefox.desktop".text = ''
         [Desktop Entry]
         Comment[en_US]=

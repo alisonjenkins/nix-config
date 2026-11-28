@@ -15,9 +15,9 @@
 let
   gpgSign = gitGPGSigningKey != "";
   gpgSigningProgram = (
-    if pkgs.stdenv.isLinux then
+    if pkgs.stdenv.hostPlatform.isLinux then
       "${pkgs._1password-gui}/bin/op-ssh-sign"
-    else if pkgs.stdenv.isDarwin then
+    else if pkgs.stdenv.hostPlatform.isDarwin then
       "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
     else
       ""

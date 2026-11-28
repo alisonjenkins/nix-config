@@ -1,5 +1,5 @@
 { pkgs, ... }: {
-  home.file = (if pkgs.stdenv.isLinux then {
+  home.file = (if pkgs.stdenv.hostPlatform.isLinux then {
     ".local/share/dbus-1/services/org.freedesktop.secrets.service".text = ''
       [D-BUS Service]
       Name=org.freedesktop.secrets

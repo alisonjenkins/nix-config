@@ -3,7 +3,7 @@
 }:
 {
   home.file = (
-    if pkgs.stdenv.isLinux then
+    if pkgs.stdenv.hostPlatform.isLinux then
     {
     ".config/river/init" = {
       text = ''

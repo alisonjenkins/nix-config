@@ -54,7 +54,7 @@
       inherit github_clone_ssh_host_personal github_clone_ssh_host_work;
 
       home =
-        if pkgs.stdenv.isDarwin then "/Users/${username}" else "/home/${username}";
+        if pkgs.stdenv.hostPlatform.isDarwin then "/Users/${username}" else "/home/${username}";
 
       tmux-catpuccin = pkgs.stdenv.mkDerivation rec {
         name = "tmux-catpuccin";
@@ -74,7 +74,7 @@
     in
     {
       ".config/tmux/tmux.conf".text = import ./tmux.conf.nix {inherit pkgs; inherit tmux-catpuccin;};
-    } // (if pkgs.stdenv.isLinux then {
+    } // (if pkgs.stdenv.hostPlatform.isLinux then {
       ".config/tms/config.toml".text = ''
         [[search_dirs]]
         path = "${home}/git"

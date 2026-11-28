@@ -9,7 +9,7 @@
   ];
 
   config.programs.librewolf = {
-    enable = lib.mkIf pkgs.stdenv.isLinux true;
+    enable = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
 
     package = pkgs.unstable.librewolf;
 
@@ -44,7 +44,7 @@
 
       extensions = {
         packages = (
-          if pkgs.stdenv.isLinux
+          if pkgs.stdenv.hostPlatform.isLinux
           then with pkgs.nur.repos.rycee.firefox-addons; [
             auto-tab-discard
             darkreader
@@ -72,7 +72,7 @@
   };
 
   config.home.file =
-    if pkgs.stdenv.isLinux then {
+    if pkgs.stdenv.hostPlatform.isLinux then {
       ".local/share/applications/Librewolf.desktop".text = ''
         [Desktop Entry]
         Comment[en_US]=

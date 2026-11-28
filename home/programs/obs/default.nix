@@ -6,7 +6,7 @@
   imports = [ ./declarative.nix ];
 
   # home.file =
-  #   if pkgs.stdenv.isLinux
+  #   if pkgs.stdenv.hostPlatform.isLinux
   #   then {
   #     ".local/share/applications/OBS - Autostart Webcam.desktop".text = ''
   #       [Desktop Entry]
@@ -28,7 +28,7 @@
   #   else { };
 
   programs.obs-studio = {
-    enable = lib.mkIf pkgs.stdenv.isLinux true;
+    enable = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
     plugins = with pkgs.obs-studio-plugins;
       [
         # unstable.advanced-scene-switcher
@@ -66,7 +66,7 @@
     (pkgs.writeShellScriptBin ''obs-webcam-bg'' ''
       ${pkgs.obs-do}/bin/obs-do set-scene "Webcam BG"
     '')
-  ] ++ lib.optionals pkgs.stdenv.isLinux [
+  ] ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
     (pkgs.writeShellScriptBin ''obs-start-stream'' ''
       set -euo pipefail
       if ! ${pkgs.procps}/bin/pgrep -x '(obs|\.obs-wrapped)' >/dev/null; then

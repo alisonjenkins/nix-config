@@ -47,14 +47,14 @@
   home = {
     inherit username;
     homeDirectory = lib.mkForce (
-      if pkgs.stdenv.isDarwin
+      if pkgs.stdenv.hostPlatform.isDarwin
       then "/Users/${username}"
       else "/home/${username}"
     );
   };
 
   fonts = {
-    fontconfig.enable = pkgs.stdenv.isLinux;
+    fontconfig.enable = pkgs.stdenv.hostPlatform.isLinux;
   };
 
   home.sessionVariables = import ./environmentVariables.nix { inherit pkgs; };
@@ -64,7 +64,7 @@
     [
       pkgs.nix-flake-template-init
     ]
-    ++ (if pkgs.stdenv.isLinux
+    ++ (if pkgs.stdenv.hostPlatform.isLinux
     then
       (with pkgs;
       [
@@ -133,11 +133,11 @@
     else [ ]);
 
   programs.home-manager.enable =
-    if pkgs.stdenv.isLinux
+    if pkgs.stdenv.hostPlatform.isLinux
     then true
     else false;
   targets.genericLinux.enable =
-    if pkgs.stdenv.isLinux
+    if pkgs.stdenv.hostPlatform.isLinux
     then true
     else false;
 
@@ -147,7 +147,7 @@
     ssh-agent.enable = false;
 
     gpg-agent = {
-      enable = lib.mkIf pkgs.stdenv.isLinux true;
+      enable = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
       enableBashIntegration = true;
       enableZshIntegration = true;
       # kwalletcli was removed in nixpkgs 26.05 (Plasma 5 EOL) with no Qt6

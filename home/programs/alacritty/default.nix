@@ -11,7 +11,7 @@
   ];
 
   home.file =
-    if config.programs.alacritty.enable && pkgs.stdenv.isLinux && !builtins.pathExists /etc/NIXOS
+    if config.programs.alacritty.enable && pkgs.stdenv.hostPlatform.isLinux && !builtins.pathExists /etc/NIXOS
     then {
       ".local/share/applications/Alacritty.desktop".text = ''
         [Desktop Entry]
@@ -33,7 +33,7 @@
         X-KDE-Username=
       '';
     }
-    else if config.programs.alacritty.enable && pkgs.stdenv.isLinux
+    else if config.programs.alacritty.enable && pkgs.stdenv.hostPlatform.isLinux
     then {
       ".local/share/applications/Alacritty.desktop".text = ''
         [Desktop Entry]

@@ -15,7 +15,7 @@ let
 in
 {
   # Linux: systemd user service
-  systemd.user.services.lspmux = lib.mkIf pkgs.stdenv.isLinux {
+  systemd.user.services.lspmux = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     Unit.Description = "LSP Multiplexer Daemon";
 
     Service = {
@@ -28,7 +28,7 @@ in
   };
 
   # macOS: launchd agent
-  launchd.agents.lspmux = lib.mkIf pkgs.stdenv.isDarwin {
+  launchd.agents.lspmux = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
     enable = true;
     config = {
       ProgramArguments = [ "${lspmux}/bin/lspmux" "server" ];

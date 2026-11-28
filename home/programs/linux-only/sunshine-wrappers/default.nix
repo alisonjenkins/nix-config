@@ -84,7 +84,7 @@ let
   };
 in
 {
-  config = lib.mkIf pkgs.stdenv.isLinux {
+  config = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     home.packages = [ sunshine-gamescope sunshine-steam-bp ];
   };
 }

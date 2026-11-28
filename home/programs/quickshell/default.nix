@@ -5,7 +5,7 @@
   ...
 }:
 {
-  home.packages = if pkgs.stdenv.isLinux then with pkgs; [
+  home.packages = if pkgs.stdenv.hostPlatform.isLinux then with pkgs; [
     ibm-plex
     inputs.quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default
     material-symbols

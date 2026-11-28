@@ -44,7 +44,7 @@ in
     inputs.noctalia.homeModules.default
   ];
 
-  home.packages = if pkgs.stdenv.isLinux then with pkgs; [
+  home.packages = if pkgs.stdenv.hostPlatform.isLinux then with pkgs; [
     fuzzel
     inputs.quickshell.packages.${pkgs.stdenv.hostPlatform.system}.default
     nautilus

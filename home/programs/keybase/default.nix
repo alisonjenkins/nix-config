@@ -3,14 +3,14 @@
 }: {
   # keybase-gui has no aarch64 build; skip the gui on arm Linux.
   home.packages =
-    if pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.isx86_64 then
+    if pkgs.stdenv.hostPlatform.isLinux && pkgs.stdenv.hostPlatform.isx86_64 then
       with pkgs; [ keybase keybase-gui ]
-    else if pkgs.stdenv.isLinux then
+    else if pkgs.stdenv.hostPlatform.isLinux then
       with pkgs; [ keybase ]
     else [];
 
   # home.file =
-  #   if pkgs.stdenv.isLinux then {
+  #   if pkgs.stdenv.hostPlatform.isLinux then {
   #     ".local/share/applications/Keybase.desktop".text = ''
   #       [Desktop Entry]
   #       Comment[en_US]=

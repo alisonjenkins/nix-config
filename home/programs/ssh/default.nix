@@ -48,9 +48,9 @@
         # it the host's own key file is named directly.
         personalKey = if use1password then "~/.ssh/id_personal.pub" else primarySSHKey;
         identity_sock_path =
-          if pkgs.stdenv.isLinux then
+          if pkgs.stdenv.hostPlatform.isLinux then
             "~/.1password/agent.sock"
-          else if pkgs.stdenv.isDarwin then
+          else if pkgs.stdenv.hostPlatform.isDarwin then
             "\"~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\""
           else "";
       in

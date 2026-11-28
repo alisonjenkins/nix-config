@@ -120,7 +120,7 @@ in
     };
   };
 
-  config = lib.mkIf pkgs.stdenv.isLinux {
+  config = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     # Seeds the runtime selection only when nothing has chosen one yet.
     # Deliberately not xdg.configFile: that produces read-only store symlinks,
     # which is what left the live state inconsistent — OpenXR resolved to

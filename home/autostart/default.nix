@@ -2,7 +2,7 @@
   # Most autostart entries (steam, discord, keybase-gui, zapzap) are
   # x86_64-only — gate the whole block to skip cleanly on
   # aarch64-linux hosts like ali-mba-linux.
-  isLinuxX86 = pkgs.stdenv.isLinux && pkgs.stdenv.hostPlatform.isx86_64;
+  isLinuxX86 = pkgs.stdenv.hostPlatform.isLinux && pkgs.stdenv.hostPlatform.isx86_64;
 in {
   home = {
     packages = if isLinuxX86 then with pkgs; [
@@ -77,7 +77,7 @@ in {
       ".config/autostart/steam.desktop".source = "${steam-autostart-silent}/share/applications/steam-autostart-silent.desktop";
       ".config/autostart/zapzap.desktop".source = "${pkgs.zapzap}/share/applications/com.rtosta.zapzap.desktop";
     } else { })
-  // (if pkgs.stdenv.isLinux then {
+  // (if pkgs.stdenv.hostPlatform.isLinux then {
     # The app writes these itself with its own store path in Exec=, which goes
     # stale on every upgrade; and the autostart one execs the unwrapped
     # binary, skipping the CLAUDE_CODE_LOCAL_BINARY wrapper. Resolve through

@@ -1,5 +1,5 @@
 { pkgs, ... }: {
-  home.packages = if pkgs.stdenv.isDarwin then [
+  home.packages = if pkgs.stdenv.hostPlatform.isDarwin then [
     # Minimal Rust setup for macOS to avoid rust-docs OOM issues
     pkgs.fenix.stable.minimalToolchain
     pkgs.bacon

@@ -48,7 +48,7 @@ in
     };
   };
 
-  config = lib.mkIf (pkgs.stdenv.isLinux && cfg.enable) {
+  config = lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && cfg.enable) {
     home.packages = [ obs-desktop-audio ];
 
     systemd.user.services.obs-desktop-audio = {

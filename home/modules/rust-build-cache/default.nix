@@ -141,7 +141,7 @@ in {
       };
     };
 
-    systemd.user.services.cargo-sweep = lib.mkIf (cfg.sweep.enable && pkgs.stdenv.isLinux) {
+    systemd.user.services.cargo-sweep = lib.mkIf (cfg.sweep.enable && pkgs.stdenv.hostPlatform.isLinux) {
       Unit.Description = "Delete stale cargo build artifacts";
       Service = {
         Type = "oneshot";
@@ -158,13 +158,13 @@ in {
       };
     };
 
-    systemd.user.timers.cargo-sweep = lib.mkIf (cfg.sweep.enable && pkgs.stdenv.isLinux) {
+    systemd.user.timers.cargo-sweep = lib.mkIf (cfg.sweep.enable && pkgs.stdenv.hostPlatform.isLinux) {
       Unit.Description = "Delete stale cargo build artifacts";
       Timer = sweepSchedule;
       Install.WantedBy = [ "timers.target" ];
     };
 
-    systemd.user.services.cargo-prune-external-targets = lib.mkIf (cfg.sweep.enable && pkgs.stdenv.isLinux) {
+    systemd.user.services.cargo-prune-external-targets = lib.mkIf (cfg.sweep.enable && pkgs.stdenv.hostPlatform.isLinux) {
       Unit.Description = "Delete stale cargo target dirs outside any project";
       Service = {
         Type = "oneshot";
@@ -177,7 +177,7 @@ in {
       };
     };
 
-    systemd.user.timers.cargo-prune-external-targets = lib.mkIf (cfg.sweep.enable && pkgs.stdenv.isLinux) {
+    systemd.user.timers.cargo-prune-external-targets = lib.mkIf (cfg.sweep.enable && pkgs.stdenv.hostPlatform.isLinux) {
       Unit.Description = "Delete stale cargo target dirs outside any project";
       Timer = sweepSchedule;
       Install.WantedBy = [ "timers.target" ];

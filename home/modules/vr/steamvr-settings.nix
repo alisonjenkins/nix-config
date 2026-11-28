@@ -126,7 +126,7 @@ in
     '';
   };
 
-  config = lib.mkIf (pkgs.stdenv.isLinux && cfg.steamvrSettings != { }) {
+  config = lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && cfg.steamvrSettings != { }) {
     home.activation.mergeSteamvrSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       run ${lib.getExe pkgs.python3} ${mergeSteamvrSettingsScript} \
         "${cfg.steamRoot}/config/steamvr.vrsettings" \

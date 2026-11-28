@@ -25,7 +25,7 @@
         end
 
         # Ghostty shell integration
-        ${if pkgs.stdenv.isDarwin then ''
+        ${if pkgs.stdenv.hostPlatform.isDarwin then ''
           if test -f /Applications/Ghostty.app/Contents/Resources/shell-integration/fish/vendor_conf.d/ghostty-shell-integration.fish
             source /Applications/Ghostty.app/Contents/Resources/shell-integration/fish/vendor_conf.d/ghostty-shell-integration.fish
           end

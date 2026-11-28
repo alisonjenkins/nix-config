@@ -4,12 +4,12 @@
 , inputs
 , ...
 }: {
-  home.packages = lib.optionals pkgs.stdenv.isLinux [
+  home.packages = lib.optionals pkgs.stdenv.hostPlatform.isLinux [
     pkgs.obsidian
   ];
 
   home.file =
-    if pkgs.stdenv.isLinux && !builtins.pathExists /etc/NIXOS
+    if pkgs.stdenv.hostPlatform.isLinux && !builtins.pathExists /etc/NIXOS
     then {
       ".local/share/applications/Obsidian.desktop".text = ''
         [Desktop Entry]
@@ -31,7 +31,7 @@
         X-KDE-Username=
       '';
     }
-    else if config.programs.alacritty.enable && pkgs.stdenv.isLinux
+    else if config.programs.alacritty.enable && pkgs.stdenv.hostPlatform.isLinux
     then {
       ".local/share/applications/Obsidian.desktop".text = ''
         [Desktop Entry]

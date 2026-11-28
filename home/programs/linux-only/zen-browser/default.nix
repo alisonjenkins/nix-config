@@ -13,16 +13,16 @@ in {
   ];
 
   config.programs.zen-browser = {
-    enable = lib.mkIf pkgs.stdenv.isLinux true;
+    enable = lib.mkIf pkgs.stdenv.hostPlatform.isLinux true;
     # Setting unwrappedPackage skips the module's own override, so pass its
     # policies and desktop-entry options through here.
-    unwrappedPackage = lib.mkIf pkgs.stdenv.isLinux (
+    unwrappedPackage = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
       inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta-unwrapped.override {
         inherit (config.programs.zen-browser) policies enablePrivateDesktopEntry;
         ffmpeg_9 = pkgs.ffmpeg-git-unstable;
       }
     );
-    nativeMessagingHosts = lib.mkIf pkgs.stdenv.isLinux [
+    nativeMessagingHosts = lib.mkIf pkgs.stdenv.hostPlatform.isLinux [
       # inputs.pipewire-screenaudio.packages.${pkgs.stdenv.hostPlatform.system}.default # broken upstream: firefox.json renamed
       pkgs._1password-gui
     ];
@@ -36,7 +36,7 @@ in {
 
       extensions = {
         packages = (
-          if pkgs.stdenv.isLinux
+          if pkgs.stdenv.hostPlatform.isLinux
           then (with pkgs.nur.repos.rycee.firefox-addons; [
             # firenvim
             # plasma-integration

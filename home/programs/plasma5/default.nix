@@ -1,7 +1,7 @@
 { pkgs, ... }: {
   programs.plasma = {
     enable =
-      if pkgs.stdenv.isLinux
+      if pkgs.stdenv.hostPlatform.isLinux
       then true
       else false;
 

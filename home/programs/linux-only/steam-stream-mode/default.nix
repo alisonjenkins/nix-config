@@ -167,7 +167,7 @@ in
     };
   };
 
-  config = lib.mkIf pkgs.stdenv.isLinux (lib.mkMerge [
+  config = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (lib.mkMerge [
     # The command is useful by hand even where the watcher is not wanted, so
     # it is installed whenever the module is imported.
     { home.packages = [ stream-mode ]; }

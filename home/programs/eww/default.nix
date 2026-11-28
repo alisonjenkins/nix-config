@@ -6,7 +6,7 @@
   #   };
   # };
 
-  home.packages = with pkgs; if pkgs.stdenv.isLinux then [
+  home.packages = with pkgs; if pkgs.stdenv.hostPlatform.isLinux then [
     bc
     coreutils
     eww

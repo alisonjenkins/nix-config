@@ -134,7 +134,7 @@ let
   # Cross-platform sound for the Notification hook (fires when Claude waits
   # for user input). Bypasses the tmux/ghostty bell-propagation chain.
   notifyBell = pkgs.writeShellScript "claude-notify-bell" (
-    if pkgs.stdenv.isDarwin then ''
+    if pkgs.stdenv.hostPlatform.isDarwin then ''
       ${pkgs.coreutils}/bin/nohup /usr/bin/afplay /System/Library/Sounds/Glass.aiff >/dev/null 2>&1 &
     '' else ''
       ${pkgs.coreutils}/bin/nohup ${pkgs.pulseaudio}/bin/paplay \
@@ -369,7 +369,7 @@ let
   # so subcommands run clean. `@REAL@` is substituted with the absolute store
   # path of `.claude-real` at build time (below).
   claudeDispatcher = pkgs.writeShellScript "claude-dispatcher" ''
-    ${lib.optionalString pkgs.stdenv.isDarwin ''
+    ${lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
       # nixpkgs' launcher does `--set-default CLAUDE_CODE_CERT_STORE system`,
       # which on the work Mac makes every session fail with
       # UNABLE_TO_GET_ISSUER_CERT_LOCALLY. It only sets the variable when

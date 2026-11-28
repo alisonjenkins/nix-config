@@ -11,7 +11,7 @@
   programs = {
     zsh =
       let
-        ghostty_alias = if pkgs.stdenv.isDarwin then "alias ghostty=\"/Applications/Ghostty.app/Contents/MacOS/ghostty\"" else "";
+        ghostty_alias = if pkgs.stdenv.hostPlatform.isDarwin then "alias ghostty=\"/Applications/Ghostty.app/Contents/MacOS/ghostty\"" else "";
         ghostty_shell_integration = ''
           ${ghostty_alias}
         '';
