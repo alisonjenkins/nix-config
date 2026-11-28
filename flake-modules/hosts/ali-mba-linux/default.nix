@@ -137,6 +137,7 @@ in {
         # further down in this host config. Result: fully flake-pure (no
         # `--impure`), no files in the repo.
         hardware.asahi = {
+          enable = true;
           extractPeripheralFirmware = true;
           peripheralFirmwareDirectory = "/var/lib/asahi-firmware";
           # Experimental upstream and only tested on M2; mpv needs
