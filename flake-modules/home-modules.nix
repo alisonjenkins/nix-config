@@ -44,6 +44,8 @@
         };
       };
     };
+    # Valve Steam Frame (standalone, flake-modules/hosts/home-only).
+    steam-frame-config = import ../home/machines/steam-frame;
     steam-deck-config = { pkgs, ... }: {
       nix = {
         package = pkgs.nix;

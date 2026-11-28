@@ -222,6 +222,10 @@ switch *extraargs:
         else
             sudo darwin-rebuild switch --option sandbox false --flake . {{extraargs}}
         fi
+    elif [ ! -e /etc/NIXOS ]; then
+        # Standalone home-manager (Steam Frame, Steam Deck, Arch): the config
+        # is homeConfigurations.<user>; displaced dotfiles get a backup suffix.
+        home-manager switch --flake ".#$(id -un)" -b "hm-backup-$(date +%Y%m%d-%H%M%S)" {{extraargs}}
     elif command -v nh &>/dev/null; then
         rm -f ~/.gtkrc-2.0
         nh os switch . -- {{extraargs}} ;
