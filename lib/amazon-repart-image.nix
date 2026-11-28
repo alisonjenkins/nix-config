@@ -42,6 +42,7 @@ in
   systemd.services.growpart.environment.TMP = "/run";
 
   image.repart = {
+    enable = true;
     name = imageName;
     sectorSize = 512;
 
