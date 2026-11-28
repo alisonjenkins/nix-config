@@ -105,8 +105,9 @@ An update auto-merges only when all of these pass:
 4. **Scan.** No new CVE that is high or critical, or known or likely to be
    exploited, introduced, by vulnix (closures) and Trivy (images).
    nix-config: the `cve-scan` job in `pr-check.yaml` runs
-   `scripts/cve-scan.sh` whenever `flake.lock` or `overlays/` change. It
-   evaluates every NixOS host on the PR's base and head (nothing is built),
+   `scripts/cve-scan.sh` on every PR that changes more than `.github/` and
+   the top-level Markdown files (a module or host change can swap package
+   versions as surely as a lock bump). It evaluates every NixOS host on the PR's base and head (nothing is built),
    leaves out each host whose derivation is the same on both sides, and runs
    vulnix from the base's nixpkgs over the rest. A (package, CVE) pair the
    head has and the base did not fails when any of these hold:
