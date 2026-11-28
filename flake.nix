@@ -85,7 +85,7 @@
     };
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
     nixpkgs_master.url = "github:nixos/nixpkgs";
-    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-26.05";
+    nixpkgs_stable.url = "github:nixos/nixpkgs/nixos-26.11";
     nixpkgs_old.url = "github:nixos/nixpkgs/nixos-24.11";
     # Holds the Ghidra and JDK that REA's decompiler runs on. nixpkgs_unstable
     # from 02c087f3 (2026-10-23) builds a Ghidra whose native decompile helper
@@ -101,7 +101,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     stylix = {
-      url = "github:danth/stylix/release-25.11";
+      # TODO(26.11): switch to release-26.11 once stylix cuts it; master
+      # targets 26.11 until then.
+      url = "github:danth/stylix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -109,25 +111,24 @@
       url = "github:alisonjenkins/neovim-nix-flake";
       inputs = {
         # Build ali-neovim (and the nixvim packages it pulls) against the
-        # 26.05 release `nixpkgs`, not nixpkgs_unstable. nixpkgs_unstable
-        # has rolled to 26.11; nixvim is on its nixos-26.05 release, so
-        # feeding it a 26.11 `pkgs` trips nixvim's mismatched-version
-        # warning. Keeping pkgs + nixvim's eval-nixpkgs both on 26.05
-        # clears it.
+        # release `nixpkgs` (26.11), not nixpkgs_unstable, and keep nixvim
+        # on the matching release so nixvim's mismatched-version warning
+        # stays quiet.
         nixpkgs.follows = "nixpkgs";
         nixpkgs-master.follows = "nixpkgs_master";
         nixpkgs-stable.follows = "nixpkgs_stable";
-        # nixvim pinned to its nixos-26.05 release branch, evaluated
-        # against the same 26.05 `nixpkgs` as above.
-        nixvim.url = "github:nix-community/nixvim/nixos-26.05";
+        # TODO(26.11): switch to nixos-26.11 once nixvim cuts it; main
+        # targets 26.11 until then.
+        nixvim.url = "github:nix-community/nixvim";
         nixvim.inputs.nixpkgs.follows = "nixpkgs";
       };
     };
 
     darwin = {
-      # Must match nixpkgs release: nixpkgs = nixos-26.05, so nix-darwin
-      # uses the nix-darwin-26.05 branch (master tracks unstable/26.11).
-      url = "github:lnl7/nix-darwin/nix-darwin-26.05";
+      # Must match nixpkgs release (26.11).
+      # TODO(26.11): switch to nix-darwin-26.11 once it is cut; master
+      # targets 26.11 until then.
+      url = "github:lnl7/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -150,11 +151,10 @@
     };
 
     home-manager = {
-      # Tracks the release branch matching our nixpkgs (26.05). release-26.05
-      # carries both `programs.claude-code.lspServers` and the modular-services
-      # support backed by nixpkgs 26.05's lib/services/lib.nix, so the old
-      # master-rev pin (needed under 25.11) is no longer required.
-      url = "github:nix-community/home-manager/release-26.05";
+      # Tracks the release matching our nixpkgs (26.11).
+      # TODO(26.11): switch to release-26.11 once it is cut; master
+      # targets 26.11 until then.
+      url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -181,7 +181,7 @@
     };
 
     nixpkgs = {
-      url = "github:nixos/nixpkgs/nixos-26.05";
+      url = "github:nixos/nixpkgs/nixos-26.11";
       # url = "path:/home/ali/git/nixpkgs";
     };
 
