@@ -1236,11 +1236,10 @@ in {
         # };
 
         services = {
-          avahi = {
-            publish = {
-              enable = true;
-              userServices = true;
-            };
+          avahi.settings.publish = {
+            disable-publishing = false;
+            disable-user-service-publishing = false;
+            publish-addresses = true;
           };
 
           btrfs = {
