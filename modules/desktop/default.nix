@@ -1723,10 +1723,7 @@ in
     hardware = {
       ksm.enable = true;
 
-      logitech.wireless = mkIf cfg.logitech.enable {
-        enable = true;
-        enableGraphical = true;
-      };
+      logitech.wireless.enable = mkIf cfg.logitech.enable true;
 
       bluetooth.settings = mkMerge [
         # Base Bluetooth settings - always enabled when desktop module is active
@@ -1798,6 +1795,9 @@ in
 
     programs = {
       zsh.enable = true;
+
+      # Solaar GUI for Logitech receivers (was hardware.logitech.wireless.enableGraphical).
+      solaar.enable = mkIf cfg.logitech.enable true;
 
       gamemode = mkIf cfg.gaming.enable {
         enable = true;
