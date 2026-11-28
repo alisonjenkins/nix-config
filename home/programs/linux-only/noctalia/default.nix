@@ -37,4 +37,8 @@ in
   };
 
   config.programs.noctalia.settings = cfg.settings;
+
+  # Stylix gained a noctalia target that forces theme.source = "custom".
+  # Keep the wallpaper-derived colour scheme set above.
+  config.stylix.targets.noctalia.enable = false;
 }
