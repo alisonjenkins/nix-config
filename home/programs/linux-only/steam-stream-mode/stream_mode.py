@@ -67,6 +67,10 @@ STATE = os.environ.get(
 DEFAULT_WIDTH = int(os.environ.get("STREAM_MODE_DEFAULT_WIDTH", "1280"))
 DEFAULT_HEIGHT = int(os.environ.get("STREAM_MODE_DEFAULT_HEIGHT", "800"))
 DEFAULT_REFRESH = int(os.environ.get("STREAM_MODE_DEFAULT_REFRESH", "60"))
+# A headset never reports its size to Steam, so a VR stream with nothing
+# learned would otherwise get the Deck's 16:10 panel on a 16:9 virtual screen.
+VR_DEFAULT_WIDTH = int(os.environ.get("STREAM_MODE_VR_DEFAULT_WIDTH", "1920"))
+VR_DEFAULT_HEIGHT = int(os.environ.get("STREAM_MODE_VR_DEFAULT_HEIGHT", "1080"))
 # Long enough that a reconnect is not mistaken for the session ending. Removing
 # the output mid-reconnect would drop the client's remembered capture source.
 REMOVE_AFTER = float(os.environ.get("STREAM_MODE_REMOVE_AFTER", "120"))
@@ -312,6 +316,43 @@ def vr_link_refresh(path=None):
         return None
     rates = VR_LINK_RATE_RE.findall(text)
     return round(float(rates[-1])) if rates else None
+
+
+def _session_bus():
+    from jeepney.io.blocking import open_dbus_connection
+    return open_dbus_connection(bus="SESSION")
+
+
+def hold_idle_inhibit(reason, open_connection=None):
+    """Hold off idle actions until the returned connection is closed.
+
+    stasis watches the session bus for org.freedesktop.ScreenSaver.Inhibit
+    and keeps the hold until UnInhibit or until the sender disconnects, so
+    the connection is the hold. A logind idle lock would not do: stasis
+    treats those as suspend-only, and the lock screen streams as black.
+    Returns None, after a warning, when there is no bus to hold it on.
+    """
+    try:
+        from jeepney import DBusAddress, new_method_call
+        connection = (open_connection or _session_bus)()
+        address = DBusAddress(
+            "/org/freedesktop/ScreenSaver",
+            bus_name="org.freedesktop.ScreenSaver",
+            interface="org.freedesktop.ScreenSaver",
+        )
+        connection.send(new_method_call(address, "Inhibit", "ss", ("stream-mode", reason)))
+    except (ImportError, OSError, ValueError) as err:
+        log("stream-mode: WARNING could not hold an idle inhibitor ({}): {!r}; "
+            "the desktop may lock mid-stream".format(reason, err))
+        return None
+    return connection
+
+
+def release_idle_inhibit(connection):
+    try:
+        connection.close()
+    except OSError as err:
+        log("stream-mode: WARNING closing the idle inhibitor's bus connection: {!r}".format(err))
 
 
 def signal_process(pid, sig):
@@ -1182,15 +1223,19 @@ def client_record(client_id, clients):
     return _size_pair(entry), None
 
 
-def client_size(client_id, clients, max_capture=None):
+def client_size(client_id, clients, max_capture=None, default=None):
     """Resolution to build the output at, defaulting until one is learned.
 
     The client's own shape, fitted inside its resolution limit: this
     session's limit when it has been sent, the remembered one otherwise.
+    default stands in for a client with nothing learned, fitted the same
+    way; without one it is the configured default, as it always was.
     """
     output, remembered = client_record(client_id, clients)
     if output is None:
-        return DEFAULT_WIDTH, DEFAULT_HEIGHT
+        if default is None:
+            return DEFAULT_WIDTH, DEFAULT_HEIGHT
+        return fit_within(default[0], default[1], max_capture or remembered)
     return fit_within(output[0], output[1], max_capture or remembered)
 
 
@@ -1232,6 +1277,9 @@ class Session:
         # desktop_stream_started.
         self.vr_stream = False
         self.vr_refresh = None
+        # The session-bus connection holding off the lock screen; see
+        # hold_idle_inhibit.
+        self.idle_inhibit = None
         self.game_pid = None
         self.game_id = None
         self.pending = None
@@ -1328,6 +1376,11 @@ class Session:
         self.output = OUTPUT_NAME
         self.left_on_alone = None
         return True
+
+    def stream_size(self):
+        """The size to run this stream's output at; see client_size."""
+        default = (VR_DEFAULT_WIDTH, VR_DEFAULT_HEIGHT) if self.vr_stream else None
+        return client_size(self.client_id, self.clients, self.max_capture, default)
 
     def apply_mode(self, width, height, refresh):
         """Set the output's mode unless it already has it."""
@@ -1450,6 +1503,7 @@ class Session:
         self.capture_nudges = 0
         self.streaming = True
         self.stopping = False
+        self.inhibit_idle()
         # Per stream, not per connection: a phone stays connected between
         # streams, and its next one left Big Picture on the desktop monitor.
         self.big_picture_placed = False
@@ -1466,8 +1520,11 @@ class Session:
         # output's own size meant a Deck streamed at 1600x900 simply because
         # that is what the output happened to be at the time.
         if self.client_id is not None:
-            width, height = client_size(self.client_id, self.clients, self.max_capture)
+            width, height = self.stream_size()
             refresh = client_refresh(self.client_id, self.clients, fps)
+            if self.vr_stream and client_record(self.client_id, self.clients)[0] is None:
+                log("stream-mode: nothing learned for headset {}; using the VR default "
+                    "{}x{}".format(self.client_id, width, height))
         else:
             size = output_logical_size(self.output) or (DEFAULT_WIDTH, DEFAULT_HEIGHT)
             width, height = size
@@ -1495,6 +1552,23 @@ class Session:
         if not published:
             log("stream-mode: WARNING games will launch at the desktop's size")
         return published
+
+    def inhibit_idle(self):
+        if self.idle_inhibit is not None:
+            return False
+        reason = "streaming to {}".format(self.stream_client or self.client_id or "a client")
+        self.idle_inhibit = hold_idle_inhibit(reason)
+        if self.idle_inhibit is not None:
+            log("stream-mode: holding off idle actions while {}".format(reason))
+        return self.idle_inhibit is not None
+
+    def release_idle(self):
+        if self.idle_inhibit is None:
+            return False
+        handle, self.idle_inhibit = self.idle_inhibit, None
+        release_idle_inhibit(handle)
+        log("stream-mode: released the idle inhibitor")
+        return True
 
     def stream_stopped(self):
         """Steam logged the stop marker; the output now waits for a reconnect."""
@@ -1793,7 +1867,7 @@ class Session:
         if self.streaming or self.client_id is not None:
             self.output = OUTPUT_NAME
             if self.client_id is not None:
-                width, height = client_size(self.client_id, self.clients, self.max_capture)
+                width, height = self.stream_size()
                 # The headset's rate is not learned per client: it is SteamVR's.
                 fps = self.vr_refresh if self.vr_stream else self.max_fps
                 refresh = client_refresh(self.client_id, self.clients, fps)
@@ -1848,6 +1922,7 @@ class Session:
         self.game_capturing = False
         self.reset_low_rate()
         self.stop_audio()
+        self.release_idle()
 
         # Off first, target withdrawn second -- the reverse of connect, and for
         # the same reason. Between the two there is a state where the output
@@ -1904,7 +1979,7 @@ class Session:
         self.max_fps = fps
         if not self.streaming or self.output is None or self.client_id is None:
             return False
-        target = client_size(self.client_id, self.clients, self.max_capture)
+        target = self.stream_size()
         refresh = client_refresh(self.client_id, self.clients, self.max_fps)
         publish_target(self.output, target[0], target[1], refresh)
         return self.apply_mode(target[0], target[1], refresh)
@@ -2603,6 +2678,67 @@ def stream_in_progress(path=None):
     return last is True
 
 
+def _log_tail(path):
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            fh.seek(max(0, fh.tell() - LOG_SCAN_BYTES))
+            return fh.read().decode("utf-8", "replace")
+    except OSError:
+        return None
+
+
+def vr_desktop_stream_in_progress(path=None):
+    """Whether Steam's last capture began outside any Remote Play session.
+
+    That is how a Steam Link VR session shows in the log (see
+    Session.desktop_stream_started): a desktop stream with no
+    "Streaming started to" open and none of its stop markers after it.
+    """
+    tail = _log_tail(path or LOG)
+    if tail is None:
+        return False
+    remote_play_open = False
+    desktop = False
+    for line in tail.splitlines():
+        if START_RE.search(line):
+            remote_play_open = True
+        elif STOP_RE.search(line):
+            remote_play_open = False
+            desktop = False
+        elif DESKTOP_STREAM_START_RE.search(line):
+            desktop = True
+    return desktop and not remote_play_open
+
+
+def last_streaming_request(path=None):
+    """The device id of the newest streaming request, or None."""
+    tail = _log_tail(path or CONNECTIONS_LOG)
+    if tail is None:
+        return None
+    requests = STREAM_REQUEST_RE.findall(tail)
+    return int(requests[-1]) if requests else None
+
+
+def resume_vr_stream(session, log_path=None, connections_path=None):
+    """Pick a VR stream back up after a restart in the middle of one.
+
+    A headset announces itself with a streaming request, not a connect line,
+    so connected_client never finds it, and stream_in_progress looks only for
+    Remote Play's markers.
+    """
+    if not vrserver_running() or not vr_desktop_stream_in_progress(log_path):
+        return False
+    device = last_streaming_request(connections_path)
+    if device is None:
+        log("stream-mode: SteamVR is streaming the desktop but there is no streaming "
+            "request to say which headset; not resuming")
+        return False
+    log("stream-mode: resuming the VR stream to headset {}".format(device))
+    session.connect(device, "device")
+    return session.desktop_stream_started()
+
+
 def connected_client(path=None):
     """The client that connected most recently and has not disconnected.
 
@@ -2664,6 +2800,8 @@ def watch():
     if stream_in_progress() and steam_is_running():
         log("stream-mode: a stream is already in progress")
         session.begin_stream()
+    elif steam_is_running():
+        resume_vr_stream(session)
 
     log(
         "stream-mode: state — output={} streaming={} target={}".format(

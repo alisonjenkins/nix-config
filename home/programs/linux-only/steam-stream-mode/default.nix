@@ -5,6 +5,8 @@ let
   raw = pkgs.writers.writePython3Bin "stream-mode"
     {
       flakeIgnore = [ "E501" ];
+      # Holds the idle inhibitor on the session bus while a stream runs.
+      libraries = [ pkgs.python3Packages.jeepney ];
     }
     (builtins.readFile ./stream_mode.py);
 
@@ -72,6 +74,23 @@ in
       type = lib.types.int;
       default = 800;
       description = "Height used until a client's resolution is learned.";
+    };
+
+    vrDefaultWidth = lib.mkOption {
+      type = lib.types.int;
+      default = 1920;
+      description = ''
+        Width for a Steam Link VR stream (a Quest, the Steam Frame) whose
+        headset has nothing learned. A headset never reports its size to
+        Steam, so defaultWidth, the Deck's panel, would put a 16:10 picture
+        on the headset's 16:9 virtual screen.
+      '';
+    };
+
+    vrDefaultHeight = lib.mkOption {
+      type = lib.types.int;
+      default = 1080;
+      description = "Height for a VR stream with nothing learned; see vrDefaultWidth.";
     };
 
     refresh = lib.mkOption {
@@ -189,6 +208,8 @@ in
           "STREAM_MODE_DEFAULT_WIDTH=${toString cfg.defaultWidth}"
           "STREAM_MODE_DEFAULT_HEIGHT=${toString cfg.defaultHeight}"
           "STREAM_MODE_DEFAULT_REFRESH=${toString cfg.refresh}"
+          "STREAM_MODE_VR_DEFAULT_WIDTH=${toString cfg.vrDefaultWidth}"
+          "STREAM_MODE_VR_DEFAULT_HEIGHT=${toString cfg.vrDefaultHeight}"
           "STREAM_MODE_REMOVE_AFTER=${toString cfg.removeAfter}"
           "STREAM_MODE_STAGE_TIMEOUT=${toString cfg.stageTimeout}"
           "STREAM_MODE_TARGET_FILE=${cfg.targetFile}"
