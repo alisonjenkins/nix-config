@@ -139,7 +139,8 @@ Custom modules via `self.nixosModules.*` (exported in `nixos-modules.nix`), enab
 ### CI/CD Workflows
 
 - **`build-and-cache.yaml`**: builds all nixosConfigurations on push to main -> niks3 cache. Dry-run skips cached; parallel build+push via queue drain.
-- **`update.yaml`**: daily flake lock update (2 AM UTC)
+- **`update.yaml`**: daily flake lock update (02:00 UTC, inside the cheap-power window for the home runners): opens an auto-merge PR and exits
+- **`update-shepherd.yaml`**: follows that PR (rebases it when behind, only 00:30-04:30 UTC; opens a "Nightly flake update is stuck" issue when it fails or stalls)
 - **`ami-build-and-upload.yaml`**: builds+uploads NixOS AMIs to AWS, retention cleanup
 - **`closure-report.yaml`**: closure size reports for desktop/laptop configs
 
