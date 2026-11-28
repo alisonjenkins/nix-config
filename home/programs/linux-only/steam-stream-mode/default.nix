@@ -77,7 +77,7 @@ in
     };
 
     vrDefaultWidth = lib.mkOption {
-      type = lib.types.int;
+      type = lib.types.ints.positive;
       default = 1920;
       description = ''
         Width for a Steam Link VR stream (a Quest, the Steam Frame) whose
@@ -88,7 +88,7 @@ in
     };
 
     vrDefaultHeight = lib.mkOption {
-      type = lib.types.int;
+      type = lib.types.ints.positive;
       default = 1080;
       description = "Height for a VR stream with nothing learned; see vrDefaultWidth.";
     };

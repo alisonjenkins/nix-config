@@ -341,7 +341,8 @@ def hold_idle_inhibit(reason, open_connection=None):
             interface="org.freedesktop.ScreenSaver",
         )
         connection.send(new_method_call(address, "Inhibit", "ss", ("stream-mode", reason)))
-    except (ImportError, OSError, ValueError) as err:
+    # KeyError: jeepney's answer to an unset DBUS_SESSION_BUS_ADDRESS.
+    except (ImportError, KeyError, OSError, ValueError) as err:
         log("stream-mode: WARNING could not hold an idle inhibitor ({}): {!r}; "
             "the desktop may lock mid-stream".format(reason, err))
         return None
@@ -2679,13 +2680,15 @@ def stream_in_progress(path=None):
 
 
 def _log_tail(path):
+    """The last LOG_SCAN_BYTES of path, and whether earlier lines were left out."""
     try:
         with open(path, "rb") as fh:
             fh.seek(0, os.SEEK_END)
-            fh.seek(max(0, fh.tell() - LOG_SCAN_BYTES))
-            return fh.read().decode("utf-8", "replace")
+            start = max(0, fh.tell() - LOG_SCAN_BYTES)
+            fh.seek(start)
+            return fh.read().decode("utf-8", "replace"), start > 0
     except OSError:
-        return None
+        return None, False
 
 
 def vr_desktop_stream_in_progress(path=None):
@@ -2695,10 +2698,12 @@ def vr_desktop_stream_in_progress(path=None):
     Session.desktop_stream_started): a desktop stream with no
     "Streaming started to" open and none of its stop markers after it.
     """
-    tail = _log_tail(path or LOG)
+    tail, truncated = _log_tail(path or LOG)
     if tail is None:
         return False
-    remote_play_open = False
+    # In a cut tail with no Remote Play marker before the desktop stream, a
+    # session's start marker may be what was cut: unknown, so not VR.
+    remote_play_open = None if truncated else False
     desktop = False
     for line in tail.splitlines():
         if START_RE.search(line):
@@ -2708,12 +2713,15 @@ def vr_desktop_stream_in_progress(path=None):
             desktop = False
         elif DESKTOP_STREAM_START_RE.search(line):
             desktop = True
-    return desktop and not remote_play_open
+    if desktop and remote_play_open is None:
+        log("stream-mode: the streaming log's scanned tail has no Remote Play marker "
+            "before its desktop stream; not treating it as VR")
+    return desktop and remote_play_open is False
 
 
 def last_streaming_request(path=None):
     """The device id of the newest streaming request, or None."""
-    tail = _log_tail(path or CONNECTIONS_LOG)
+    tail, _ = _log_tail(path or CONNECTIONS_LOG)
     if tail is None:
         return None
     requests = STREAM_REQUEST_RE.findall(tail)

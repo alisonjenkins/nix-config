@@ -2703,6 +2703,27 @@ class TestResumeVrStream(unittest.TestCase):
         self.assertEqual(session.connected, [])
         self.assertTrue(any("no streaming request" in line for line in self.lines), self.lines)
 
+    def test_a_tail_that_may_have_cut_off_a_remote_play_start_resumes_nothing(self):
+        """The scan window can start inside a Remote Play session, after its
+        start marker: resuming then would retarget the output mid-stream."""
+        real = stream_mode.LOG_SCAN_BYTES
+        stream_mode.LOG_SCAN_BYTES = len(self.REQUEST) + 10
+        try:
+            resumed, session = self.resume(self.RP_START + "x" * 500 + "\n" + self.DESKTOP, self.REQUEST)
+        finally:
+            stream_mode.LOG_SCAN_BYTES = real
+        self.assertFalse(resumed)
+        self.assertEqual(session.connected, [])
+
+    def test_a_cut_tail_with_a_stop_before_the_desktop_stream_still_resumes(self):
+        real = stream_mode.LOG_SCAN_BYTES
+        stream_mode.LOG_SCAN_BYTES = len(self.REQUEST) + 10
+        try:
+            resumed, _ = self.resume(self.RP_START + "x" * 500 + "\n" + self.RP_STOP + self.DESKTOP, self.REQUEST)
+        finally:
+            stream_mode.LOG_SCAN_BYTES = real
+        self.assertTrue(resumed)
+
     def test_missing_logs_resume_nothing(self):
         session = object()
         self.assertFalse(stream_mode.resume_vr_stream(session, "/nonexistent/a", "/nonexistent/b"))
@@ -2729,6 +2750,21 @@ class TestIdleInhibitMessage(unittest.TestCase):
         self.assertEqual(header[HeaderFields.interface], "org.freedesktop.ScreenSaver")
         self.assertEqual(header[HeaderFields.member], "Inhibit")
         self.assertEqual(sent[0].body, ("stream-mode", "streaming to deck"))
+
+    @unittest.skipUnless(
+        __import__("importlib").util.find_spec("jeepney"), "jeepney not installed"
+    )
+    def test_an_unset_bus_address_means_no_hold_rather_than_no_stream(self):
+        """jeepney raises KeyError when DBUS_SESSION_BUS_ADDRESS is unset."""
+        real_log = stream_mode.log
+        stream_mode.log = lambda line: None
+        try:
+            def no_address():
+                raise KeyError("DBUS_SESSION_BUS_ADDRESS")
+
+            self.assertIsNone(real_hold_idle_inhibit("streaming to deck", open_connection=no_address))
+        finally:
+            stream_mode.log = real_log
 
     def test_no_session_bus_means_no_hold_and_a_warning(self):
         lines = []
