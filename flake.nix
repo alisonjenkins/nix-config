@@ -42,6 +42,13 @@
       url = "github:Jovian-Experiments/Jovian-NixOS";
       inputs.nixpkgs.follows = "nixpkgs_unstable";
     };
+    # Home Manager modules for the Valve Steam Frame (SteamOS, aarch64):
+    # session/portal fixes, VR keyboard and SteamVR dashboard patches. Used
+    # by the standalone homeConfigurations.steamos (flake-modules/hosts/home-only).
+    steam-frame-nix = {
+      url = "github:lhns/steam-frame-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     luks-controller-unlock = {
       url = "github:alisonjenkins/luks-controller-unlock";
       # Follow nixpkgs_unstable: upstream's flake.nix tracks nixos-unstable
