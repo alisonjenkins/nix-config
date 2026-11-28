@@ -22,6 +22,9 @@ real_output_refresh = stream_mode.output_refresh
 stream_mode.output_refresh = lambda name: None
 # Unknown, which keeps the plain turn-it-off behaviour.
 stream_mode.other_active_outputs = lambda name: None
+# Holds a real inhibitor on the session bus; never let a test reach it.
+real_hold_idle_inhibit = stream_mode.hold_idle_inhibit
+stream_mode.hold_idle_inhibit = lambda reason: None
 
 _state_dir = None
 
@@ -1273,8 +1276,13 @@ class TestOutputLifetime(unittest.TestCase):
                 "output_refresh",
                 "set_screencast_cursor",
                 "signal_process",
+                "hold_idle_inhibit",
+                "release_idle_inhibit",
+                "log",
             )
         }
+        self.lines = []
+        stream_mode.log = self.lines.append
         self.cursor = []
         stream_mode.set_screencast_cursor = lambda name, embed: (
             self.cursor.append((name, embed)) or True
@@ -1665,7 +1673,103 @@ class TestOutputLifetime(unittest.TestCase):
         """A 60 Hz output in a 90 Hz headset holds frames for one refresh,
         then two: judder that shows most when turning to aim."""
         self.start_vr_stream(link_refresh=90)
-        self.assertEqual(self.modes[-1], (stream_mode.OUTPUT_NAME, 1280, 800, 90))
+        self.assertEqual(self.modes[-1][3], 90)
+
+    VR_DEFAULT_MODE = (
+        stream_mode.OUTPUT_NAME,
+        stream_mode.VR_DEFAULT_WIDTH,
+        stream_mode.VR_DEFAULT_HEIGHT,
+        90,
+    )
+
+    def test_a_vr_stream_with_nothing_learned_uses_the_vr_size(self):
+        """A headset never reports a size, so the Deck's 1280x800 stood in for
+        the Frame's virtual screen: a 16:10 picture in a 16:9 theatre."""
+        self.start_vr_stream()
+        self.assertEqual(self.modes[-1], self.VR_DEFAULT_MODE)
+        self.assertTrue(any("VR default" in line for line in self.lines), self.lines)
+
+    def test_a_vr_stream_keeps_a_size_learned_for_the_headset(self):
+        stream_mode.load_clients = lambda path=None: {
+            "10933890668138783182": {"output": [2560, 1440], "refresh": 90},
+        }
+        self.start_vr_stream()
+        self.assertEqual(self.modes[-1][1:3], (2560, 1440))
+
+    def test_a_remote_play_stream_with_nothing_learned_keeps_the_default(self):
+        stream_mode.vrserver_running = lambda: False
+        stream_mode.output_logical_size = lambda name: (640, 480)
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.begin_stream("deck")
+        self.assertEqual(
+            self.modes[-1][1:3], (stream_mode.DEFAULT_WIDTH, stream_mode.DEFAULT_HEIGHT)
+        )
+
+    def test_a_config_reload_mid_vr_stream_keeps_the_vr_size(self):
+        """niri re-applies the declared 1280x800 on every reload."""
+        s = self.start_vr_stream()
+        self.modes.clear()
+        s.reassert_output()
+        self.assertEqual(self.modes[-1], self.VR_DEFAULT_MODE)
+
+    def test_a_vr_stream_fits_its_size_inside_the_clients_limit(self):
+        s = self.start_vr_stream()
+        s.note_max_capture(1280, 720)
+        self.assertEqual(self.modes[-1][1:3], (1280, 720))
+
+    # -- idle inhibitor
+
+    def hold_inhibits(self, handle="held"):
+        self.inhibits = []
+        stream_mode.hold_idle_inhibit = lambda reason: (
+            self.inhibits.append(("hold", reason)) or handle
+        )
+        stream_mode.release_idle_inhibit = lambda h: self.inhibits.append(("release", h))
+
+    def test_a_stream_holds_off_the_lock_screen(self):
+        """A locked desktop streams as black, and a VR menu is no game window
+        for stasis' inhibit_apps to see."""
+        self.hold_inhibits()
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.begin_stream("deck")
+        self.assertEqual([k for k, _ in self.inhibits], ["hold"])
+        self.assertIn("deck", self.inhibits[0][1])
+
+    def test_a_second_start_marker_does_not_hold_a_second_inhibitor(self):
+        self.hold_inhibits()
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.begin_stream("deck")
+        s.begin_stream("deck")
+        self.assertEqual([k for k, _ in self.inhibits], ["hold"])
+
+    def test_ending_a_stream_releases_the_inhibitor(self):
+        self.hold_inhibits()
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.begin_stream("deck")
+        s.end_stream()
+        self.assertEqual(self.inhibits[-1], ("release", "held"))
+        s.end_stream()
+        self.assertEqual(len(self.inhibits), 2, "released once, not on every end")
+
+    def test_steamvr_exiting_releases_the_inhibitor(self):
+        self.hold_inhibits()
+        s = self.start_vr_stream()
+        stream_mode.vrserver_running = lambda: False
+        self.assertTrue(s.check_vr_alive())
+        self.assertEqual(self.inhibits[-1], ("release", "held"))
+
+    def test_a_failed_hold_is_tried_again_on_the_next_start(self):
+        self.hold_inhibits(handle=None)
+        s = stream_mode.Session(stage_timeout=0)
+        s.connect(123, "deck")
+        s.begin_stream("deck")
+        self.assertTrue(s.streaming, "streaming goes ahead without an inhibitor")
+        s.begin_stream("deck")
+        self.assertEqual([k for k, _ in self.inhibits], ["hold", "hold"])
 
     def test_a_vr_stream_follows_a_120_hz_headset(self):
         self.start_vr_stream(link_refresh=120)
@@ -2509,6 +2613,171 @@ class TestOutputDetection(unittest.TestCase):
         stream_mode.niri_outputs = boom
         stream_mode.niri_workspaces = boom
         self.assertEqual(stream_mode.taken_output_names(), set())
+
+
+class TestResumeVrStream(unittest.TestCase):
+    """A restart mid-VR-session picks the stream back up.
+
+    Only Remote Play's markers were looked for, and a headset announces
+    itself with a streaming request rather than a connect line, so a
+    `just switch` during a VR session left the game unmanaged until SteamVR
+    was restarted.
+    """
+
+    DESKTOP = "[2026-10-04 11:58:16][310.1] >>> Starting desktop stream\n"
+    RP_START = "Streaming started to ali-mba at 0.0.0.0:0, audio channels = 2, MTU = 1200\n"
+    RP_STOP = "PipeWire: Deinitializing streaming\n"
+    REQUEST = (
+        "[2026-10-04 11:57:37] Received streaming request 43269442 with device ID "
+        "10933890668138783182 from 192.168.1.46:34702\n"
+    )
+
+    def setUp(self):
+        self._real = {
+            k: getattr(stream_mode, k)
+            for k in ("vrserver_running", "log")
+        }
+        self.tmp = tempfile.TemporaryDirectory()
+        self.lines = []
+        stream_mode.log = self.lines.append
+        stream_mode.vrserver_running = lambda: True
+        self.started = []
+
+    def tearDown(self):
+        for k, v in self._real.items():
+            setattr(stream_mode, k, v)
+        self.tmp.cleanup()
+
+    def write(self, name, body):
+        path = os.path.join(self.tmp.name, name)
+        with open(path, "w") as fh:
+            fh.write(body)
+        return path
+
+    def resume(self, stream_log, connections_log):
+        class FakeSession:
+            def __init__(inner):
+                inner.connected = []
+                inner.desktop_streams = 0
+
+            def connect(inner, client_id, name):
+                inner.connected.append((client_id, name))
+                return True
+
+            def desktop_stream_started(inner):
+                inner.desktop_streams += 1
+                return True
+
+        session = FakeSession()
+        resumed = stream_mode.resume_vr_stream(
+            session,
+            self.write("streaming_log.txt", stream_log),
+            self.write("remote_connections.txt", connections_log),
+        )
+        return resumed, session
+
+    def test_a_desktop_stream_with_steamvr_running_is_resumed(self):
+        resumed, session = self.resume(self.RP_START + self.RP_STOP + self.DESKTOP, self.REQUEST)
+        self.assertTrue(resumed)
+        self.assertEqual(session.connected, [(10933890668138783182, "device")])
+        self.assertEqual(session.desktop_streams, 1)
+        self.assertTrue(any("resuming" in line for line in self.lines), self.lines)
+
+    def test_nothing_is_resumed_without_steamvr(self):
+        stream_mode.vrserver_running = lambda: False
+        resumed, session = self.resume(self.DESKTOP, self.REQUEST)
+        self.assertFalse(resumed)
+        self.assertEqual(session.connected, [])
+
+    def test_a_desktop_stream_inside_a_remote_play_session_is_not_vr(self):
+        resumed, _ = self.resume(self.RP_START + self.DESKTOP, self.REQUEST)
+        self.assertFalse(resumed)
+
+    def test_a_desktop_stream_before_the_last_stop_is_over(self):
+        resumed, _ = self.resume(self.DESKTOP + self.RP_START + self.RP_STOP, self.REQUEST)
+        self.assertFalse(resumed)
+
+    def test_no_streaming_request_means_no_headset_to_resume(self):
+        resumed, session = self.resume(self.DESKTOP, "noise\n")
+        self.assertFalse(resumed)
+        self.assertEqual(session.connected, [])
+        self.assertTrue(any("no streaming request" in line for line in self.lines), self.lines)
+
+    def test_a_tail_that_may_have_cut_off_a_remote_play_start_resumes_nothing(self):
+        """The scan window can start inside a Remote Play session, after its
+        start marker: resuming then would retarget the output mid-stream."""
+        real = stream_mode.LOG_SCAN_BYTES
+        stream_mode.LOG_SCAN_BYTES = len(self.REQUEST) + 10
+        try:
+            resumed, session = self.resume(self.RP_START + "x" * 500 + "\n" + self.DESKTOP, self.REQUEST)
+        finally:
+            stream_mode.LOG_SCAN_BYTES = real
+        self.assertFalse(resumed)
+        self.assertEqual(session.connected, [])
+
+    def test_a_cut_tail_with_a_stop_before_the_desktop_stream_still_resumes(self):
+        real = stream_mode.LOG_SCAN_BYTES
+        stream_mode.LOG_SCAN_BYTES = len(self.REQUEST) + 10
+        try:
+            resumed, _ = self.resume(self.RP_START + "x" * 500 + "\n" + self.RP_STOP + self.DESKTOP, self.REQUEST)
+        finally:
+            stream_mode.LOG_SCAN_BYTES = real
+        self.assertTrue(resumed)
+
+    def test_missing_logs_resume_nothing(self):
+        session = object()
+        self.assertFalse(stream_mode.resume_vr_stream(session, "/nonexistent/a", "/nonexistent/b"))
+
+
+class TestIdleInhibitMessage(unittest.TestCase):
+    """The hold stasis honours: org.freedesktop.ScreenSaver.Inhibit, held
+    for as long as the connection that sent it stays open."""
+
+    @unittest.skipUnless(
+        __import__("importlib").util.find_spec("jeepney"), "jeepney not installed"
+    )
+    def test_the_inhibit_call_names_stream_mode_and_the_reason(self):
+        sent = []
+
+        class FakeConnection:
+            def send(self, message):
+                sent.append(message)
+
+        handle = real_hold_idle_inhibit("streaming to deck", open_connection=FakeConnection)
+        self.assertIsNotNone(handle)
+        header = sent[0].header.fields
+        from jeepney import HeaderFields
+        self.assertEqual(header[HeaderFields.interface], "org.freedesktop.ScreenSaver")
+        self.assertEqual(header[HeaderFields.member], "Inhibit")
+        self.assertEqual(sent[0].body, ("stream-mode", "streaming to deck"))
+
+    @unittest.skipUnless(
+        __import__("importlib").util.find_spec("jeepney"), "jeepney not installed"
+    )
+    def test_an_unset_bus_address_means_no_hold_rather_than_no_stream(self):
+        """jeepney raises KeyError when DBUS_SESSION_BUS_ADDRESS is unset."""
+        real_log = stream_mode.log
+        stream_mode.log = lambda line: None
+        try:
+            def no_address():
+                raise KeyError("DBUS_SESSION_BUS_ADDRESS")
+
+            self.assertIsNone(real_hold_idle_inhibit("streaming to deck", open_connection=no_address))
+        finally:
+            stream_mode.log = real_log
+
+    def test_no_session_bus_means_no_hold_and_a_warning(self):
+        lines = []
+        real_log = stream_mode.log
+        stream_mode.log = lines.append
+        try:
+            def no_bus():
+                raise OSError("no session bus")
+
+            self.assertIsNone(real_hold_idle_inhibit("streaming to deck", open_connection=no_bus))
+        finally:
+            stream_mode.log = real_log
+        self.assertTrue(any("WARNING" in line and "idle" in line for line in lines), lines)
 
 
 class TestStreamInProgress(unittest.TestCase):

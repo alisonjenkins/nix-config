@@ -38,6 +38,7 @@ something is wrong.
 | [0028](0028-draw-cursor-into-vr-stream-capture.md) | Draw the cursor into the capture during a Steam Link VR stream | Accepted, pending live test |
 | [0053](0053-tag-game-audio-streams-for-obs.md) | Tag game audio streams for OBS instead of routing them through a sink | Accepted, pending live test |
 | [0054](0054-link-desktop-streams-to-an-obs-sink-by-title.md) | Link desktop streams to an OBS sink by title, not by app | Accepted, pending live test in OBS |
+| [0067](0067-steam-frame-vr-stream-size-restart-and-idle.md) | Size VR streams for a headset's virtual screen, resume them after a restart, hold off idle while streaming | Accepted, pending live test |
 
 steam-command-runner has its own records in its repo, `docs/adr/`. Its
 [0007](https://github.com/alisonjenkins/steam-command-runner/blob/main/docs/adr/0007-streamed-games-skip-gamescope.md)
