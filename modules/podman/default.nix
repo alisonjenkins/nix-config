@@ -74,17 +74,24 @@ in
       defaultNetwork.settings.dns_enabled = true;
     };
 
-    virtualisation.containers.registries.search = cfg.registries;
+    # Podman 6 reads registries.conf V2 only.
+    virtualisation.containers.registries.settings.unqualified-search-registries =
+      cfg.registries;
 
     virtualisation.containers.storage.settings = {
       storage = {
         driver = cfg.storageDriver;
-        graphroot = "/var/lib/containers/storage";
-        runroot = "/run/containers/storage";
         options.overlay = lib.mkIf (cfg.storageDriver == "overlay") {
           mountopt = "nodev,metacopy=on";
         };
       };
+    };
+
+    # graphroot/runroot in the shared settings would also apply to rootless
+    # podman, so they live in the rootful drop-in.
+    virtualisation.containers.storage.rootful.settings.storage = {
+      graphroot = "/var/lib/containers/storage";
+      runroot = "/run/containers/storage";
     };
 
     hardware.nvidia-container-toolkit.enable = cfg.enableNvidia;
