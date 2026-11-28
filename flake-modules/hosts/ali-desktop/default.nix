@@ -803,9 +803,9 @@ in {
             stable.ananicy-cpp
             stress
             sunshine
-            sweethome3d.application
-            sweethome3d.furniture-editor
-            sweethome3d.textures-editor
+            sweethome3d
+            sweethome3d-furniture-editor
+            sweethome3d-textures-editor
             sysbench
             tiny4linux
             unixtools.xxd
