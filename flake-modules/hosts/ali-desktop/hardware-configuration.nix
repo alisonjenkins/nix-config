@@ -30,7 +30,6 @@
         ];
         luks.devices.luksroot = {
           device = "/dev/disk/by-uuid/251edf6c-ec46-4734-97ad-1caab10a6246";
-          preLVM = true;
           allowDiscards = true;
         };
       };

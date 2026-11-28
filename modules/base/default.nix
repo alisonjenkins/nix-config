@@ -194,8 +194,6 @@ in
         ];
 
         initrd = {
-          verbose = false;
-
           availableKernelModules = [ "lz4" "lz4_compress" ];
 
           # Leave luks.cryptoModules at the NixOS default. The pinned CachyOS
@@ -208,7 +206,6 @@ in
           # makeModulesClosure failures.
 
           systemd = {
-            enable = true;
             # Allow logging into the initrd emergency shell without a root password.
             # Needed to diagnose early-boot failures (e.g. systemd-cryptsetup) when
             # the machine can't pivot to the real root, so /persistence/passwords/root
@@ -638,9 +635,6 @@ in
           memtest86.enable = true;
           netbootxyz.enable = true;
         };
-
-        # Systemd initrd is required for PCR15 verification (luksPCR15 module)
-        initrd.systemd.enable = true;
 
         lanzaboote = {
           enable = true;

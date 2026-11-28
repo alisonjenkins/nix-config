@@ -59,7 +59,6 @@ in
       ];
 
       initrd = {
-        systemd.enable = true;
         includeDefaultModules = false;
         # Hetzner Cloud exposes the root disk over virtio-SCSI (/dev/sda), so the
         # initrd needs virtio_scsi + sd_mod or /dev/disk/by-label/nixos never

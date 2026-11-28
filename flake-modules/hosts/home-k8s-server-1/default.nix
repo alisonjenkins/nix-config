@@ -155,8 +155,6 @@ in {
               canTouchEfiVariables = true;
             };
           };
-          # Required by modules.initrd-ssh.
-          initrd.systemd.enable = true;
           # Bypass kernel workqueues for dm-crypt: lower latency on
           # the SATA SSD. Runtime-only, applies on next boot.
           initrd.luks.devices.crypted.crypttabExtraOpts = [

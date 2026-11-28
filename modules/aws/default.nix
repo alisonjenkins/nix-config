@@ -41,7 +41,6 @@ in
       loader.timeout = lib.mkForce 0;
 
       initrd = {
-        systemd.enable = true;
         includeDefaultModules = false;
         kernelModules = [ "nvme" ]
           ++ lib.optionals (cfg.rootFsType == "btrfs") [ "btrfs" ];

@@ -170,17 +170,6 @@ in {
   };
 
   config = mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = config.boot.initrd.systemd.enable;
-        message = ''
-          modules.initrd-ssh requires boot.initrd.systemd.enable =
-          true. The scripted (busybox) initrd path is not supported
-          by this module.
-        '';
-      }
-    ];
-
     # Firmware bundling: redistributable firmware in /run/current-system
     # /firmware is automatically copied into the initrd by the systemd
     # stage 1 generator when a kernel module that requests it is in

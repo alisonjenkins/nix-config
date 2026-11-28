@@ -21,8 +21,6 @@
           "xhci_pci"
         ];
         kernelModules = [ ];
-        # Required when impermanence is later enabled (pass 2).
-        systemd.enable = true;
       };
     };
 

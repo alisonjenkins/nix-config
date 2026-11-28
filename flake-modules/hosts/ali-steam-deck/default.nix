@@ -310,14 +310,13 @@ in {
         boot.loader.grub.efiInstallAsRemovable = lib.mkForce true;
 
         # TPM2-based LUKS auto-unlock so the Steam Deck doesn't need
-        # a USB keyboard at boot to type the password. systemd-stage-1
-        # is required for systemd-cryptsetup's TPM2 support — scripted
-        # stage-1 (the default) cannot unseal TPM-bound keys.
+        # a USB keyboard at boot to type the password. This relies on
+        # the systemd stage-1 initrd (the only one since NixOS 26.11)
+        # for systemd-cryptsetup's TPM2 support.
         # The TPM is enrolled as an additional keyslot during install
         # by the install-nixos launcher; the original password keyslot
         # stays as a fallback for the case where PCR 7 changes
         # (UEFI Secure Boot toggle).
-        boot.initrd.systemd.enable = true;
         boot.initrd.availableKernelModules = [ "tpm_crb" ];
         boot.initrd.luks.devices."crypted".crypttabExtraOpts = [
           # TEMPORARY: systemd 258.7's systemd-cryptsetup segfaults in
