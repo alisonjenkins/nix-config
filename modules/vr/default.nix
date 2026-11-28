@@ -161,6 +161,12 @@ in
       Steam Frame over SSH, and its framedrop:// handler, so "Install with
       FrameDrop" links (FrameDrop itself is Windows-only) open in it
     '';
+    framePort.enable = lib.mkEnableOption ''
+      FramePort (pkgs/frameport), which copies Meta Quest games off a Quest
+      over adb, converts them to OpenXR and installs them on a Steam Frame.
+      Also adds adb and a uaccess udev rule for Meta Quest headsets (USB
+      vendor 2833) so the logged-in user can reach a Quest without root
+    '';
     frameDongle.disablePowerSave = lib.mkEnableOption ''
       turning Wi-Fi power saving off on the Steam Frame's USB dongle
       (rtw89_8852cu, kernel 7.2+). With power save on, the link to the
@@ -389,6 +395,24 @@ in
     # chooser for a custom scheme (see the vrmonitor note in home/modules/vr).
     xdg.mime.defaultApplications."x-scheme-handler/framedrop" = "framedrop-handler.desktop";
     xdg.mime.addedAssociations."x-scheme-handler/framedrop" = "framedrop-handler.desktop";
+  })
+
+  (lib.mkIf (cfg.enable && cfg.framePort.enable) {
+    environment.systemPackages = [ pkgs.frameport pkgs.android-tools ];
+
+    # adb to a Quest in developer mode, for pulling its APKs, OBBs and saves.
+    # The uaccess tag gives the seat's user the device, as programs.adb did.
+    # It has to be set before systemd's 73-seat-late.rules acts on it, so it
+    # ships as a 70- rule; extraRules lands in 99-local.rules, too late.
+    services.udev.packages = [
+      (pkgs.writeTextFile {
+        name = "meta-quest-udev-rules";
+        destination = "/etc/udev/rules.d/70-meta-quest.rules";
+        text = ''
+          SUBSYSTEM=="usb", ATTR{idVendor}=="2833", TAG+="uaccess"
+        '';
+      })
+    ];
   })
 
   (lib.mkIf (cfg.enable && cfg.frameDongle.disablePowerSave) {

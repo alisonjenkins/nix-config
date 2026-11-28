@@ -478,6 +478,7 @@ in {
         modules.vr = {
           enable = true;
           frameControl.enable = true;
+          framePort.enable = true;
           frameDongle.disablePowerSave = true;
           enableOpenSourceVR = true;
           codec = "av1";
