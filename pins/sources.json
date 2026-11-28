@@ -166,6 +166,16 @@
       "tier": "individual-code"
     },
     {
+      "match": "github:lhns/steam-frame-nix",
+      "tier": "individual-code",
+      "note": "Steam Frame home-manager modules; patches Steam/SteamVR UIs at runtime."
+    },
+    {
+      "match": "github:dnut/clipboard-sync",
+      "tier": "individual-code",
+      "note": "steam-frame-nix dependency (source only), built for clipboardSync."
+    },
+    {
       "match": "github:pabloaul/lsfg-vk-flake",
       "tier": "individual-code",
       "note": "Vulkan layer."

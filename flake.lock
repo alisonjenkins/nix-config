@@ -124,6 +124,22 @@
         "type": "github"
       }
     },
+    "clipboard-sync-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793141678,
+        "narHash": "sha256-vIQuWzE2N0X3K+7YMr4xdZO49s7i7iHYjRSxzSlfJTw=",
+        "owner": "dnut",
+        "repo": "clipboard-sync",
+        "rev": "23eeade11468dffe03d09012ce2fb2c555f63f79",
+        "type": "github"
+      },
+      "original": {
+        "owner": "dnut",
+        "repo": "clipboard-sync",
+        "type": "github"
+      }
+    },
     "crane": {
       "locked": {
         "lastModified": 1776396856,
@@ -1638,6 +1654,7 @@
         "quickshell": "quickshell",
         "sops-nix": "sops-nix",
         "steam-command-runner": "steam-command-runner",
+        "steam-frame-nix": "steam-frame-nix",
         "stylix": "stylix",
         "tmux-sessionizer": "tmux-sessionizer",
         "zen-browser": "zen-browser"
@@ -1813,6 +1830,27 @@
       "original": {
         "owner": "alisonjenkins",
         "repo": "steam-command-runner",
+        "type": "github"
+      }
+    },
+    "steam-frame-nix": {
+      "inputs": {
+        "clipboard-sync-src": "clipboard-sync-src",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792272113,
+        "narHash": "sha256-dw/3Lk+KKBhNULh353lRJCnPNqMCDooWcP6uvyW9nGA=",
+        "owner": "lhns",
+        "repo": "steam-frame-nix",
+        "rev": "881c1de6a9e813b7c269be80a9bf91baf588f5f2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lhns",
+        "repo": "steam-frame-nix",
         "type": "github"
       }
     },
