@@ -18,6 +18,10 @@
   # this via extraSpecialArgs, personal machines get the empty-string default.
   _module.args.azureDevopsRsaKey = lib.mkDefault "";
 
+  # Machines without the 1Password SSH agent (the Steam Frame) set this false
+  # via extraSpecialArgs; see home/programs/ssh.
+  _module.args.sshUse1Password = lib.mkDefault true;
+
   _module.args.enableDifftastic = lib.mkDefault true;
 
   # Work machines set workIdentity = true and point workIdentitySecretsFile at
