@@ -257,10 +257,10 @@ in
 
     # Cap journal size; persist to disk so early-boot failures survive a hang
     # (read /var/log/journal from rescue). Storage=persistent creates the dir.
-    services.journald.extraConfig = ''
-      SystemMaxUse=50M
-      Storage=persistent
-    '';
+    services.journald.settings.Journal = {
+      SystemMaxUse = "50M";
+      Storage = "persistent";
+    };
 
     # Disable unnecessary services
     services.fwupd.enable = false;

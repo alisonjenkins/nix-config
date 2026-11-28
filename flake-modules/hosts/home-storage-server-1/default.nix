@@ -439,9 +439,7 @@ in {
 
         # An HBA discovery-error storm (mpt3sas, ~20 lines/s) grew the journal to
         # 3 GB and kept I/O busy; cap it so a repeat cannot fill the root volume.
-        services.journald.extraConfig = ''
-          SystemMaxUse=1G
-        '';
+        services.journald.settings.Journal.SystemMaxUse = "1G";
 
         # smartd starts before passthrough disks are available; retry until they appear
         systemd.services.smartd.serviceConfig = {

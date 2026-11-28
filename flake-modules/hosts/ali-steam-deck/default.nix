@@ -669,10 +669,10 @@ in {
         # subsequent installer boot. Default Storage=auto only
         # persists when /var/log/journal already exists — which it
         # doesn't on a fresh impermanence root.
-        services.journald.extraConfig = ''
-          Storage=persistent
-          SystemMaxUse=200M
-        '';
+        services.journald.settings.Journal = {
+          Storage = "persistent";
+          SystemMaxUse = "200M";
+        };
 
         services.desktopManager.plasma6.enable = true;
 

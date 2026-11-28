@@ -212,7 +212,7 @@ in
     };
 
     # Cap journal size to reduce I/O from rotation
-    services.journald.extraConfig = "SystemMaxUse=50M";
+    services.journald.settings.Journal.SystemMaxUse = "50M";
 
     # Disable unnecessary services
     services.fwupd.enable = false;
