@@ -52,6 +52,8 @@ of them. Do them in order and state progress each turn
   presets, slices, prints the settings that landed (and the diff against a
   known-good project with `QIDI_REFERENCE`), writes `MODEL.sliced.3mf` and
   `MODEL.gcode`. `QIDI_SLOT=0-3` picks the filament box slot.
+- `scripts/check-model.py MODEL.3mf|STL [--parts N]`: fails when the model is not
+  the expected number of solid pieces. `slice.sh` runs it first.
 - `scripts/flatten.py`: resolves preset `inherits` chains; used by `slice.sh`.
 - `scripts/printer.sh status | start FILE.gcode --bed-clear | cancel | off`:
   Moonraker control. `start` refuses without `--bed-clear`, which you pass only
