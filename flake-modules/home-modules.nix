@@ -39,7 +39,7 @@
         # periodic GC only (no free-space-triggered GC / store optimise).
         gc = {
           automatic = true;
-          frequency = "weekly";
+          dates = "weekly";
           options = "--delete-older-than 60d";
         };
       };
@@ -56,7 +56,7 @@
         # for the multi-user-daemon caveat).
         gc = {
           automatic = true;
-          frequency = "weekly";
+          dates = "weekly";
           options = "--delete-older-than 60d";
         };
       };
