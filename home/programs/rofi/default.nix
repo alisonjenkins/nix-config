@@ -2,7 +2,7 @@
   programs.rofi = {
     enable = false;
     package = pkgs.rofi-wayland;
-    terminal = "${pkgs.cool-retro-term}/bin/cool-retro-term";
+    settings.terminal = "${pkgs.cool-retro-term}/bin/cool-retro-term";
     # theme = ./theme.rasi;
   };
 
