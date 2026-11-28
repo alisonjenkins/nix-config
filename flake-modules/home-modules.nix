@@ -19,6 +19,7 @@
     memory-recall =import ../home/modules/memory-recall;
     observability-stack = import ../home/modules/observability-stack;
     rust-build-cache = import ../home/modules/rust-build-cache;
+    kobo-sync = import ../home/modules/kobo-sync;
     antigravity-cli = import ../home/modules/antigravity-cli;
     overseer = import ../home/modules/overseer;
     rootly = import ../home/modules/rootly;
