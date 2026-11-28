@@ -2418,10 +2418,16 @@ in
         listenAddresses = [ "127.0.0.1:631" ];
       };
 
-      scx = {
+      # NixOS 26.11 replaced services.scx with scx_loader. Auto mode carries
+      # the flags services.scx.extraArgs used to; modules.powerManagement
+      # switches them at runtime through scxctl.
+      scx-loader = {
         enable = mkDefault true;
-        scheduler = mkDefault "scx_lavd";
-        extraArgs = mkDefault ["--performance"];
+        config = {
+          default_sched = mkDefault "scx_lavd";
+          default_mode = mkDefault "Auto";
+          scheds.scx_lavd.auto_mode = mkDefault [ "--performance" ];
+        };
       };
 
       tlp = {

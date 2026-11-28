@@ -4,6 +4,20 @@
 let
   cfg = config.modules.powerManagement;
 
+  scxLoader = config.services.scx-loader;
+
+  # Restart the running sched_ext scheduler with new flags through
+  # scx_loader's D-Bus API. An empty list means scx_lavd's own default,
+  # which is --autopilot; scxctl rejects an empty --args. The --args=
+  # form lets the value start with a dash; scxctl shell-splits it.
+  scxSwitch = args:
+    let
+      effective = if args == [ ] then [ "--autopilot" ] else args;
+    in
+    "${scxLoader.package}/bin/scxctl switch"
+    + " --sched ${lib.escapeShellArg scxLoader.config.default_sched}"
+    + " --args=${lib.escapeShellArg (lib.escapeShellArgs effective)}";
+
   # Helper function fragment for error-reporting scripts
   # Each step logs its result and the script continues regardless
   runStepPreamble = ''
@@ -105,12 +119,9 @@ let
       }
       run_step "dirty-writeback" dirty_writeback_battery
 
-      ${lib.optionalString (config.services.scx.enable) ''
+      ${lib.optionalString scxLoader.enable ''
         scx_battery() {
-          mkdir -p /run/power-management
-          echo "SCX_FLAGS_OVERRIDE=${lib.escapeShellArgs cfg.onBattery.scxArgs}" > /run/power-management/scx.env
-          systemctl reset-failed scx.service
-          systemctl restart scx.service
+          ${scxSwitch cfg.onBattery.scxArgs}
         }
         run_step "scx-scheduler" scx_battery
       ''}
@@ -230,12 +241,9 @@ let
       }
       run_step "dirty-writeback" dirty_writeback_ac
 
-      ${lib.optionalString (config.services.scx.enable) ''
+      ${lib.optionalString scxLoader.enable ''
         scx_ac() {
-          mkdir -p /run/power-management
-          echo "SCX_FLAGS_OVERRIDE=${lib.escapeShellArgs cfg.onAC.scxArgs}" > /run/power-management/scx.env
-          systemctl reset-failed scx.service
-          systemctl restart scx.service
+          ${scxSwitch cfg.onAC.scxArgs}
         }
         run_step "scx-scheduler" scx_ac
       ''}
@@ -349,7 +357,7 @@ in
       scxArgs = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [ ];
-        description = "Arguments for scx_lavd scheduler on battery. Empty list uses default energy-aware mode.";
+        description = "Arguments for scx_lavd scheduler on battery. Empty list uses scx_lavd's default (--autopilot). Applied at runtime with scxctl.";
       };
 
       wifiPowerSave = lib.mkOption {
@@ -624,11 +632,5 @@ in
         };
       };
     };
-
-    # Add EnvironmentFile drop-in to scx service so power-switch scripts
-    # can override SCX_FLAGS_OVERRIDE at runtime via /run/power-management/scx.env
-    systemd.services.scx.serviceConfig.EnvironmentFile = lib.mkIf (config.services.scx.enable) [
-      "-/run/power-management/scx.env"
-    ];
   };
 }

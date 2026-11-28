@@ -164,7 +164,7 @@ in {
         # scx schedulers are x86-only (sched_ext + BPF helpers). The
         # desktop module enables scx by default; explicitly disable on
         # aarch64 so its package doesn't pull in.
-        services.scx.enable = lib.mkForce false;
+        services.scx-loader.enable = lib.mkForce false;
 
         modules.desktop = {
           enable = true;
